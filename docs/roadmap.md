@@ -28,14 +28,23 @@ decision resolves.
 
 ## Phase 1 — Communication backbone (do this BEFORE anything pretty)
 This is the project's only make-or-break risk. Prove it first.
-- [ ] `apps/relay`: socket.io server, room-by-sessionId, token queue state machine
-      (`docs/architecture.md` §3), input forwarding, idle/disconnect release.
-- [ ] `apps/kiosk`: connect, register room, render a static QR, show a cursor that a
-      phone can push around.
-- [ ] `apps/controller`: open via `/c/:sessionId`, join room, `TrackpadSurface` sending
-      `dx,dy`/tap/scroll. Show driver vs queued role.
-- [ ] End-to-end test: one phone moves the kiosk cursor; a second phone queues; driver
-      leaves → token passes. Test on both eduroam and 4G.
+- [x] `apps/relay`: socket.io server (`RoomManager`), room-by-sessionId, token queue
+      state machine (`docs/architecture.md` §3), driver-only input forwarding, idle /
+      pass / disconnect release, per-driver input rate-limit (§9).
+- [x] `apps/kiosk`: connect + register room (`kiosk:hello`), static QR (`qrcode.react`),
+      inertia cursor driven by forwarded `dx,dy`/tap/scroll; idle ↔ interactive via
+      `room:driverChanged`.
+- [x] `apps/controller`: opens via `/c/:sessionId` (manual parse, no router),
+      `TrackpadSurface` (relative `dx,dy` + tap + two-finger scroll, rAF-coalesced),
+      driver/queued/passed UI, pass + idle countdown + heartbeat. Honors reduced motion.
+- [x] State-machine verified by a scripted end-to-end smoke test (kiosk + 2 controllers):
+      driver assignment, queue, queued-input rejection, pass→promotion (`youAreUp`),
+      disconnect→idle. All 11 assertions pass.
+- [x] Real-phone E2E on the **same Wi-Fi (LAN)** PASSED — driver/queue/pass verified on
+      actual devices.
+- [ ] **Cross-network E2E (phone on 4G, kiosk on eduroam)** — still blocked on the relay
+      deployment decision (CLAUDE.md §7): needs a public deploy target + domain for the
+      QR URL. Deferred by choice until the content structure lands.
 
 ## Phase 2 — Content structure
 - [ ] Content schema + `content/*.json` placeholder data + `content/media/` folders

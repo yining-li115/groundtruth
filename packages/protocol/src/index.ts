@@ -95,8 +95,15 @@ export type RelayToClientEventName = keyof RelayToClientEvents;
  * ------------------------------------------------------------------ */
 
 export const TIMING = {
-  /** Driver is released after this long with no input. */
+  /**
+   * Driver is released after this long with no INPUT (move/tap/scroll/back).
+   * Heartbeats do NOT reset this — they are connection keep-alive only, so an
+   * inattentive driver who leaves the tab open still frees the token for the queue
+   * (architecture §3; resolves the §5 heartbeat wording).
+   */
   IDLE_TIMEOUT_MS: 60_000,
   /** Grace period on voluntary pass before the token moves on. */
   PASS_GRACE_MS: 0,
+  /** How often a controller sends `ctrl:heartbeat` (connection liveness). */
+  HEARTBEAT_INTERVAL_MS: 15_000,
 } as const;

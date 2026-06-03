@@ -1,23 +1,47 @@
-import { TIMING } from "@groundtruth/protocol";
-
-/**
- * Phase 0 scaffold only.
- *
- * The socket.io server, room-by-sessionId, the token queue state machine
- * (docs/architecture.md §3), input forwarding, and idle/disconnect release all land
- * in Phase 1. The relay is the SOLE authority for who holds the token (CLAUDE.md
- * rule 4) — clients never decide locally.
- *
- * Re-export the protocol event maps so Phase 1's socket.io server can type its
- * `Server<ClientToRelayEvents, RelayToClientEvents>` from here, while the contract
- * itself stays defined once in @groundtruth/protocol (CLAUDE.md §6).
- */
-export type {
+import { createServer } from "node:http";
+import { Server } from "socket.io";
+import type {
   ClientToRelayEvents,
   RelayToClientEvents,
 } from "@groundtruth/protocol";
+import { config } from "./config";
+import { RoomManager, type SocketData } from "./rooms";
 
-console.log(
-  `[relay] scaffold ready · IDLE_TIMEOUT=${TIMING.IDLE_TIMEOUT_MS}ms · ` +
-    `PASS_GRACE=${TIMING.PASS_GRACE_MS}ms · server impl arrives in Phase 1`,
-);
+/**
+ * Groundtruth relay — the cloud authority both clients connect to over WebSocket
+ * (architecture §1). Rooms by sessionId, the token queue state machine, and input
+ * forwarding all live in RoomManager. This file is just wiring: bind each protocol
+ * event to the manager. The relay is the SOLE authority for the token (CLAUDE.md
+ * rule 4); it forwards only abstract input intents, never arbitrary actions (§9).
+ */
+const httpServer = createServer();
+
+const io = new Server<
+  ClientToRelayEvents,
+  RelayToClientEvents,
+  Record<string, never>,
+  SocketData
+>(httpServer, {
+  cors: { origin: config.corsOrigin },
+});
+
+const rooms = new RoomManager(io);
+
+io.on("connection", (socket) => {
+  socket.on("kiosk:hello", ({ sessionId }) => rooms.registerKiosk(socket, sessionId));
+  socket.on("ctrl:join", ({ sessionId }) => rooms.addController(socket, sessionId));
+
+  socket.on("ctrl:input.move", (payload) => rooms.forwardMove(socket, payload));
+  socket.on("ctrl:input.tap", () => rooms.forwardTap(socket));
+  socket.on("ctrl:input.scroll", (payload) => rooms.forwardScroll(socket, payload));
+  socket.on("ctrl:input.back", () => rooms.forwardBack(socket));
+
+  socket.on("ctrl:pass", () => rooms.pass(socket));
+  socket.on("ctrl:heartbeat", () => rooms.heartbeat(socket));
+
+  socket.on("disconnect", () => rooms.disconnect(socket));
+});
+
+httpServer.listen(config.port, () => {
+  console.log(`[relay] listening on :${config.port} (cors: ${config.corsOrigin})`);
+});

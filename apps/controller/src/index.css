@@ -1,2 +1,75 @@
 @import "tailwindcss";
 @import "@groundtruth/tokens/tokens.css";
+
+/* Controller is mobile-first and uses theme.light throughout (design-system §5). */
+.gt-controller {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1rem;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+}
+
+.gt-trackpad {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  border: 1px solid var(--gt-border);
+  background: var(--gt-surface);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab; /* desktop affordance; no effect on touch */
+}
+.gt-trackpad:active {
+  cursor: grabbing;
+}
+
+.gt-trackpad__hint {
+  pointer-events: none;
+  padding: 0 1.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--gt-text-secondary);
+}
+
+/* Pill buttons (design-system §5). */
+.gt-btn-solid,
+.gt-btn-outline {
+  border-radius: 9999px;
+  padding: 0.7rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.gt-btn-solid {
+  background: var(--gt-button-solid-bg);
+  color: var(--gt-button-solid-text);
+  border: none;
+}
+.gt-btn-outline {
+  background: var(--gt-button-outline-bg);
+  color: var(--gt-button-outline-text);
+  border: 1px solid var(--gt-button-outline-border);
+}
+
+/* Heavy motion is opt-out on the controller — it runs on personal phones
+   (CLAUDE.md rule 5). Only animate when the user hasn't asked to reduce motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .gt-trackpad:active {
+    transform: scale(0.997);
+    transition: transform 0.1s ease;
+  }
+  .gt-btn-solid:active,
+  .gt-btn-outline:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease;
+  }
+}

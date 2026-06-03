@@ -117,7 +117,7 @@ protocol file. Names are fixed.
 | `ctrl:input.scroll`| controller (driver) | `{ dy }` | scroll |
 | `ctrl:input.back`  | controller (driver) | `{}` | go back / exit section |
 | `ctrl:pass`        | controller (driver) | `{}` | voluntarily release token |
-| `ctrl:heartbeat`   | controller | `{}` | keep-alive / resets idle timer |
+| `ctrl:heartbeat`   | controller | `{}` | connection keep-alive (does NOT reset the idle timer — see below) |
 
 ### Relay → Clients
 
@@ -135,6 +135,11 @@ protocol file. Names are fixed.
 ### Lifecycle rules
 - Relay validates that input messages come from the current driver; ignore input from
   queued phones (defense against tampering).
+- **Only real input** (`ctrl:input.move`/`.tap`/`.scroll`/`.back`) resets the driver's
+  inactivity timer. `ctrl:heartbeat` is connection keep-alive **only** — it must NOT
+  reset the idle timer, otherwise an inattentive driver who keeps the tab open would
+  never time out and the queue could never reclaim the token. (Resolved in Phase 1; the
+  idle release in §3 is about *no input*, and socket.io already detects dead sockets.)
 - On any disconnect, relay re-runs the queue state machine (§3).
 - socket.io handles reconnection; on reconnect a controller re-sends `ctrl:join` and
   the relay restores or re-queues it.
