@@ -6,18 +6,24 @@ into web-ready tokens and resolves web-specific decisions.
 
 ---
 
-## 1. The color conflict (RESOLVED)
+## 1. The accent + the two blues (RESOLVED)
 
-The TUM print spec lists the primary blue as **`#0065BD`**. The official TUM **web
-logo** is drawn in **`#3070B3`**. These are different blues. Decision:
+Three distinct colors, three distinct jobs — kept as separate tokens so they can never
+be confused or merged:
 
-- **UI primary blue = `#0065BD`** (the print-spec primary). Use this for interactive
-  accents, primary buttons, focus rings, key brand surfaces.
-- **Logo keeps its native `#3070B3`.** Do NOT recolor the logo to `#0065BD`. It ships
-  as-is from `assets/logo/`.
+- **UI accent = `#3A3AF0`** (`brand.electric`) — an **electric blue-violet**, Lusion-
+  inspired. This is the single high-chroma hero color: interactive accents, primary
+  buttons/focus rings, the one hero color block. *(Base version; may be tuned further.)*
+- **TUM blue = `#0065BD`** (`brand.blue`, the print-spec primary, Pantone 300C / RAL
+  5017) — **RESERVED for TUM-brand / logo-adjacent contexts only.** It is **no longer
+  the UI accent**. Don't reach for it for general interactive accents; use
+  `brand.electric`.
+- **Logo blue = `#3070B3`** (`brand.logoBlue`) — the official web wordmark's native
+  hue. The logo **ships as-is** from `assets/logo/`; never recolor it to `#0065BD` or
+  to the accent (white recolor on dark backgrounds is the only exception, see §3).
 
-Both values live in the tokens package. They are distinct tokens with distinct names
-(`brand.blue` vs `brand.logoBlue`) so they can never be confused or accidentally merged.
+All three live in the tokens package as distinct names (`brand.electric` /
+`brand.blue` / `brand.logoBlue`).
 
 ---
 
@@ -29,10 +35,11 @@ to `packages/tokens`.
 ### Primary
 | Token | Hex | RGB | Notes |
 |-------|-----|-----|-------|
-| `brand.blue`      | `#0065BD` | 0/101/189  | **UI primary.** Pantone 300C, RAL 5017 |
-| `brand.logoBlue`  | `#3070B3` | 48/112/179 | Logo only — never for UI fills |
-| `brand.white`     | `#FFFFFF` | 255/255/255 | |
-| `brand.black`     | `#000000` | 0/0/0 | |
+| `brand.electric` | `#3A3AF0` | 58/58/240  | **UI accent** — single hero color (Lusion-inspired blue-violet). Not a TUM print color. |
+| `brand.blue`     | `#0065BD` | 0/101/189  | TUM blue (Pantone 300C, RAL 5017). **Logo/brand contexts only — not the UI accent.** |
+| `brand.logoBlue` | `#3070B3` | 48/112/179 | Logo only — never for UI fills |
+| `brand.white`    | `#FFFFFF` | 255/255/255 | |
+| `brand.black`    | `#000000` | 0/0/0 | |
 
 ### Secondary (extend the spectrum; print spec allows 80/50/20% tints)
 | Token | Hex | RGB |
@@ -88,11 +95,24 @@ Rules:
 
 ## 4. Typography
 
-The print spec governs print; for web pick a clean, neutral sans that pairs with the
-TUM wordmark. Recommended (confirm with group if they have a license/preference):
-- UI sans: a geometric/neutral grotesk (e.g. system stack `Inter`, or TUM's licensed
-  face if available). Define as `--font-sans` token.
-- Numerals for tickers/stats: tabular figures.
+**UI typeface — RESOLVED: TUM Neue Helvetica** (the official TUM identity font). It is
+wired up as the `--font-sans` token; everything inherits it by default.
+
+- **Files:** source TTFs (Regular / Bold / Italic / BoldItalic) live in `assets/fonts/`
+  as provenance. Web-optimised **WOFF2** versions live in
+  `packages/tokens/src/fonts/` and are loaded via `@font-face` in
+  `packages/tokens/src/tokens.css`. Because every app and Storybook imports that
+  stylesheet, the fonts are bundled once from the tokens package — no per-app copies.
+- **Token:** `--font-sans` is defined in `tokens.css` (with a system-sans fallback
+  chain: `ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+  Arial, sans-serif`). It is set unlayered, so it also overrides Tailwind's default
+  `--font-sans` — the `font-sans` utility and the global default both resolve to TUM
+  Neue Helvetica. A `--gt-font-sans` alias mirrors it for our `--gt-*` convention.
+- **Faces shipped:** 400 normal, 700 normal, 400 italic, 700 italic.
+- **Verify:** Storybook → *Foundations / Typography* renders a specimen (weights +
+  italics, with a serif contrast row) to confirm the font actually loaded.
+- Numerals for tickers/stats: tabular figures (use where available).
+- License: TUM-licensed identity font; keep its use within TUM/PF contexts.
 
 Scale (define as tokens, don't hardcode px in components):
 - Display (kiosk hero): large, set per-scene.
@@ -113,17 +133,19 @@ kiosk display headlines where viewing distance justifies it.
 
 ### The look we're matching (from the Lusion reference screenshot)
 The high-end feel comes from restraint, not color volume:
-- **Near-white cool background** — not pure `#FFFFFF`. A very faint blue-gray tint.
+- **Near-white lavender-grey background** — not pure `#FFFFFF`. A very faint cool
+  lavender tint (`bg` = `#F1F0F8`).
 - **Generous whitespace.** Let elements breathe; don't fill the canvas.
 - **Oversized black display headlines** in a geometric sans. Big type IS the design.
-- **A single high-chroma color block** as the one hero accent (Lusion uses a blue-violet;
-  **we use TUM `brand.blue` `#0065BD` instead** — same structural role, TUM-compliant).
+- **A single high-chroma color block** as the one hero accent — an **electric blue-violet**
+  (`brand.electric` `#3A3AF0`), the Lusion-style accent.
 - **Pill-shaped buttons**: one dark solid (near-black) + one light/outline variant.
-- **Imagery duotoned to the brand blue** — photos tinted toward `brand.blue` rather than
+- **Imagery duotoned to the accent** — photos tinted toward `brand.electric` rather than
   shown full-color, so media reads as part of the palette.
 
-> Important: do NOT copy Lusion's blue-violet hue. Borrow the *composition* (light base,
-> big type, one strong color block, duotoned images) and apply TUM blue as that color.
+> Note: the hero accent is the electric blue-violet `brand.electric` `#3A3AF0` (base
+> version — may be tuned). TUM blue `#0065BD` is reserved for logo/brand contexts and is
+> **not** the UI accent.
 
 ### `theme.light` — the default, used everywhere
 The content sections (People, Research, Student projects, Teaching, Photo), the idle
@@ -131,17 +153,18 @@ showreel by default, and the entire controller UI.
 
 | Token | Value (guideline — tune to taste) | Role |
 |-------|-----------------------------------|------|
-| `bg`             | `#F4F5F9` (near-white, faint cool tint) | page background |
+| `bg`             | `#F1F0F8` (near-white, faint lavender-grey tint) | page background |
 | `surface`        | `#FFFFFF` | cards, raised surfaces |
 | `text.primary`   | `brand.black` `#000000` | headlines, body |
 | `text.secondary` | `gray.80` `#333333` | secondary copy |
 | `border`         | `gray.20` `#CCCCCC` | hairlines, dividers |
-| `accent`         | `brand.blue` `#0065BD` | the single hero color block, links, focus |
+| `accent`         | `brand.electric` `#3A3AF0` | the single hero color block, links, focus |
 | `button.solid`   | near-black `#1A1A1A` bg / white text | primary pill |
 | `button.outline` | transparent bg / dark text / `border` outline | secondary pill |
 
-Imagery: apply a duotone tint toward `brand.blue` for hero/section media to match the
-reference. Keep this as a reusable treatment (a component/util), not per-image hacks.
+Imagery: apply a duotone tint toward `brand.electric` (the accent) for hero/section
+media to match the reference. Keep this as a reusable treatment (a component/util), not
+per-image hacks.
 
 ### `theme.dark` — OPTIONAL kiosk idle backdrop only
 Not a landing page, not user-navigable. Purpose: a calmer, less glaring backdrop for the
@@ -151,9 +174,9 @@ behind the glass). The interactive content sections always use `theme.light`.
 - Build it only if/when wanted; `theme.light` is the priority. If unsure, ship light-only
   for the idle showreel too and add dark later.
 - **Base is true black** (`brand.black` `#000000`) — maximal glare reduction behind the
-  glass. `surface` is a near-black lift so raised cards read above the base. `brand.blue`
-  and sparing accents glow against it; the **logo is recolored white** (the one allowed
-  recolor, see §3).
+  glass. `surface` is a near-black lift so raised cards read above the base. The accent
+  (`brand.electric`) and sparing accents glow against it; the **logo is recolored white**
+  (the one allowed recolor, see §3).
 
 | Token | Value | Role |
 |-------|-------|------|
@@ -162,7 +185,7 @@ behind the glass). The interactive content sections always use `theme.light`.
 | `text.primary`   | `brand.white` `#FFFFFF` | headlines, body |
 | `text.secondary` | `gray.20` `#CCCCCC` | secondary copy |
 | `border`         | `gray.80` `#333333` | hairlines, dividers |
-| `accent`         | `brand.blue` `#0065BD` | the single hero color block, links, focus |
+| `accent`         | `brand.electric` `#3A3AF0` | the single hero color block, links, focus |
 | `button.solid`   | `brand.white` bg / `brand.black` text | primary pill |
 | `button.outline` | transparent bg / white text / `gray.80` border | secondary pill |
 

@@ -31,17 +31,18 @@ export type ThemeTokens = {
 /**
  * theme.light — the DEFAULT, used everywhere: all content sections, the controller UI,
  * and the idle showreel by default (design-system §5). Lusion post-entry look: a
- * near-white cool base, big black type, one TUM-blue accent.
+ * near-white lavender-grey base, big black type, one electric blue-violet accent
+ * (`brand.electric`).
  */
 export const light: ThemeTokens = {
-  bg: "#F4F5F9",
+  bg: "#F1F0F8",
   surface: palette.brand.white,
   text: {
     primary: palette.brand.black,
     secondary: palette.gray[80],
   },
   border: palette.gray[20],
-  accent: palette.brand.blue,
+  accent: palette.brand.electric,
   button: {
     solid: { bg: "#1A1A1A", text: palette.brand.white },
     outline: { bg: "transparent", text: palette.brand.black, border: palette.gray[20] },
@@ -63,7 +64,7 @@ export const dark: ThemeTokens = {
     secondary: palette.gray[20],
   },
   border: palette.gray[80],
-  accent: palette.brand.blue,
+  accent: palette.brand.electric,
   button: {
     solid: { bg: palette.brand.white, text: palette.brand.black },
     outline: { bg: "transparent", text: palette.brand.white, border: palette.gray[80] },

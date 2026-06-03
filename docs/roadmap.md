@@ -57,10 +57,11 @@ This is the project's only make-or-break risk. Prove it first.
       the npm script; **CI hookup still TODO** — no CI configured yet.)
 - [ ] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
       projects, Teaching. (UI — later in Phase 2.)
-- [ ] **Interactive home (landing) + navigation menu** — the post-takeover website
-      shell that holds the sections (`docs/architecture.md` §6).
-- [ ] Showreel + home as ONE shared content feed with a `mode` prop
-      (`idle` auto-play vs `interactive` explorable) — `docs/architecture.md` §6.
+- [ ] **Interactive home (landing) + horizontal navigation menu** — the post-takeover
+      website shell that holds the sections (`docs/architecture.md` §6). Home's central
+      area is reserved for an interactive component (TBD), NOT the showreel.
+- [ ] Idle showreel as its own auto-playing standby screen (independent of home; may
+      reuse the same content JSON as source material) — `docs/architecture.md` §6.
 - [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`.
 - [x] `PROJECT-MAP.md` at repo root — plain-language (Chinese) guide to where each kind
       of thing lives, so a non-programmer can find what to edit.
@@ -95,4 +96,6 @@ This is the project's only make-or-break risk. Prove it first.
 - [x] Dark/light palette — RESOLVED: light-first, no landing page (design-system §5).
 - [ ] Relay deployment target + domain for the QR URL.
 - [ ] Real content + media assets.
-- [ ] Web font / typeface license.
+- [x] Web font — RESOLVED: **TUM Neue Helvetica** (official TUM identity font), wired
+      as `--font-sans` in `packages/tokens`; WOFF2 in `packages/tokens/src/fonts/`,
+      source TTFs in `assets/fonts/`. See design-system §4.

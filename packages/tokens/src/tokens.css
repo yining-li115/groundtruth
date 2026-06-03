@@ -8,9 +8,51 @@
  * Consume with var(--gt-…). Never write a raw hex outside this file (CLAUDE.md rule 1).
  */
 
+/* ---- Typeface: TUM Neue Helvetica (official TUM identity font).
+   WOFF2 files live next to this CSS at ./fonts/ and are bundled by Vite for every
+   app (kiosk, controller) and Storybook that imports this stylesheet — one source,
+   no per-app copies. ---- */
+@font-face {
+  font-family: "TUM Neue Helvetica";
+  src: url("./fonts/TUMNeueHelvetica-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "TUM Neue Helvetica";
+  src: url("./fonts/TUMNeueHelvetica-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "TUM Neue Helvetica";
+  src: url("./fonts/TUMNeueHelvetica-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "TUM Neue Helvetica";
+  src: url("./fonts/TUMNeueHelvetica-BoldItalic.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
+  /* ---- Typography ---- */
+  /* UI sans = the TUM identity face, with a system-sans fallback chain. Defining
+     --font-sans here (unlayered) also overrides Tailwind's default @theme value, so
+     the whole site and the `font-sans` utility pick up TUM Neue Helvetica. */
+  --font-sans: "TUM Neue Helvetica", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --gt-font-sans: var(--font-sans);
+
   /* ---- Raw palette (design-system §2) ---- */
-  --gt-brand-blue: #0065bd;       /* UI primary */
+  --gt-brand-electric: #3a3af0;   /* UI accent — the single hero color (Lusion-inspired) */
+  --gt-brand-blue: #0065bd;       /* TUM blue — logo/brand contexts only, NOT the UI accent */
   --gt-brand-logo-blue: #3070b3;  /* logo ONLY — never a UI fill */
   --gt-brand-white: #ffffff;
   --gt-brand-black: #000000;
@@ -30,17 +72,23 @@
   --gt-accent-midblue: #64a0c8;
 
   /* ---- theme.light — DEFAULT, used everywhere ---- */
-  --gt-bg: #f4f5f9;
+  --gt-bg: #f1f0f8;
   --gt-surface: var(--gt-brand-white);
   --gt-text-primary: var(--gt-brand-black);
   --gt-text-secondary: var(--gt-gray-80);
   --gt-border: var(--gt-gray-20);
-  --gt-accent: var(--gt-brand-blue);
+  --gt-accent: var(--gt-brand-electric);
   --gt-button-solid-bg: #1a1a1a;
   --gt-button-solid-text: var(--gt-brand-white);
   --gt-button-outline-bg: transparent;
   --gt-button-outline-text: var(--gt-brand-black);
   --gt-button-outline-border: var(--gt-border);
+}
+
+/* Apply the UI typeface globally. tokens.css is imported AFTER Tailwind, so this wins
+   over Tailwind's preflight default font-family. */
+html {
+  font-family: var(--font-sans);
 }
 
 /* ---- theme.dark — OPTIONAL kiosk idle backdrop only (design-system §5).
@@ -51,7 +99,7 @@
   --gt-text-primary: var(--gt-brand-white);
   --gt-text-secondary: var(--gt-gray-20);
   --gt-border: var(--gt-gray-80);
-  --gt-accent: var(--gt-brand-blue);
+  --gt-accent: var(--gt-brand-electric);
   --gt-button-solid-bg: var(--gt-brand-white);
   --gt-button-solid-text: var(--gt-brand-black);
   --gt-button-outline-bg: transparent;

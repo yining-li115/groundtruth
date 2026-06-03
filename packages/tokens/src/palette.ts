@@ -7,12 +7,22 @@
 export const palette = {
   /** Primary brand colors. */
   brand: {
-    /** UI primary blue. Pantone 300C, RAL 5017. Use for accents, focus, key surfaces. */
+    /**
+     * UI accent — the single high-chroma hero color (Lusion-inspired electric
+     * blue-violet). Use for interactive accents, focus rings, the one hero color block.
+     * NOT a TUM print color; it is the chosen web accent (design-system §1).
+     */
+    electric: "#3A3AF0",
+    /**
+     * TUM blue (print-spec primary, Pantone 300C / RAL 5017). RESERVED for TUM-brand /
+     * logo-adjacent contexts only — NO LONGER the UI accent (use `brand.electric`).
+     * Still distinct from `logoBlue` (design-system §1).
+     */
     blue: "#0065BD",
     /**
      * Logo-only blue. The official TUM web wordmark is drawn in this hue. NEVER use it
      * for UI fills, and never recolor the logo to `brand.blue`. Distinct on purpose so
-     * the two blues can never be confused or merged (design-system §1).
+     * the blues can never be confused or merged (design-system §1).
      */
     logoBlue: "#3070B3",
     white: "#FFFFFF",
