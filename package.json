@@ -1,0 +1,28 @@
+{
+  "name": "groundtruth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Interactive kiosk web experience for the TUM Professorship of Photogrammetry and Remote Sensing (PF).",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "storybook": "npm run storybook -w @groundtruth/ui",
+    "build-storybook": "npm run build-storybook -w @groundtruth/ui",
+    "dev:kiosk": "npm run dev -w @groundtruth/kiosk",
+    "dev:controller": "npm run dev -w @groundtruth/controller",
+    "dev:relay": "npm run dev -w @groundtruth/relay",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "^10.4.2",
+    "@storybook/react-vite": "^10.4.2",
+    "storybook": "^10.4.2"
+  }
+}

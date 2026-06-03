@@ -1,0 +1,4 @@
+/* Component-library styles. Tailwind v4 + the TUM token CSS variables.
+   Apps and Storybook import this to get utilities + tokens in one shot. */
+@import "tailwindcss";
+@import "@groundtruth/tokens/tokens.css";

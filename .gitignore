@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+storybook-static/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+*.log
+CLAUDE.md

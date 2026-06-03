@@ -1,0 +1,21 @@
+{
+  "name": "@groundtruth/relay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Node.js + socket.io relay server. Sole authority for who holds the token (CLAUDE.md rule 4).",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@groundtruth/protocol": "*",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

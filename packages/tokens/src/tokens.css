@@ -1,0 +1,60 @@
+/**
+ * TUM design tokens as CSS custom properties. Mirror of src/palette.ts + src/themes.ts.
+ *
+ * - `:root` carries the raw palette AND theme.light (the default — used everywhere).
+ * - `[data-theme="dark"]` overrides ONLY the theme tokens for the optional kiosk idle
+ *   backdrop. Same token names in both (design-system §5 "Token discipline").
+ *
+ * Consume with var(--gt-…). Never write a raw hex outside this file (CLAUDE.md rule 1).
+ */
+
+:root {
+  /* ---- Raw palette (design-system §2) ---- */
+  --gt-brand-blue: #0065bd;       /* UI primary */
+  --gt-brand-logo-blue: #3070b3;  /* logo ONLY — never a UI fill */
+  --gt-brand-white: #ffffff;
+  --gt-brand-black: #000000;
+
+  --gt-secondary-blue1: #005293;
+  --gt-secondary-blue2: #003359;
+
+  --gt-gray-80: #333333;
+  --gt-gray-50: #808080;
+  --gt-gray-20: #cccccc;
+
+  /* Accents — use sparingly; highlight, never fill (design-system §2). */
+  --gt-accent-beige: #dad7cb;
+  --gt-accent-orange: #e37222;
+  --gt-accent-green: #a2ad00;
+  --gt-accent-lightblue: #98c6ea;
+  --gt-accent-midblue: #64a0c8;
+
+  /* ---- theme.light — DEFAULT, used everywhere ---- */
+  --gt-bg: #f4f5f9;
+  --gt-surface: var(--gt-brand-white);
+  --gt-text-primary: var(--gt-brand-black);
+  --gt-text-secondary: var(--gt-gray-80);
+  --gt-border: var(--gt-gray-20);
+  --gt-accent: var(--gt-brand-blue);
+  --gt-button-solid-bg: #1a1a1a;
+  --gt-button-solid-text: var(--gt-brand-white);
+  --gt-button-outline-bg: transparent;
+  --gt-button-outline-text: var(--gt-brand-black);
+  --gt-button-outline-border: var(--gt-border);
+}
+
+/* ---- theme.dark — OPTIONAL kiosk idle backdrop only (design-system §5).
+   True black base (max glare reduction behind glass); near-black surface lift. ---- */
+[data-theme="dark"] {
+  --gt-bg: var(--gt-brand-black);
+  --gt-surface: #121212;
+  --gt-text-primary: var(--gt-brand-white);
+  --gt-text-secondary: var(--gt-gray-20);
+  --gt-border: var(--gt-gray-80);
+  --gt-accent: var(--gt-brand-blue);
+  --gt-button-solid-bg: var(--gt-brand-white);
+  --gt-button-solid-text: var(--gt-brand-black);
+  --gt-button-outline-bg: transparent;
+  --gt-button-outline-text: var(--gt-brand-white);
+  --gt-button-outline-border: var(--gt-gray-80);
+}
