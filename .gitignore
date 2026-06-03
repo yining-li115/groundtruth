@@ -8,3 +8,4 @@ storybook-static/
 .env.local
 *.log
 CLAUDE.md
+run_all.txt

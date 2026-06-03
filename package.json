@@ -18,11 +18,14 @@
     "dev:kiosk": "npm run dev -w @groundtruth/kiosk",
     "dev:controller": "npm run dev -w @groundtruth/controller",
     "dev:relay": "npm run dev -w @groundtruth/relay",
+    "check:content": "tsx scripts/check-content.ts",
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^10.4.2",
     "@storybook/react-vite": "^10.4.2",
-    "storybook": "^10.4.2"
+    "storybook": "^10.4.2",
+    "tsx": "^4.22.4",
+    "zod": "^3.25.76"
   }
 }

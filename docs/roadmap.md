@@ -47,13 +47,23 @@ This is the project's only make-or-break risk. Prove it first.
       QR URL. Deferred by choice until the content structure lands.
 
 ## Phase 2 — Content structure
-- [ ] Content schema + `content/*.json` placeholder data + `content/media/` folders
-      (per `docs/content-model.md`).
-- [ ] `npm run check:content` validator (zod-based) wired up + run in CI.
-- [ ] Five browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
-      projects, Teaching, Photo.
-- [ ] Idle showreel auto-scroll (spotlight / news / open topics) with bundled content.
+- [x] Content schema (`content/schema.ts`, zod + inferred types) + `content/*.json`
+      placeholder data (2–3 realistic items each: People, Research topics, Student
+      projects, Teaching, showreel) + `content/media/` folders. No standalone Photo
+      gallery — photos folded into People (`photo` + `photos[]`). Avatars via DiceBear
+      URLs, detail photos via picsum.
+- [x] `npm run check:content` validator (zod-based) — schema + duplicate-id + dangling
+      cross-ref + non-URL media-existence checks; exits non-zero on failure. (Wired to
+      the npm script; **CI hookup still TODO** — no CI configured yet.)
+- [ ] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
+      projects, Teaching. (UI — later in Phase 2.)
+- [ ] **Interactive home (landing) + navigation menu** — the post-takeover website
+      shell that holds the sections (`docs/architecture.md` §6).
+- [ ] Showreel + home as ONE shared content feed with a `mode` prop
+      (`idle` auto-play vs `interactive` explorable) — `docs/architecture.md` §6.
 - [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`.
+- [x] `PROJECT-MAP.md` at repo root — plain-language (Chinese) guide to where each kind
+      of thing lives, so a non-programmer can find what to edit.
 
 ## Phase 3 — Component library (ongoing, starts here)
 - [ ] Build the priority components (`docs/component-library.md` §5), each with a story.
@@ -65,6 +75,12 @@ This is the project's only make-or-break risk. Prove it first.
 - [ ] Postprocessing pass (bloom/DOF) for the Lusion look, perf-budgeted for the kiosk
       hardware.
 - [ ] Keep navigation fully functional without the WebGL layer (CLAUDE.md rule 6).
+- [ ] CANDIDATE: glass-material treatment (React Bits "Fluid Glass", R3F
+      `MeshTransmissionMaterial`) for the navigation menu. Re-implement with TUM tokens,
+      not pasted as-is (CLAUDE.md rule 9); needs a `.glb` model asset; perf-budget it.
+      CAUTION on the cursor: a refracting/chromatic-aberration material can hurt cursor
+      legibility and follow feel — the cursor's job is to be clear and tracked. Test
+      before committing; readability wins over flash.
 
 ## Phase 5 — Waiting game + polish
 - [ ] Endless-runner mini-game in the controller queued state.

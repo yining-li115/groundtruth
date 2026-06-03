@@ -1,0 +1,26 @@
+[
+  {
+    "id": "spotlight-motto",
+    "kind": "spotlight",
+    "title": "Making machines see & think in 3D",
+    "blurb": "Photogrammetry & Remote Sensing at TUM — turning pixels and points into an understanding of the world.",
+    "media": { "kind": "image", "src": "https://picsum.photos/seed/showreel-motto/1600/900", "caption": "City-scale reconstruction" },
+    "cta": "Scan to explore"
+  },
+  {
+    "id": "news-isprs-award",
+    "kind": "news",
+    "title": "Best Paper Award at ISPRS 2026",
+    "blurb": "Our work on regularised mesh reconstruction from fused aerial LiDAR and imagery received the conference best paper award.",
+    "media": { "kind": "image", "src": "https://picsum.photos/seed/showreel-award/1600/900" },
+    "refId": "urban-3d-reconstruction"
+  },
+  {
+    "id": "open-nerf-facades",
+    "kind": "open-topic",
+    "title": "Open: Master's thesis on neural fields for façade modelling",
+    "blurb": "Looking for a student to explore neural radiance and signed-distance fields for detailed building façade reconstruction.",
+    "cta": "Talk to us",
+    "refId": "urban-3d-reconstruction"
+  }
+]

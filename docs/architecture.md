@@ -148,12 +148,33 @@ protocol file. Names are fixed.
 
 ## 6. Kiosk modes
 
-- **Idle / attract**: no driver in room. Auto-scroll showreel (spotlight, news, open
-  topics). Dark theme. Static QR visible in a corner at all times.
-- **Interactive**: a driver exists (`room:driverChanged hasDriver=true`). Show the
-  cursor, enable navigation through the five content sections. Light theme.
+- **Idle / attract**: no driver in room. The **showreel** auto-plays — spotlight, news,
+  open topics — with smooth, deliberate transitions. Static QR visible in a corner at
+  all times. (Theme: light by default per design-system §5; optional dark backdrop.)
+- **Interactive**: a driver exists (`room:driverChanged hasDriver=true`). The kiosk now
+  behaves like a **normal website** (this is the Lusion post-entry feel):
+  - An **interactive home (landing)** — the first screen after takeover. Big display
+    headline (e.g. the group motto "Making Machines See and Think in 3D"), one TUM-blue
+    hero block, and entry points into the content.
+  - A **navigation menu (menu bar)** letting the driver jump between the five sections:
+    People, Research, Teaching, Photo, News.
+  - The five content sections themselves, browsed via the cursor.
 - Transition back to idle when the room loses its driver and the queue is empty, OR
   after a global inactivity timeout.
+
+### Showreel and home share one content source (DECIDED)
+The **idle showreel** and the **interactive home** display the **same underlying
+content** (`content/showreel.json` — spotlight / news / open-topics), differing only in
+*presentation mode*:
+- **`mode: 'idle'`** — auto-advancing, emphasis on smooth/fluid transitions. No input.
+- **`mode: 'interactive'`** — the same items, but paused and explorable: hover/click,
+  cursor-driven, and surfaced alongside the navigation menu into the five sections.
+
+Implement this as **one shared content feed + one component family that takes a `mode`
+prop**, NOT two independently-built pages. Maintaining content in one JSON file updates
+both the idle showreel and the interactive home at once. The home additionally carries the
+navigation menu (which the showreel does not), since the menu leads into the detailed
+sections that the showreel only teases.
 
 ---
 

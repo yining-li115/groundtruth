@@ -1,0 +1,35 @@
+[
+  {
+    "id": "ms-pointcloud-registration",
+    "title": "Robust Registration of Heterogeneous Point Clouds",
+    "type": "Master",
+    "year": 2025,
+    "students": ["Jonas Keller"],
+    "supervisorIds": ["lena-hartmann"],
+    "abstract": "Aligning airborne LiDAR with terrestrial mobile-mapping scans is hard when density and viewpoint differ wildly. This thesis develops a coarse-to-fine registration that uses learned local descriptors for the coarse step and a robust ICP variant for refinement, evaluated on Munich city data.",
+    "cover": "https://picsum.photos/seed/proj-registration/1200/800",
+    "topicIds": ["urban-3d-reconstruction"]
+  },
+  {
+    "id": "bs-sar-despeckling",
+    "title": "Lightweight SAR Despeckling on the Edge",
+    "type": "Bachelor",
+    "year": 2026,
+    "students": ["Sophie Wagner"],
+    "supervisorIds": ["marco-bianchi"],
+    "abstract": "Can a compact CNN despeckle SAR imagery fast enough to run on-board a small satellite? This project benchmarks pruned and quantised despeckling networks against quality and latency targets.",
+    "cover": "https://picsum.photos/seed/proj-despeckle/1200/800",
+    "topicIds": ["sar-deep-learning"]
+  },
+  {
+    "id": "idp-digital-twin-campus",
+    "title": "A Living Digital Twin of the TUM Campus",
+    "type": "IDP",
+    "year": 2026,
+    "students": ["Mehmet Demir", "Clara Nguyen"],
+    "supervisorIds": ["ananya-rao"],
+    "abstract": "An interdisciplinary project building a continuously updated semantic 3D twin of the campus from repeated mobile-mapping runs, with a web viewer that highlights what changed between scans.",
+    "cover": "https://picsum.photos/seed/proj-twin/1200/800",
+    "topicIds": ["semantic-lidar", "urban-3d-reconstruction"]
+  }
+]

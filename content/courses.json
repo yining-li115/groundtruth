@@ -1,0 +1,32 @@
+[
+  {
+    "id": "photogrammetry-1",
+    "title": "Photogrammetry I",
+    "level": "Bachelor",
+    "semester": "WS 2025/26",
+    "ects": 6,
+    "instructorIds": ["lena-hartmann"],
+    "summary": "Foundations of image-based measurement: camera geometry, orientation, stereo, and bundle adjustment.",
+    "link": "https://campus.example.tum.de/courses/photogrammetry-1"
+  },
+  {
+    "id": "remote-sensing-dl",
+    "title": "Deep Learning for Remote Sensing",
+    "level": "Master",
+    "semester": "SS 2026",
+    "ects": 5,
+    "instructorIds": ["marco-bianchi", "lena-hartmann"],
+    "summary": "Modern neural methods applied to optical and radar Earth observation: segmentation, change detection, and self-supervision.",
+    "link": "https://campus.example.tum.de/courses/rs-deep-learning"
+  },
+  {
+    "id": "3d-vision",
+    "title": "3D Vision & Scene Understanding",
+    "level": "Master",
+    "semester": "WS 2025/26",
+    "ects": 6,
+    "instructorIds": ["lena-hartmann", "ananya-rao"],
+    "summary": "From multi-view geometry to learned 3D representations and semantic understanding of point clouds.",
+    "link": "https://campus.example.tum.de/courses/3d-vision"
+  }
+]

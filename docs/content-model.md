@@ -23,6 +23,10 @@ The types below are written in TypeScript notation because that's the precise wa
 describe the shape — but the actual content you edit is plain JSON. A `Person` type
 field `name: string` means the JSON object has `"name": "..."`.
 
+There are **four content sections** (People, Research topics, Student projects,
+Teaching) plus the showreel feed. There is **no standalone Photo gallery** — all photos
+belong to a person (see §1).
+
 Below are the v1 fields — extend as real content arrives, but keep the core stable.
 When you add or change a field here, update the zod schema so validation stays in sync.
 
@@ -31,14 +35,17 @@ When you add or change a field here, update the zod schema so validation stays i
 ## 1. People (individual profiles)
 
 The PF group members. Each person is also the target of "individual content" in the
-interactive flow. JSON file: `content/people.json` (an array of these objects).
+interactive flow: the People section shows a thumbnail card per person; tapping a card
+opens that person's detail page. JSON file: `content/people.json` (an array of these
+objects).
 
 ```ts
 type Person = {
   id: string;              // slug, e.g. "jane-doe"
   name: string;
   role: string;            // "Professor", "PhD Researcher", "PostDoc", ...
-  photo: string;           // path under content/media/people/
+  photo: string;           // main headshot — shown on the thumbnail card
+  photos?: { src: string; caption?: string }[];  // extra photos for the detail page
   email?: string;
   shortBio: string;        // 1–2 sentences for cards
   longBio?: string;        // full profile view
@@ -48,6 +55,12 @@ type Person = {
   relatedProjectIds?: string[]; // → StudentProject.id
 };
 ```
+
+Note on photos: `Person.photo` is the single main headshot used on the thumbnail card.
+`Person.photos` is the set of additional images shown on the individual detail page
+(work photos, results, etc.). There is **no separate "photo wall" section** — every
+photo is owned by a specific person, so it always has context (whose it is, what it
+shows).
 
 ## 2. Research topics (group)
 
@@ -111,28 +124,7 @@ type Course = {
 };
 ```
 
-## 5. Photo gallery
-
-JSON file: `content/photos.json` (one or more `Gallery` objects).
-
-```ts
-type Photo = {
-  id: string;
-  src: string;               // path under content/media/photos/
-  caption?: string;
-  credit?: string;
-  date?: string;
-  tags?: string[];
-};
-
-type Gallery = {
-  id: string;
-  title: string;
-  photos: Photo[];
-};
-```
-
-## 6. Shared
+## 5. Shared
 
 ```ts
 type MediaItem = {
@@ -143,11 +135,12 @@ type MediaItem = {
 };
 ```
 
-## 7. Showreel / idle content
+## 6. Showreel / idle content
 
-What the kiosk auto-scrolls when no one is driving. JSON file: `content/showreel.json`
-(an array of these objects). **This is where "news" lives** — a news item is a
-`SpotlightItem` with `kind: "news"`.
+What the kiosk auto-plays when no one is driving — and, in interactive mode, what the
+home screen shows (same feed, different presentation; see `docs/architecture.md` §6).
+JSON file: `content/showreel.json` (an array of these objects). **This is where "news"
+lives** — a news item is a `SpotlightItem` with `kind: "news"`.
 
 ```ts
 type SpotlightItem = {
@@ -169,6 +162,13 @@ type SpotlightItem = {
   the relationship graph (person ↔ topic ↔ project) can power "related" navigation.
 - Media paths are relative to `content/media/`. Real assets land later; ship
   placeholders first.
+- **External URLs are allowed.** A media value starting with `http://` or `https://`
+  (e.g. DiceBear avatars, picsum placeholders) is treated as an external URL and is NOT
+  checked on disk by the validator. Any other value is a filename resolved under
+  `content/media/<type>/` and must exist. The shipped placeholder data uses URLs; real
+  assets become local files.
+- Implemented: the zod schema lives at `content/schema.ts` (also exports inferred TS
+  types) and the validator at `scripts/check-content.ts` (`npm run check:content`).
 - Point-cloud / 3D assets (the on-brand WebGL material for a remote-sensing group)
   attach via `MediaItem` with `kind: "pointcloud" | "model"` and are consumed by the
   `apps/kiosk/src/webgl` layer.
@@ -182,17 +182,17 @@ files themselves live in `content/media/`, organized by type:
 
 ```
 content/media/
-├── people/          ← staff photos, named by person id   (jane-doe.jpg)
+├── people/          ← staff photos: headshots AND detail-page photos, named by id
 ├── topics/          ← research topic covers + media
 ├── projects/        ← student project covers + media
-├── photos/          ← gallery images
 └── showreel/        ← spotlight / news imagery
 ```
 
 Rule: a JSON field like `"photo": "jane-doe.jpg"` resolves to
 `content/media/people/jane-doe.jpg`. Name files after the item's `id` so they're easy
-to find and never collide. Keep images reasonably sized (the kiosk is one big screen,
-not a 4K photo viewer) — large originals slow the showreel.
+to find and never collide (for a person's extra photos, suffix them, e.g.
+`jane-doe-2.jpg`, `jane-doe-fieldwork.jpg`). Keep images reasonably sized (the kiosk is
+one big screen, not a 4K photo viewer) — large originals slow the showreel.
 
 ---
 
@@ -204,9 +204,12 @@ You don't need to touch any code to update what the wall shows. Everything is JS
 
 ### Add a new staff member
 1. Put their photo in `content/media/people/`, named after their id, e.g. `li-wei.jpg`.
+   For extra detail-page photos, add more files like `li-wei-2.jpg`.
 2. Open `content/people.json`. Copy the last entry, paste it, and edit the fields
    (`id`, `name`, `role`, `photo`, `shortBio`, …). The `id` must be unique and is a
    lowercase slug (e.g. `"li-wei"`). `photo` is just the filename: `"li-wei.jpg"`.
+   Add extra photos in `photos`, e.g.
+   `"photos": [{ "src": "li-wei-2.jpg", "caption": "Fieldwork in the Alps" }]`.
 3. Save. Run `npm run check:content`. If it's green, preview locally / redeploy. The
    new profile card appears automatically.
 
@@ -214,7 +217,8 @@ You don't need to touch any code to update what the wall shows. Everything is JS
 1. Open `content/showreel.json`.
 2. Copy an existing entry with `"kind": "news"`, edit `title`, `blurb`, optional
    `media`. If it has an image, drop the file in `content/media/showreel/` first.
-3. Save, validate, redeploy. It joins the idle showreel rotation.
+3. Save, validate, redeploy. It joins the idle showreel rotation (and the interactive
+   home, which shares this feed).
 
 ### Add a student project
 1. (Optional) cover image → `content/media/projects/`.

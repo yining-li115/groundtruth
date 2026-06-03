@@ -1,0 +1,58 @@
+[
+  {
+    "id": "lena-hartmann",
+    "name": "Prof. Dr. Lena Hartmann",
+    "role": "Professor",
+    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Lena%20Hartmann",
+    "email": "lena.hartmann@example.tum.de",
+    "shortBio": "Chair of Photogrammetry & Remote Sensing. Builds large-scale 3D reconstructions of cities from aerial imagery and LiDAR.",
+    "longBio": "Lena Hartmann leads the Professorship of Photogrammetry and Remote Sensing. Her group develops methods to turn raw airborne and satellite measurements into accurate, semantically rich 3D models of the built environment — bridging classical photogrammetry with modern deep learning. Before joining TUM she worked on national-scale digital terrain mapping.",
+    "researchInterests": ["3D reconstruction", "point cloud", "photogrammetry", "digital twin"],
+    "photos": [
+      { "src": "https://picsum.photos/seed/hartmann-lab/800/600", "caption": "Reconstruction lab, demonstrating a city-scale point cloud." },
+      { "src": "https://picsum.photos/seed/hartmann-field/800/600", "caption": "Airborne LiDAR field campaign over Munich." }
+    ],
+    "links": [
+      { "label": "Google Scholar", "url": "https://scholar.google.com/citations?user=example-lh" },
+      { "label": "Group page", "url": "https://www.pf.example.tum.de/team/hartmann" }
+    ],
+    "relatedTopicIds": ["urban-3d-reconstruction", "semantic-lidar"],
+    "relatedProjectIds": ["ms-pointcloud-registration"]
+  },
+  {
+    "id": "marco-bianchi",
+    "name": "Dr. Marco Bianchi",
+    "role": "PostDoc",
+    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Marco%20Bianchi",
+    "email": "marco.bianchi@example.tum.de",
+    "shortBio": "PostDoc working on deep learning for Synthetic Aperture Radar — despeckling, InSAR, and change detection.",
+    "longBio": "Marco Bianchi develops learning-based methods for radar remote sensing, with a focus on turning noisy SAR and InSAR stacks into reliable measurements of ground deformation and land-cover change. He is interested in self-supervised approaches that reduce the need for scarce labelled radar data.",
+    "researchInterests": ["SAR", "InSAR", "deep learning", "change detection"],
+    "photos": [
+      { "src": "https://picsum.photos/seed/bianchi-sar/800/600", "caption": "Interferogram of a subsidence-prone region." }
+    ],
+    "links": [
+      { "label": "Google Scholar", "url": "https://scholar.google.com/citations?user=example-mb" }
+    ],
+    "relatedTopicIds": ["sar-deep-learning"],
+    "relatedProjectIds": ["bs-sar-despeckling"]
+  },
+  {
+    "id": "ananya-rao",
+    "name": "Ananya Rao",
+    "role": "PhD Researcher",
+    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Ananya%20Rao",
+    "email": "ananya.rao@example.tum.de",
+    "shortBio": "PhD researcher on semantic understanding of LiDAR point clouds and building living digital twins of urban scenes.",
+    "researchInterests": ["LiDAR", "semantic segmentation", "digital twin", "3D reconstruction"],
+    "photos": [
+      { "src": "https://picsum.photos/seed/rao-scan/800/600", "caption": "Mobile-mapping scan of a campus courtyard." },
+      { "src": "https://picsum.photos/seed/rao-twin/800/600", "caption": "Semantic labels projected onto the reconstructed mesh." }
+    ],
+    "links": [
+      { "label": "GitHub", "url": "https://github.com/example-ananya" }
+    ],
+    "relatedTopicIds": ["semantic-lidar"],
+    "relatedProjectIds": ["idp-digital-twin-campus"]
+  }
+]
