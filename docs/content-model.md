@@ -137,8 +137,10 @@ type MediaItem = {
 
 ## 6. Showreel / idle content
 
-What the kiosk auto-plays when no one is driving — and, in interactive mode, what the
-home screen shows (same feed, different presentation; see `docs/architecture.md` §6).
+What the kiosk auto-plays when no one is driving. The **interactive home** may also
+*surface* some of these items, but the home and the idle showreel are **independent
+presentations** that merely share this content as source material — there is no shared
+"mode" component and no obligation to look alike (see `docs/architecture.md` §6).
 JSON file: `content/showreel.json` (an array of these objects). **This is where "news"
 lives** — a news item is a `SpotlightItem` with `kind: "news"`.
 
@@ -217,8 +219,8 @@ You don't need to touch any code to update what the wall shows. Everything is JS
 1. Open `content/showreel.json`.
 2. Copy an existing entry with `"kind": "news"`, edit `title`, `blurb`, optional
    `media`. If it has an image, drop the file in `content/media/showreel/` first.
-3. Save, validate, redeploy. It joins the idle showreel rotation (and the interactive
-   home, which shares this feed).
+3. Save, validate, redeploy. It joins the idle showreel rotation (and may also be
+   surfaced on the interactive home, which reads the same JSON as source).
 
 ### Add a student project
 1. (Optional) cover image → `content/media/projects/`.

@@ -58,11 +58,12 @@ This is the project's only make-or-break risk. Prove it first.
 - [x] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
       projects, Teaching — plain token-styled lists rendering `content/*.json` (id refs
       resolved to names). Navigated via zustand view-state (no router).
-- [x] **Interactive home (landing) + horizontal navigation menu** — the post-takeover
-      website shell that holds the sections (`docs/architecture.md` §6). Brand top-left,
-      motto headline, 4-item horizontal nav top-right, clean central placeholder block
-      (reserved for an interactive component, NOT the showreel), bottom control hint.
-      Logo / controller "back" → home.
+- [x] **Interactive home (landing) + navigation menu** — the post-takeover website shell
+      that holds the sections (`docs/architecture.md` §6). Brand top-left, motto headline,
+      bottom control hint, Logo / controller "back" → home. Nav is **`StaggeredMenu`** (a
+      corner "MENU" button → side drawer with the four sections), not a horizontal row —
+      see §6. The central area carries the **point-cloud hero** (next item), not a
+      placeholder.
 - [ ] Idle showreel as its own auto-playing standby screen (independent of home; may
       reuse the same content JSON as source material) — `docs/architecture.md` §6.
 - [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`. (NOT done yet:
@@ -76,10 +77,18 @@ This is the project's only make-or-break risk. Prove it first.
 - [ ] Migrate ad-hoc UI from phases 1–2 into `packages/ui` as it stabilizes.
 
 ## Phase 4 — WebGL façade
-- [ ] Pick 1–2 hero scenes for R3F. Strong candidate: an interactive **point cloud**
-      (on-brand for a remote-sensing group) as the idle-showreel backdrop.
+- [~] Hero scene for R3F: an interactive **point cloud** (on-brand for a remote-sensing
+      group). **Started early and relocated** — instead of the idle-showreel backdrop it
+      now drives the **interactive home hero** (`apps/kiosk/src/experiments/showcase/`,
+      preview at `/?exp=showcase`): a city + satellites + car + sensor "data lines"
+      assembled from ~140k particles, scroll-disperses, cursor-orbits (§4/§6). Single
+      indigo asset color (off-token by the design-system "asset colors" exception).
+      Still WIP (composition/feel); not yet promoted into `packages/ui` or `webgl/`.
 - [ ] Postprocessing pass (bloom/DOF) for the Lusion look, perf-budgeted for the kiosk
-      hardware.
+      hardware. NOTE: Bloom was deliberately dropped from the hero point cloud — it
+      blew out the dense particles and hurt readability; density + crisp soft sprites
+      read better. Revisit only if a scene genuinely needs it. (Perf: hero caps canvas
+      `dpr` to 1.5 and disables MSAA so the 140k points don't stutter while scrolling.)
 - [ ] Keep navigation fully functional without the WebGL layer (CLAUDE.md rule 6).
 - [ ] CANDIDATE: glass-material treatment (React Bits "Fluid Glass", R3F
       `MeshTransmissionMaterial`) for the navigation menu. Re-implement with TUM tokens,

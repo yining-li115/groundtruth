@@ -100,6 +100,19 @@ These map to what the kiosk/controller actually need early:
 
 Build these in `packages/ui`, consume them in `apps/kiosk` and `apps/controller`.
 
+### Built so far (in `packages/ui`, each with a story)
+- **`Logo`** — the TUM wordmark (inline SVG; `blue` / `white` / `black` variants per
+  design-system §3).
+- **`StaggeredMenu`** — the kiosk navigation drawer (corner "MENU" button → side panel,
+  sections numbered 01–04). This is the **current** nav (architecture §6).
+- **`BubbleMenu`** — an earlier nav iteration, **superseded by `StaggeredMenu`**. Kept
+  for now; prune once StaggeredMenu is firmly settled.
+
+Not yet migrated: `Cursor` (lives in `apps/kiosk/src/components`) and `TrackpadSurface`
+(lives in `apps/controller/src/components`). They work in-app; move them into
+`packages/ui` when they stabilize (Phase 3). The hero point cloud lives in
+`apps/kiosk/src/experiments/showcase/` and is not a reusable component yet.
+
 ---
 
 ## 6. Accessibility reminder
