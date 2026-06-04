@@ -41,6 +41,7 @@ function Card({
 
 export function Home() {
   const setView = useKioskStore((s) => s.setView);
+  const setHeroOrbitActive = useKioskStore((s) => s.setHeroOrbitActive);
 
   const spotlight = showreel.filter((s) => s.kind === "spotlight");
   const news = showreel.filter((s) => s.kind === "news");
@@ -62,11 +63,18 @@ export function Home() {
     const onScroll = () => {
       const d = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.8)));
       progress.current = 1 - d; // top assembled → scroll disperses
+      // While the hero is still pinned (i.e. not yet scrolled past), a one-finger drag
+      // orbits the particles instead of moving the cursor. Disabled in reduced-motion
+      // (no scene to rotate). The hero unpins at the same 0.8·vh where progress hits 0.
+      setHeroOrbitActive(!reduced && window.scrollY < window.innerHeight * 0.8);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      setHeroOrbitActive(false); // leaving home → cursor behaves normally again
+    };
+  }, [reduced, setHeroOrbitActive]);
 
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>

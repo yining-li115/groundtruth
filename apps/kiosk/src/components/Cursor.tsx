@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { socket } from "../lib/socket";
 import { SENSITIVITY } from "../config";
 import { useKioskStore } from "../state/store";
+import { heroOrbit } from "../lib/heroInput";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Inertia: actual position eases toward target each frame (design-system §6). */
@@ -24,9 +25,16 @@ export function Cursor() {
     const onMove = ({ dx, dy }: { dx: number; dy: number }) => {
       target.current.x = clamp(target.current.x + dx * SENSITIVITY, 0, window.innerWidth);
       target.current.y = clamp(target.current.y + dy * SENSITIVITY, 0, window.innerHeight);
+      // On the pinned home hero, moving the cursor also orbits the cloud (drag-to-look),
+      // while the cursor stays usable for the MENU button.
+      if (useKioskStore.getState().heroOrbitActive) {
+        heroOrbit.touched = true;
+      }
     };
     const onScroll = ({ dy }: { dy: number }) => {
-      window.scrollBy({ top: dy * SENSITIVITY, behavior: "auto" });
+      // Natural (phone-native) scrolling: two fingers UP moves content up → page scrolls
+      // DOWN. `dy` is the raw finger delta (down = positive), so negate it.
+      window.scrollBy({ top: -dy * SENSITIVITY, behavior: "auto" });
     };
     const onTap = () => {
       // Cursor has pointer-events:none, so this hits the UI underneath.
@@ -56,6 +64,10 @@ export function Cursor() {
       const node = ringRef.current;
       if (node) {
         node.style.transform = `translate3d(${pos.current.x - SIZE / 2}px, ${pos.current.y - SIZE / 2}px, 0)`;
+      }
+      // On the pinned home hero, the point cloud orbits to follow the cursor.
+      if (useKioskStore.getState().heroOrbitActive) {
+        heroOrbit.aim(pos.current.x / window.innerWidth, pos.current.y / window.innerHeight);
       }
       raf = requestAnimationFrame(loop);
     };

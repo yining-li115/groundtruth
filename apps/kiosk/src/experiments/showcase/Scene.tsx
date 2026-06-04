@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
 import { light } from "@groundtruth/tokens";
 import { A } from "./assetColors";
+import { heroOrbit } from "../../lib/heroInput";
 import { POINT_VERT, POINT_FRAG } from "./pointMorphShader";
 
 const N = 140000; // total particles (denser city so its features read like the sat/car)
@@ -146,6 +147,7 @@ function PointCity({
 }) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const groupRef = useRef<THREE.Group>(null);
+  const rot = useRef({ yaw: 0, pitch: 0, swayAmp: 0.12 });
   const sprite = useMemo(makeSprite, []);
 
   const geom = useMemo(() => {
@@ -231,9 +233,15 @@ function PointCity({
   useFrame((state) => {
     const u = matRef.current?.uniforms.uProgress;
     if (u) u.value += ((progressRef.current ?? 0) - u.value) * 0.08;
-    // gentle idle sway — an implicit "you can drag me" hint; drag (OrbitControls) layers on top
     if (idleSpin && groupRef.current) {
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.15) * 0.12;
+      // Ease toward the phone-driven orbit target (Cursor routes one-finger drag here).
+      rot.current.yaw += (heroOrbit.yaw - rot.current.yaw) * 0.1;
+      rot.current.pitch += (heroOrbit.pitch - rot.current.pitch) * 0.1;
+      // Idle sway is a "you can drag me" hint; fade it out once the visitor takes control.
+      rot.current.swayAmp += ((heroOrbit.touched ? 0 : 0.12) - rot.current.swayAmp) * 0.05;
+      const sway = Math.sin(state.clock.elapsedTime * 0.15) * rot.current.swayAmp;
+      groupRef.current.rotation.y = sway + rot.current.yaw;
+      groupRef.current.rotation.x = rot.current.pitch;
     }
   });
 
@@ -259,7 +267,11 @@ export function Scene({ progressRef, mode = "inspect" }: { progressRef: Progress
   return (
     <Canvas
       camera={{ position: home ? [8.59, 2.15, 4.63] : [0, 3, 9], fov: 45 }}
-      gl={{ antialias: true }}
+      // Cap pixel ratio + drop MSAA: 140k soft-sprite points are fill-rate bound, so a
+      // full-res retina canvas (dpr 2) stutters while scrolling. The sprites are already
+      // soft, so antialias buys almost nothing here.
+      dpr={[1, 1.5]}
+      gl={{ antialias: false, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0 }}
     >
       <color attach="background" args={[light.bg]} />

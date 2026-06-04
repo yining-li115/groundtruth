@@ -12,16 +12,22 @@ interface KioskState {
   hasDriver: boolean;
   /** Current screen in the interactive shell. */
   view: View;
+  /** Home hero is pinned → a one-finger drag orbits the particles (and the cursor is
+   *  hidden) instead of moving the cursor. Off once you scroll past the hero. */
+  heroOrbitActive: boolean;
   setConnected: (v: boolean) => void;
   setHasDriver: (v: boolean) => void;
   setView: (v: View) => void;
+  setHeroOrbitActive: (v: boolean) => void;
 }
 
 export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
   view: "home",
+  heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
   setView: (view) => set({ view }),
+  setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),
 }));
