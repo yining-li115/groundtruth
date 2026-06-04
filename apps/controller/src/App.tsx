@@ -49,7 +49,7 @@ export default function App() {
     socket.on("room:role", onRole);
     socket.on("room:queue", onQueue);
     socket.on("room:youAreUp", onYouAreUp);
-    socket.connect();
+    if (!socket.connected) socket.connect();
 
     return () => {
       socket.off("connect", onConnect);
@@ -57,7 +57,10 @@ export default function App() {
       socket.off("room:role", onRole);
       socket.off("room:queue", onQueue);
       socket.off("room:youAreUp", onYouAreUp);
-      socket.disconnect();
+      // Keep this singleton socket connected for the app's lifetime (it closes when the
+      // tab does) — only detach listeners. Disconnecting here makes React StrictMode's
+      // dev double-mount churn connect→disconnect→connect, which the relay sees as a
+      // phantom 2nd controller that lands in the queue behind the first.
     };
   }, []);
 

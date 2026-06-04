@@ -44,13 +44,16 @@ export default function App() {
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("room:driverChanged", onDriverChanged);
-    socket.connect();
+    if (!socket.connected) socket.connect();
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("room:driverChanged", onDriverChanged);
-      socket.disconnect();
+      // Keep this singleton socket connected for the app's lifetime (it closes when the
+      // tab does) — only detach listeners. Disconnecting here makes React StrictMode's
+      // dev double-mount churn connect→disconnect→connect, which registers the kiosk in
+      // the room multiple times (you saw kiosks=2/3 in the relay log).
     };
   }, []);
 
