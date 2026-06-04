@@ -1,7 +1,13 @@
-import { KioskMenu } from "../components/KioskMenu";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { HomeBlock } from "../components/HomeBlock";
+import { KioskMenu } from "../components/KioskMenu";
 import { useKioskStore } from "../state/store";
 import { showreel, viewForId } from "../lib/content";
+
+// Lazy — the WebGL scene (three.js) is heavy; code-split it out of the main bundle.
+const HeroScene = lazy(() =>
+  import("../experiments/showcase/Scene").then((m) => ({ default: m.Scene })),
+);
 
 /** A plain preview card. Clickable (button) when it has a jump target, else static. */
 function Card({
@@ -32,68 +38,71 @@ function Card({
   );
 }
 
-/**
- * Interactive home — a scrollable long page (structure only; no effects yet). A sticky
- * top bar holds the section menu, the hero fills the first screen, and entry blocks
- * follow top-to-bottom, each previewing a few items and linking onward.
- */
 export function Home() {
   const setView = useKioskStore((s) => s.setView);
 
   const spotlight = showreel.filter((s) => s.kind === "spotlight");
   const news = showreel.filter((s) => s.kind === "news");
   const openTopics = showreel.filter((s) => s.kind === "open-topic");
-
-  /** A showreel item jumps to the section of its refId, if it resolves. */
   const refJump = (refId?: string) => {
     const v = refId ? viewForId(refId) : null;
     return v ? () => setView(v) : undefined;
   };
 
+  // particle dispersal progress: 1 = assembled (top), → 0 as you scroll the hero runway.
+  const progress = useRef(1);
+  const [reduced] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  useEffect(() => {
+    const onScroll = () => {
+      const d = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.8)));
+      progress.current = 1 - d; // top assembled → scroll disperses
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
-      {/* Bubble navigation — MENU toggle floats top-right over the content. */}
       <KioskMenu />
 
-      {/* Hero — first screenful. Group name (left, enlarged) and the motto share the
-          same top; the motto is a bigger, left-aligned, two-line headline. */}
-      <section className="flex min-h-[86vh] flex-col px-10 pb-8 pt-8">
-        <div className="flex items-start gap-12">
-          <span className="max-w-[16ch] shrink-0 text-xl font-bold leading-tight">
-            Professorship of Photogrammetry and Remote Sensing
-          </span>
-          <h1 className="text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl">
-            Making Machines
-            <br />
-            See and Think in 3D
-          </h1>
-        </div>
-        <div
-          className="mt-10 flex flex-1 items-center justify-center rounded-[2rem]"
-          style={{
-            background: "var(--gt-surface)",
-            border: "1px solid var(--gt-border)",
-            minHeight: "32vh",
-          }}
-          aria-label="Interactive showcase area"
-        >
-          <span
-            className="text-xs uppercase tracking-[0.22em]"
-            style={{ color: "var(--gt-text-secondary)" }}
-          >
-            interactive showcase · coming soon
-          </span>
-        </div>
-        <p
-          className="mt-6 text-center text-[0.7rem] uppercase tracking-[0.2em]"
-          style={{ color: "var(--gt-text-secondary)" }}
-        >
-          Scroll to explore ↓
-        </p>
-      </section>
+      {/* HERO — pinned stage: motto (left) + particle city (right). Scrolling disperses
+          the particles to the right and releases into the Spotlight feed below. */}
+      <div className="hero-pin">
+        <section className="hero-stage">
+          <div className="hero-left">
+            <span className="max-w-[16ch] text-xl font-bold leading-tight">
+              Professorship of Photogrammetry and Remote Sensing
+            </span>
+            <h1 className="mt-auto text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl">
+              Making Machines
+              <br />
+              See and Think in 3D
+            </h1>
+            <span
+              className="mt-8 text-2xl font-bold tracking-tight"
+              style={{ color: "var(--gt-text-secondary)" }}
+            >
+              Spotlight ↓
+            </span>
+          </div>
 
-      {/* Entry blocks — info feed only. The four sections (Research / Student projects
-          / Teaching / People) live in the top menu, so they're not duplicated here. */}
+          <div className="hero-right">
+            {!reduced && (
+              <Suspense fallback={null}>
+                <HeroScene progressRef={progress} />
+              </Suspense>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Content feed (info only — the four sections live in the menu). */}
       <div className="flex flex-col gap-16 pb-28">
         <HomeBlock title="Spotlight">
           <div className="grid gap-4">

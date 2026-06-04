@@ -22,6 +22,31 @@
   background: var(--gt-accent);
 }
 
+/* Home hero: a pinned stage (motto left, particle canvas right) with a scroll runway
+   that drives the particle dispersal, then releases into the content sections. */
+.hero-pin {
+  height: 180vh; /* stage (100vh) + runway to disperse the particles */
+}
+.hero-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.hero-left {
+  flex: 0 0 46%;
+  display: flex;
+  flex-direction: column;
+  padding: 6rem 2.5rem 2.5rem;
+  z-index: 2;
+}
+.hero-right {
+  position: relative;
+  flex: 1 1 auto;
+}
+
 /* Plain content card used by the section pages. */
 .gt-card {
   background: var(--gt-surface);

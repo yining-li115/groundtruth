@@ -1,0 +1,32 @@
+/* Showcase experiment — scroll-assemble point cloud. Dark scene; the sticky stage holds
+   the canvas while the runway below provides scroll range to drive the assembly. */
+
+.sc-root {
+  background: var(--gt-bg); /* light — matches the home page */
+}
+
+.sc-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Extra scroll length so the user can scroll the point cloud from scattered → assembled. */
+.sc-runway {
+  height: 220vh;
+}
+
+.sc-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gt-brand-black) 45%, transparent);
+  pointer-events: none;
+}

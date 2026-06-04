@@ -74,6 +74,14 @@ use them to distinguish only when one is present, or for separate purposes.
 - Never put `accent.orange` and `accent.green` in the same view as the two things
   the user must tell apart.
 
+### Asset colors — exception
+Visual **assets** — WebGL scenes (e.g. the hero point cloud), photos, project imagery —
+are *content*, not UI, and are **not** bound to the token palette (project photos are
+naturally multi-coloured). Such asset colors may live outside `packages/tokens` in a
+clearly-labelled file (e.g. `assetColors.ts` next to the scene). Rule 1's "no hardcoded
+colors" applies to the **UI** (type, panels, menus, buttons, backgrounds) — those still
+use tokens. The hex-audit should exclude flagged asset files.
+
 ---
 
 ## 3. Logo
