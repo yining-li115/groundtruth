@@ -100,13 +100,19 @@ groundtruth/
 ## 常用命令（都在仓库根目录跑）
 
 ```bash
-npm run check:content   # 校验内容 JSON（改完内容必跑）
-npm run dev:kiosk        # 起大屏 app
-npm run dev:controller   # 起手机端 app
-npm run dev:relay        # 起中转服务器
+npm run dev:all          # ⭐ 一键起 relay+kiosk+controller(自动注入本机 IP，打印大屏/扫码地址)
+npm run check:content    # 校验内容 JSON（改完内容必跑）
+npm run dev:kiosk        # 单独起大屏 app（端口固定 5173）
+npm run dev:controller   # 单独起手机端 app（端口固定 5174）
+npm run dev:relay        # 单独起中转服务器（端口 3001）
 npm run storybook        # 组件工作台
 npm run typecheck        # 全仓库类型检查
 ```
+
+> 日常测试用 `npm run dev:all` 就够了：一个终端起全部三个服务，带彩色前缀区分
+> （relay 洋红 / kiosk 青 / ctrl 绿），自动探测局域网 IP 注入到各 app，并在顶部打印
+> **大屏地址** 和 **手机扫码地址**。换 WiFi 也不用改 IP；自动探测不准时用
+> `GT_HOST_IP=<ip> npm run dev:all` 手动指定。
 
 完整运行/真机测试步骤、各阶段进度见 `docs/roadmap.md`。
 
