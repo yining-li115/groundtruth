@@ -1,7 +1,7 @@
 import { KioskMenu } from "../components/KioskMenu";
 import { HomeBlock } from "../components/HomeBlock";
 import { useKioskStore } from "../state/store";
-import { people, topics, projects, courses, showreel, viewForId } from "../lib/content";
+import { showreel, viewForId } from "../lib/content";
 
 /** A plain preview card. Clickable (button) when it has a jump target, else static. */
 function Card({
@@ -87,7 +87,8 @@ export function Home() {
         </p>
       </section>
 
-      {/* Entry blocks, top to bottom */}
+      {/* Entry blocks — info feed only. The four sections (Research / Student projects
+          / Teaching / People) live in the top menu, so they're not duplicated here. */}
       <div className="flex flex-col gap-16 pb-28">
         <HomeBlock title="Spotlight">
           <div className="grid gap-4">
@@ -105,52 +106,10 @@ export function Home() {
           </div>
         </HomeBlock>
 
-        <HomeBlock title="Research topics" seeAll="research">
-          <div className="grid gap-4 md:grid-cols-2">
-            {topics.slice(0, 3).map((t) => (
-              <Card key={t.id} title={t.title} line={t.summary} onClick={() => setView("research")} />
-            ))}
-          </div>
-        </HomeBlock>
-
-        <HomeBlock title="Student projects" seeAll="projects">
-          <div className="grid gap-4">
-            {projects.slice(0, 3).map((p) => (
-              <Card
-                key={p.id}
-                title={p.title}
-                line={`${p.type} · ${p.year}`}
-                onClick={() => setView("projects")}
-              />
-            ))}
-          </div>
-        </HomeBlock>
-
-        <HomeBlock title="Teaching" seeAll="teaching">
-          <div className="grid gap-4 md:grid-cols-2">
-            {courses.slice(0, 4).map((c) => (
-              <Card
-                key={c.id}
-                title={c.title}
-                line={`${c.level} · ${c.semester}`}
-                onClick={() => setView("teaching")}
-              />
-            ))}
-          </div>
-        </HomeBlock>
-
         <HomeBlock title="Open Topics">
           <div className="grid gap-4">
             {openTopics.map((s) => (
               <Card key={s.id} title={s.title} line={s.blurb} onClick={refJump(s.refId)} />
-            ))}
-          </div>
-        </HomeBlock>
-
-        <HomeBlock title="People" seeAll="people">
-          <div className="grid gap-4 md:grid-cols-2">
-            {people.slice(0, 4).map((p) => (
-              <Card key={p.id} title={p.name} line={p.role} onClick={() => setView("people")} />
             ))}
           </div>
         </HomeBlock>
