@@ -1,0 +1,184 @@
+/* BubbleMenu — layout/animation structure adapted from React Bits, but every color is
+   a token (CLAUDE.md rule 1 & 9). Hover and the selected item are uniformly black;
+   defaults use surface/text tokens. Font is the TUM face via --font-sans. No logo
+   bubble. Shadows derive from the black token via color-mix (no raw rgba).
+
+   Expanded items are big (near-native) pills in a centered vertical stack with generous
+   gaps — so the playful rotation never makes them overlap and long labels still fit. */
+
+.gt-bubble-menu {
+  left: 0;
+  right: 0;
+  top: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 0 2em;
+  pointer-events: none;
+  z-index: 99;
+  font-family: var(--font-sans);
+}
+.gt-bubble-menu.fixed {
+  position: fixed;
+}
+.gt-bubble-menu.absolute {
+  position: absolute;
+}
+
+.gt-bubble-menu .gt-bubble {
+  --bubble-size: 48px;
+  height: var(--bubble-size);
+  border-radius: calc(var(--bubble-size) / 2);
+  background: var(--gt-surface);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--gt-brand-black) 12%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.gt-bubble-menu .gt-toggle {
+  padding: 0 22px;
+  border: 1px solid var(--gt-border);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  color: var(--gt-text-primary);
+  background: var(--gt-surface);
+  cursor: pointer;
+  will-change: transform;
+}
+@media (hover: hover) {
+  .gt-bubble-menu .gt-toggle:hover {
+    background: var(--gt-brand-black);
+    color: var(--gt-brand-white);
+  }
+}
+.gt-bubble-menu .gt-toggle.open {
+  background: var(--gt-brand-black);
+  color: var(--gt-brand-white);
+}
+
+@media (min-width: 768px) {
+  .gt-bubble-menu .gt-bubble {
+    --bubble-size: 56px;
+  }
+}
+
+.gt-bubble-menu-items {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start; /* anchor near the top... */
+  justify-content: flex-end; /* ...right, beside the MENU button */
+  padding: 6.5rem 2em 1.5rem; /* top clears the toggle; right matches the nav padding */
+  pointer-events: none;
+  z-index: 98;
+  font-family: var(--font-sans);
+}
+.gt-bubble-menu-items.fixed {
+  position: fixed;
+}
+.gt-bubble-menu-items.absolute {
+  position: absolute;
+}
+
+/* Centered vertical stack. Big pills sized to their label; generous gap so the tilt
+   never causes overlap. */
+.gt-bubble-menu-items .gt-pill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* right-align under the button; long pills extend leftward */
+  gap: 3rem;
+  width: auto;
+  max-width: 100%;
+  pointer-events: auto;
+}
+.gt-bubble-menu-items .gt-pill-col {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.gt-bubble-menu-items .gt-pill-link {
+  --item-rot: 0deg;
+  width: auto;
+  max-width: 100%;
+  padding: clamp(1.5rem, 2.5vw, 2.75rem) clamp(2.25rem, 4vw, 4.5rem);
+  font-size: clamp(1.5rem, 4vw, 4rem);
+  font-weight: 500;
+  border: none;
+  border-radius: 999px;
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--gt-brand-black) 12%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+  will-change: transform;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+/* Selected / current section → black (same as hover). */
+.gt-bubble-menu-items .gt-pill-link.active {
+  background: var(--gt-brand-black);
+  color: var(--gt-brand-white);
+}
+
+@media (min-width: 900px) {
+  .gt-bubble-menu-items .gt-pill-link {
+    transform: rotate(var(--item-rot));
+  }
+  .gt-bubble-menu-items .gt-pill-link:hover {
+    transform: rotate(var(--item-rot)) scale(1.04);
+    background: var(--gt-brand-black);
+    color: var(--gt-brand-white);
+  }
+  .gt-bubble-menu-items .gt-pill-link:active {
+    transform: rotate(var(--item-rot)) scale(0.96);
+  }
+}
+
+.gt-bubble-menu-items .gt-pill-link .gt-pill-label {
+  display: inline-block;
+  will-change: transform, opacity;
+  line-height: 1.2;
+}
+
+@media (max-width: 899px) {
+  .gt-bubble-menu-items {
+    align-items: flex-start;
+    padding: 5.5rem 1.25rem 1.25rem;
+  }
+  .gt-bubble-menu-items .gt-pill-list {
+    gap: 2rem;
+  }
+  .gt-bubble-menu-items .gt-pill-link:hover {
+    background: var(--gt-brand-black);
+    color: var(--gt-brand-white);
+  }
+  .gt-bubble-menu-items .gt-pill-link:active {
+    transform: scale(0.96);
+  }
+}
+
+/* Reduced motion: no CSS transitions (GSAP path also skips to final state). */
+@media (prefers-reduced-motion: reduce) {
+  .gt-bubble-menu .gt-toggle,
+  .gt-bubble-menu-items .gt-pill-link {
+    transition: none;
+  }
+}

@@ -4,3 +4,4 @@
  * Tokens CSS is exported separately as `@groundtruth/ui/styles.css`.
  */
 export * from "./components/Logo";
+export * from "./components/BubbleMenu";
