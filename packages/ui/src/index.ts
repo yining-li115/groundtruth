@@ -5,3 +5,4 @@
  */
 export * from "./components/Logo";
 export * from "./components/BubbleMenu";
+export * from "./components/StaggeredMenu";
