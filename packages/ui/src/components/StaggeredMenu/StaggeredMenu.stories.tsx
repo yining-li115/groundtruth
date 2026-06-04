@@ -49,7 +49,9 @@ function Demo() {
           <strong>{active}</strong>.
         </p>
       </div>
-      <StaggeredMenu items={items} displayItemNumbering />
+      {/* isFixed so the panel fills the viewport height (same as the kiosk usage);
+          without it, height:100% has no definite parent height to resolve against. */}
+      <StaggeredMenu items={items} isFixed displayItemNumbering />
     </div>
   );
 }
