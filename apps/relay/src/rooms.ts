@@ -15,6 +15,11 @@ export interface SocketData {
 type IO = Server<ClientToRelayEvents, RelayToClientEvents, Record<string, never>, SocketData>;
 type Sock = Socket<ClientToRelayEvents, RelayToClientEvents, Record<string, never>, SocketData>;
 
+/** Short socket id for readable logs. */
+const short = (id: string): string => id.slice(0, 6);
+/** Room-activity log line (who joined/left, token changes) — NOT per-input (too noisy). */
+const rlog = (msg: string): void => console.log(`[room] ${msg}`);
+
 /** Live state for one kiosk room (keyed by sessionId). In-memory only (v1, no DB). */
 interface Room {
   sessionId: string;
@@ -49,6 +54,7 @@ export class RoomManager {
     room.kiosks.add(socket.id);
     // Bring a (re)connecting kiosk to the correct mode immediately.
     this.emitTo(socket.id, "room:driverChanged", { hasDriver: room.driverId !== null });
+    rlog(`kiosk ${short(socket.id)} registered room "${sessionId}" ${this.occupancy(room)}`);
   }
 
   addController(socket: Sock, sessionId: string): void {
@@ -60,11 +66,15 @@ export class RoomManager {
       this.emitTo(socket.id, "room:role", { role: "driver" });
       this.notifyKiosks(room);
       this.startIdle(room);
+      rlog(`controller ${short(socket.id)} joined room "${sessionId}" → DRIVER`);
     } else {
       room.queue.push(socket.id);
       socket.data.role = "queued";
       this.emitTo(socket.id, "room:role", { role: "queued", position: room.queue.length });
       this.broadcastQueue(room);
+      rlog(
+        `controller ${short(socket.id)} joined room "${sessionId}" → QUEUED #${room.queue.length} · current driver ${short(room.driverId)}`,
+      );
     }
   }
 
@@ -99,7 +109,7 @@ export class RoomManager {
 
   pass(socket: Sock): void {
     const room = this.roomOf(socket);
-    if (room && room.driverId === socket.id) this.releaseDriver(room);
+    if (room && room.driverId === socket.id) this.releaseDriver(room, "pass");
   }
 
   disconnect(socket: Sock): void {
@@ -108,14 +118,15 @@ export class RoomManager {
     if (!room) return;
 
     if (room.kiosks.delete(socket.id)) {
-      // a kiosk left
+      rlog(`kiosk ${short(socket.id)} disconnected · room "${room.sessionId}" ${this.occupancy(room)}`);
     } else if (room.driverId === socket.id) {
-      this.releaseDriver(room);
+      this.releaseDriver(room, "disconnect");
     } else {
       const idx = room.queue.indexOf(socket.id);
       if (idx !== -1) {
         room.queue.splice(idx, 1);
         this.broadcastQueue(room);
+        rlog(`queued ${short(socket.id)} left room "${room.sessionId}" · queue=${room.queue.length}`);
       }
     }
     this.cleanup(room);
@@ -144,7 +155,7 @@ export class RoomManager {
     return true;
   }
 
-  private releaseDriver(room: Room): void {
+  private releaseDriver(room: Room, reason: "pass" | "idle" | "disconnect"): void {
     this.clearIdle(room);
     const prev = room.driverId;
     room.driverId = null;
@@ -152,6 +163,7 @@ export class RoomManager {
       const s = this.io.sockets.sockets.get(prev);
       if (s) s.data.role = undefined;
     }
+    const by = prev ? short(prev) : "?";
 
     const nextId = room.queue.shift();
     if (nextId) {
@@ -160,8 +172,12 @@ export class RoomManager {
       this.emitTo(nextId, "room:role", { role: "driver" });
       this.startIdle(room);
       this.broadcastQueue(room); // remaining queued shift up one
+      rlog(
+        `token released (${reason}) by ${by} → promoted ${short(nextId)} to DRIVER · room "${room.sessionId}" · queue=${room.queue.length}`,
+      );
     } else {
       this.notifyKiosks(room); // hasDriver = false → kiosk returns to idle
+      rlog(`token released (${reason}) by ${by} → no driver, room "${room.sessionId}" now idle`);
     }
   }
 
@@ -175,7 +191,7 @@ export class RoomManager {
 
   private startIdle(room: Room): void {
     this.clearIdle(room);
-    room.idleTimer = setTimeout(() => this.releaseDriver(room), TIMING.IDLE_TIMEOUT_MS);
+    room.idleTimer = setTimeout(() => this.releaseDriver(room, "idle"), TIMING.IDLE_TIMEOUT_MS);
   }
 
   private clearIdle(room: Room): void {
@@ -226,6 +242,12 @@ export class RoomManager {
       this.rooms.set(sessionId, room);
     }
     return room;
+  }
+
+  /** One-glance summary of who's in a room, for logs. */
+  private occupancy(room: Room): string {
+    const driver = room.driverId ? short(room.driverId) : "none";
+    return `[driver=${driver} queued=${room.queue.length} kiosks=${room.kiosks.size}]`;
   }
 
   private cleanup(room: Room): void {
