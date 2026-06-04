@@ -1,13 +1,13 @@
 import type { SVGProps } from "react";
 import { palette } from "@groundtruth/tokens";
 
-export type LogoVariant = "blue" | "white";
+export type LogoVariant = "blue" | "white" | "black";
 
 export type LogoProps = Omit<SVGProps<SVGSVGElement>, "fill"> & {
   /**
    * `"blue"` (default) renders the native TUM logo blue (`brand.logoBlue` #3070B3).
-   * `"white"` is the ONE allowed recolor — for dark backgrounds where the logo blue
-   * lacks contrast (design-system §3). Never recolor to the UI blue `brand.blue`.
+   * `"white"` (on dark) and `"black"` (on light) are the allowed monochrome recolors
+   * (design-system §3). Never recolor to the UI accent or TUM blue `brand.blue`.
    */
   variant?: LogoVariant;
   /** Accessible label for the wordmark. */
@@ -27,7 +27,12 @@ export function Logo({
   height = 38,
   ...rest
 }: LogoProps) {
-  const fill = variant === "white" ? palette.brand.white : palette.brand.logoBlue;
+  const fill =
+    variant === "white"
+      ? palette.brand.white
+      : variant === "black"
+        ? palette.brand.black
+        : palette.brand.logoBlue;
   return (
     <svg
       width={width}

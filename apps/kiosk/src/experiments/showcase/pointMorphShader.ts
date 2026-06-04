@@ -23,7 +23,8 @@ export const POINT_VERT = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
     gl_PointSize = uSize * aSize * (320.0 / -mv.z);
-    vAlpha = 0.6 + 0.35 * t; // fairly opaque dark dots read on the light bg (normal blend)
+    // low per-point alpha → dense areas build up dark, sparse/dispersing areas stay light
+    vAlpha = 0.3 + 0.2 * t;
     vColor = aColor;
   }
 `;

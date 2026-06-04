@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { Logo } from "@groundtruth/ui";
 import { HomeBlock } from "../components/HomeBlock";
 import { KioskMenu } from "../components/KioskMenu";
 import { useKioskStore } from "../state/store";
@@ -71,14 +72,39 @@ export function Home() {
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
       <KioskMenu />
 
-      {/* HERO — pinned stage: motto (left) + particle city (right). Scrolling disperses
-          the particles to the right and releases into the Spotlight feed below. */}
+      {/* HERO — full-bleed particle canvas with the text overlaid on top. Scrolling
+          disperses the particles rightward and releases into the Spotlight feed below. */}
       <div className="hero-pin">
         <section className="hero-stage">
-          <div className="hero-left">
-            <span className="max-w-[16ch] text-xl font-bold leading-tight">
-              Professorship of Photogrammetry and Remote Sensing
-            </span>
+          <div className="hero-canvas">
+            {!reduced && (
+              <Suspense fallback={null}>
+                <HeroScene progressRef={progress} mode="home" />
+              </Suspense>
+            )}
+          </div>
+
+          <div className="hero-overlay">
+            <div className="flex items-center gap-4">
+              <div className="text-xs leading-tight">
+                <div className="whitespace-nowrap font-bold">
+                  Professorship of Photogrammetry and Remote Sensing
+                </div>
+                <div
+                  className="whitespace-nowrap font-bold"
+                  style={{ color: "var(--gt-text-secondary)" }}
+                >
+                  TUM School of Engineering and Design
+                </div>
+                <div
+                  className="whitespace-nowrap font-bold"
+                  style={{ color: "var(--gt-text-secondary)" }}
+                >
+                  Technical University of Munich
+                </div>
+              </div>
+              <Logo variant="black" width={86} height={45} />
+            </div>
             <h1 className="mt-auto text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl">
               Making Machines
               <br />
@@ -90,14 +116,6 @@ export function Home() {
             >
               Spotlight ↓
             </span>
-          </div>
-
-          <div className="hero-right">
-            {!reduced && (
-              <Suspense fallback={null}>
-                <HeroScene progressRef={progress} />
-              </Suspense>
-            )}
           </div>
         </section>
       </div>

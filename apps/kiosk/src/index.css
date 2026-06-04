@@ -31,20 +31,23 @@
   position: sticky;
   top: 0;
   height: 100vh;
-  display: flex;
-  align-items: stretch;
   overflow: hidden;
 }
-.hero-left {
-  flex: 0 0 46%;
+/* Particle canvas spans the WHOLE stage (full-bleed). */
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+}
+/* Text overlays on top of the particles. pointer-events:none so wheel scroll passes
+   through to the page; nothing here is interactive. */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   padding: 6rem 2.5rem 2.5rem;
-  z-index: 2;
-}
-.hero-right {
-  position: relative;
-  flex: 1 1 auto;
+  pointer-events: none;
 }
 
 /* Plain content card used by the section pages. */

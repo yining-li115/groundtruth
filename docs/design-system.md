@@ -95,8 +95,9 @@ Rules:
 - Prefer the SVG. It scales cleanly and can be recolored to white via CSS `fill` ONLY
   for the dark-background case (see below) — that is the one allowed recolor.
 - Clear space: keep padding around the logo at least the height of the "T" bar.
-- On dark backgrounds where `#3070B3` lacks contrast, use a **white** version of the
-  logo (set SVG path fill to `brand.white`). Do not use `#0065BD`.
+- Monochrome recolors allowed: **white** on dark backgrounds, **black** on light
+  backgrounds (e.g. the kiosk hero). Those two are the only recolors — never `#0065BD`
+  / the UI accent.
 - Never stretch, rotate, add shadows, or place on a busy photo without a scrim.
 
 ---
