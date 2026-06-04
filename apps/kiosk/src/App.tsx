@@ -1,10 +1,30 @@
 import { useEffect } from "react";
-import { Logo } from "@groundtruth/ui";
 import { socket } from "./lib/socket";
 import { SESSION_ID } from "./config";
 import { useKioskStore } from "./state/store";
 import { Cursor } from "./components/Cursor";
 import { KioskQR } from "./components/KioskQR";
+import { Home } from "./scenes/Home";
+import { PeopleSection } from "./scenes/PeopleSection";
+import { ResearchSection } from "./scenes/ResearchSection";
+import { ProjectsSection } from "./scenes/ProjectsSection";
+import { TeachingSection } from "./scenes/TeachingSection";
+
+function CurrentView() {
+  const view = useKioskStore((s) => s.view);
+  switch (view) {
+    case "people":
+      return <PeopleSection />;
+    case "research":
+      return <ResearchSection />;
+    case "projects":
+      return <ProjectsSection />;
+    case "teaching":
+      return <TeachingSection />;
+    default:
+      return <Home />;
+  }
+}
 
 export default function App() {
   const connected = useKioskStore((s) => s.connected);
@@ -15,7 +35,6 @@ export default function App() {
 
     const onConnect = () => {
       setConnected(true);
-      // (Re)register this room — also restores state after a relay restart (§8).
       socket.emit("kiosk:hello", { sessionId: SESSION_ID });
     };
     const onDisconnect = () => setConnected(false);
@@ -36,30 +55,26 @@ export default function App() {
   }, []);
 
   return (
-    <main
-      className="relative min-h-screen flex flex-col items-center justify-center gap-6 px-8 text-center"
-      style={{ background: "var(--gt-bg)", color: "var(--gt-text-primary)" }}
-    >
-      <Logo width={146} height={76} />
-      <h1 className="text-5xl font-medium tracking-tight">Groundtruth</h1>
-      <p className="text-lg" style={{ color: "var(--gt-text-secondary)" }}>
-        {hasDriver
-          ? "Interactive — a phone is driving the cursor"
-          : "Idle — scan the QR to take control"}
-      </p>
+    <main className="relative" style={{ background: "var(--gt-bg)" }}>
+      <CurrentView />
 
-      {/* Connection indicator */}
-      <div className="absolute left-6 top-6 flex items-center gap-2 text-xs"
-           style={{ color: "var(--gt-text-secondary)" }}>
+      {/* Static QR — always visible so a visitor can take control (architecture §2). */}
+      <KioskQR />
+
+      {/* The phone-driven cursor only exists while someone is driving. */}
+      {hasDriver && <Cursor />}
+
+      {/* Subtle connection status (kept out of the way). */}
+      <div
+        className="fixed bottom-4 left-4 flex items-center gap-2 text-[0.7rem]"
+        style={{ color: "var(--gt-text-secondary)" }}
+      >
         <span
-          className="inline-block h-2 w-2 rounded-full"
+          className="inline-block h-1.5 w-1.5 rounded-full"
           style={{ background: connected ? "var(--gt-accent)" : "var(--gt-border)" }}
         />
-        {connected ? `connected · room ${SESSION_ID}` : "connecting…"}
+        {connected ? `relay · ${SESSION_ID}` : "connecting…"}
       </div>
-
-      <KioskQR />
-      {hasDriver && <Cursor />}
     </main>
   );
 }

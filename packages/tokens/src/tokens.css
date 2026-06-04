@@ -72,7 +72,7 @@
   --gt-accent-midblue: #64a0c8;
 
   /* ---- theme.light — DEFAULT, used everywhere ---- */
-  --gt-bg: #f1f0f8;
+  --gt-bg: #f7f6fb;
   --gt-surface: var(--gt-brand-white);
   --gt-text-primary: var(--gt-brand-black);
   --gt-text-secondary: var(--gt-gray-80);

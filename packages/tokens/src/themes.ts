@@ -35,7 +35,7 @@ export type ThemeTokens = {
  * (`brand.electric`).
  */
 export const light: ThemeTokens = {
-  bg: "#F1F0F8",
+  bg: "#F7F6FB",
   surface: palette.brand.white,
   text: {
     primary: palette.brand.black,

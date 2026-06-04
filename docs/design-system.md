@@ -133,8 +133,8 @@ kiosk display headlines where viewing distance justifies it.
 
 ### The look we're matching (from the Lusion reference screenshot)
 The high-end feel comes from restraint, not color volume:
-- **Near-white lavender-grey background** — not pure `#FFFFFF`. A very faint cool
-  lavender tint (`bg` = `#F1F0F8`).
+- **Near-white lavender background** — not pure `#FFFFFF`. A very faint cool
+  lavender tint (`bg` = `#F7F6FB`).
 - **Generous whitespace.** Let elements breathe; don't fill the canvas.
 - **Oversized black display headlines** in a geometric sans. Big type IS the design.
 - **A single high-chroma color block** as the one hero accent — an **electric blue-violet**
@@ -153,7 +153,7 @@ showreel by default, and the entire controller UI.
 
 | Token | Value (guideline — tune to taste) | Role |
 |-------|-----------------------------------|------|
-| `bg`             | `#F1F0F8` (near-white, faint lavender-grey tint) | page background |
+| `bg`             | `#F7F6FB` (near-white, faint lavender tint) | page background |
 | `surface`        | `#FFFFFF` | cards, raised surfaces |
 | `text.primary`   | `brand.black` `#000000` | headlines, body |
 | `text.secondary` | `gray.80` `#333333` | secondary copy |

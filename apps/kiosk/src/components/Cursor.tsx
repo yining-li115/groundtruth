@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { socket } from "../lib/socket";
 import { SENSITIVITY } from "../config";
+import { useKioskStore } from "../state/store";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Inertia: actual position eases toward target each frame (design-system §6). */
@@ -39,7 +40,8 @@ export function Cursor() {
       }
     };
     const onBack = () => {
-      // Section navigation arrives in Phase 2; nothing to go back to yet.
+      // Controller "back" returns the website shell to the home screen.
+      useKioskStore.getState().setView("home");
     };
 
     socket.on("kiosk:cursor.move", onMove);

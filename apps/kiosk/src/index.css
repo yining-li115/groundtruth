@@ -1,6 +1,35 @@
 @import "tailwindcss";
 @import "@groundtruth/tokens/tokens.css";
 
+/* Horizontal nav items (Home / section pages). Colors from tokens only (rule 1). */
+.gt-nav-btn {
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--gt-text-primary);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+@media (hover: hover) {
+  .gt-nav-btn:hover {
+    color: var(--gt-accent);
+  }
+}
+.gt-nav-btn[aria-current="true"] {
+  color: var(--gt-brand-white);
+  background: var(--gt-accent);
+}
+
+/* Plain content card used by the section pages. */
+.gt-card {
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+}
+
 /* The kiosk cursor (architecture §4). Fixed at the origin; moved via transform by the
    Cursor component. pointer-events:none so taps land on the UI underneath. */
 .gt-cursor {

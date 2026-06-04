@@ -55,14 +55,19 @@ This is the project's only make-or-break risk. Prove it first.
 - [x] `npm run check:content` validator (zod-based) — schema + duplicate-id + dangling
       cross-ref + non-URL media-existence checks; exits non-zero on failure. (Wired to
       the npm script; **CI hookup still TODO** — no CI configured yet.)
-- [ ] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
-      projects, Teaching. (UI — later in Phase 2.)
-- [ ] **Interactive home (landing) + horizontal navigation menu** — the post-takeover
-      website shell that holds the sections (`docs/architecture.md` §6). Home's central
-      area is reserved for an interactive component (TBD), NOT the showreel.
+- [x] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
+      projects, Teaching — plain token-styled lists rendering `content/*.json` (id refs
+      resolved to names). Navigated via zustand view-state (no router).
+- [x] **Interactive home (landing) + horizontal navigation menu** — the post-takeover
+      website shell that holds the sections (`docs/architecture.md` §6). Brand top-left,
+      motto headline, 4-item horizontal nav top-right, clean central placeholder block
+      (reserved for an interactive component, NOT the showreel), bottom control hint.
+      Logo / controller "back" → home.
 - [ ] Idle showreel as its own auto-playing standby screen (independent of home; may
       reuse the same content JSON as source material) — `docs/architecture.md` §6.
-- [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`.
+- [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`. (NOT done yet:
+      the website shell currently renders regardless of driver so it's directly
+      previewable; the showreel + gating land with the item above.)
 - [x] `PROJECT-MAP.md` at repo root — plain-language (Chinese) guide to where each kind
       of thing lives, so a non-programmer can find what to edit.
 
