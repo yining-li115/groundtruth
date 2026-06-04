@@ -55,14 +55,19 @@ export function Home() {
       {/* Bubble navigation — MENU toggle floats top-right over the content. */}
       <KioskMenu />
 
-      {/* Hero — first screenful. Group name (top-left) scrolls away with the page. */}
+      {/* Hero — first screenful. Group name (left, enlarged) and the motto share the
+          same top; the motto is a bigger, left-aligned, two-line headline. */}
       <section className="flex min-h-[86vh] flex-col px-10 pb-8 pt-8">
-        <span className="max-w-[24ch] text-sm font-bold leading-snug">
-          Professorship of Photogrammetry and Remote Sensing
-        </span>
-        <h1 className="mx-auto mt-16 max-w-[20ch] text-center text-6xl font-bold leading-[1.04] tracking-tight md:text-7xl">
-          Making Machines See and Think in 3D
-        </h1>
+        <div className="flex items-start gap-12">
+          <span className="max-w-[16ch] shrink-0 text-xl font-bold leading-tight">
+            Professorship of Photogrammetry and Remote Sensing
+          </span>
+          <h1 className="text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl">
+            Making Machines
+            <br />
+            See and Think in 3D
+          </h1>
+        </div>
         <div
           className="mt-10 flex flex-1 items-center justify-center rounded-[2rem]"
           style={{
