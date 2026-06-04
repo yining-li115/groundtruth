@@ -11,6 +11,7 @@ import type {
   Course,
   SpotlightItem,
 } from "../../../../content/schema";
+import type { View } from "../state/store";
 import peopleRaw from "../../../../content/people.json";
 import topicsRaw from "../../../../content/research-topics.json";
 import projectsRaw from "../../../../content/student-projects.json";
@@ -25,8 +26,19 @@ export const showreel = showreelRaw as unknown as SpotlightItem[];
 
 const personById = new Map(people.map((p) => [p.id, p]));
 const topicById = new Map(topics.map((t) => [t.id, t]));
+const projectById = new Map(projects.map((p) => [p.id, p]));
+const courseById = new Map(courses.map((c) => [c.id, c]));
 
 /** Resolve a Person id to a display name (falls back to the id). */
 export const personName = (id: string): string => personById.get(id)?.name ?? id;
 /** Resolve a ResearchTopic id to its title (falls back to the id). */
 export const topicTitle = (id: string): string => topicById.get(id)?.title ?? id;
+
+/** Which section page an item id belongs to — used to jump from a showreel refId. */
+export function viewForId(id: string): View | null {
+  if (personById.has(id)) return "people";
+  if (topicById.has(id)) return "research";
+  if (projectById.has(id)) return "projects";
+  if (courseById.has(id)) return "teaching";
+  return null;
+}
