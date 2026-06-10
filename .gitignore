@@ -9,3 +9,7 @@ storybook-static/
 *.log
 CLAUDE.md
 run_all.txt
+
+# Hero showcase 3D models — heavy GLB binaries kept out of git history for now.
+# The manifest (which files to place here + sources) lives in the committed README.
+apps/kiosk/public/models/*.glb

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Scene } from "./Scene";
+import { SceneModels } from "./SceneModels";
 import "./showcase.css";
 
 /**
@@ -26,7 +26,7 @@ export function ShowcaseExperiment() {
   return (
     <div className="sc-root">
       <div className="sc-sticky">
-        <Scene progressRef={progress} />
+        <SceneModels progressRef={progress} />
         <div className="sc-hint">scroll to disperse · drag to orbit</div>
       </div>
       {/* scroll runway that drives the assembly progress */}
