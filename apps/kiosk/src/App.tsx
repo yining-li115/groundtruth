@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { socket } from "./lib/socket";
+import { startSmoothScroll } from "./lib/scroll";
 import { SESSION_ID } from "./config";
 import { useKioskStore } from "./state/store";
 import { Cursor } from "./components/Cursor";
@@ -29,6 +30,11 @@ function CurrentView() {
 export default function App() {
   const connected = useKioskStore((s) => s.connected);
   const hasDriver = useKioskStore((s) => s.hasDriver);
+
+  // Start the smooth-scroll + ScrollTrigger loop once for the tab's lifetime.
+  useEffect(() => {
+    startSmoothScroll();
+  }, []);
 
   useEffect(() => {
     const { setConnected, setHasDriver } = useKioskStore.getState();

@@ -1,6 +1,22 @@
 @import "tailwindcss";
 @import "@groundtruth/tokens/tokens.css";
 
+/* Lenis smooth scroll (lib/scroll.ts). Required plumbing so Lenis can own the scroll
+   without breaking document height or native position:sticky (the home hero stage). */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
 /* Horizontal nav items (Home / section pages). Colors from tokens only (rule 1). */
 .gt-nav-btn {
   border-radius: 9999px;
@@ -33,10 +49,14 @@
   height: 100vh;
   overflow: hidden;
 }
-/* Particle canvas spans the WHOLE stage (full-bleed). */
+/* Particle canvas spans the WHOLE stage (full-bleed). The bottom is feathered with a mask
+   so the dispersed particle field fades into the page instead of ending on a hard edge
+   (the overlaid motto text is a separate layer and stays crisp). */
 .hero-canvas {
   position: absolute;
   inset: 0;
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 82%);
+  mask-image: linear-gradient(to bottom, #000 45%, transparent 82%);
 }
 /* Text overlays on top of the particles. pointer-events:none so wheel scroll passes
    through to the page; nothing here is interactive. */
@@ -48,6 +68,33 @@
   flex-direction: column;
   padding: 6rem 2.5rem 2.5rem;
   pointer-events: none;
+}
+
+/* Hero "Spotlight ↓" scroll hint (HeroScrollHint). The arrow bounces to invite a scroll;
+   the whole hint fades/blurs out with the motto (driven in JS). */
+.hero-hint {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gt-text-secondary);
+  /* The whole hint (text + arrow) bounces together to invite a scroll. transform is free
+     for this — the scroll-fade animates opacity/filter, not transform. */
+  width: fit-content;
+  animation: gt-hint-bounce 1.4s ease-in-out infinite;
+}
+@keyframes gt-hint-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-hint {
+    animation: none;
+  }
 }
 
 /* Plain content card used by the section pages. */

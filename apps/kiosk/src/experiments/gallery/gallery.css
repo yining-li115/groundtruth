@@ -1,0 +1,63 @@
+/* Horizontal parallax gallery (?exp=gallery) — WebGL version. The DOM row is invisible
+   placeholders (gxgl-img, opacity 0) that lay out the bounds; the <canvas> renders the
+   three.js planes. Spacing matches the Codrops demo (tight gap, no rounding) so the row
+   reads dense. EXPERIMENT ONLY — not wired into the home. */
+
+.gx-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  overflow: hidden;
+}
+
+/* Full-viewport canvas the planes draw onto (planes are px-positioned to the DOM bounds). */
+.gxgl-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gallery__wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+.gallery__image__container {
+  display: flex;
+  gap: 2rem; /* the demo's tight spacing */
+  height: 100%;
+  will-change: transform;
+}
+.gxgl-media {
+  flex-shrink: 0;
+  aspect-ratio: 4 / 3;
+  height: 62vh;
+  max-height: 62vh;
+  overflow: hidden;
+  position: relative;
+  display: block;
+}
+/* The DOM image is invisible — its WebGL plane shows the picture. */
+.gxgl-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.gx-hint {
+  position: absolute;
+  left: 2.5rem;
+  bottom: 2rem;
+  z-index: 2;
+  font-weight: 500;
+  color: var(--gt-text-secondary);
+}

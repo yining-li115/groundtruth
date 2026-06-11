@@ -2,6 +2,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Logo } from "@groundtruth/ui";
 import { HomeBlock } from "../components/HomeBlock";
 import { KioskMenu } from "../components/KioskMenu";
+import { SpotlightGallery } from "../components/SpotlightGallery";
+import { BlurScrollText } from "../components/BlurScrollText";
+import { HeroScrollHint } from "../components/HeroScrollHint";
 import { useKioskStore } from "../state/store";
 import { showreel, viewForId } from "../lib/content";
 
@@ -43,7 +46,6 @@ export function Home() {
   const setView = useKioskStore((s) => s.setView);
   const setHeroOrbitActive = useKioskStore((s) => s.setHeroOrbitActive);
 
-  const spotlight = showreel.filter((s) => s.kind === "spotlight");
   const news = showreel.filter((s) => s.kind === "news");
   const openTopics = showreel.filter((s) => s.kind === "open-topic");
   const refJump = (refId?: string) => {
@@ -113,31 +115,25 @@ export function Home() {
               </div>
               <Logo variant="black" width={86} height={45} />
             </div>
-            <h1 className="mt-auto text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl">
-              Making Machines
-              <br />
-              See and Think in 3D
-            </h1>
-            <span
-              className="mt-8 text-2xl font-bold tracking-tight"
-              style={{ color: "var(--gt-text-secondary)" }}
-            >
-              Spotlight ↓
-            </span>
+            <BlurScrollText
+              as="h1"
+              className="mt-auto text-7xl font-bold leading-[1.02] tracking-tight md:text-8xl"
+              text={"Making Machines\nSee and Think in 3D"}
+              mode="out"
+              trigger=".hero-pin"
+              start="30% top"
+              end="80% top"
+            />
+            <HeroScrollHint className="mt-8" />
           </div>
         </section>
       </div>
 
+      {/* Spotlight — horizontal WebGL parallax gallery, browsed by scrolling on (pinned). */}
+      <SpotlightGallery />
+
       {/* Content feed (info only — the four sections live in the menu). */}
       <div className="flex flex-col gap-16 pb-28">
-        <HomeBlock title="Spotlight">
-          <div className="grid gap-4">
-            {spotlight.map((s) => (
-              <Card key={s.id} title={s.title} line={s.blurb} onClick={refJump(s.refId)} />
-            ))}
-          </div>
-        </HomeBlock>
-
         <HomeBlock title="News">
           <div className="grid gap-4">
             {news.map((s) => (

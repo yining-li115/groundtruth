@@ -75,15 +75,45 @@ This is the project's only make-or-break risk. Prove it first.
 ## Phase 3 — Component library (ongoing, starts here)
 - [ ] Build the priority components (`docs/component-library.md` §5), each with a story.
 - [ ] Migrate ad-hoc UI from phases 1–2 into `packages/ui` as it stabilizes.
+- [x] **Scroll/motion foundation** wired (`apps/kiosk/src/lib/scroll.ts`): Lenis smooth
+      scroll + GSAP ScrollTrigger kept in sync, reduced-motion-guarded; the phone's
+      two-finger scroll routes through Lenis (`scrollByPx`), the home hero keeps reading
+      `window.scrollY` unchanged. Plumbing only — per-component scroll choreography
+      (reveals / pins / parallax) lands with the content-feed polish below.
+- [~] **Home Spotlight = horizontal WebGL parallax gallery** (`components/SpotlightGallery.tsx`
+      + `experiments/gallery/galleryGL.ts`, ported from the Codrops horizontal-parallax-gallery
+      demo, three.js — our stack). The section is **pinned** and a scrubbed ScrollTrigger maps
+      vertical scroll → the gallery's horizontal position, so the visitor "scrolls on" to browse
+      spotlights sideways; per-image uv parallax + rounded corners in the shader. Phone: the
+      two-finger `dy` already drives Lenis → ScrollTrigger converts it to horizontal (no
+      controller change). Images are **picsum placeholders** for now; real content cards later.
+      Note: adds a 2nd WebGL context on the home (alongside the hero point cloud).
+- [x] **Hero → Spotlight transition** polish: hero canvas bottom feathered (CSS mask) so the
+      dispersed particles fade into the page; the motto + a bouncing "Spotlight ↓" hint
+      (`HeroScrollHint`) blur/fade OUT and the big "Spotlight" title blurs IN, via a reusable
+      `BlurScrollText` (adapted from Codrops ScrollBlurTypography — per-char `filter: blur()`
+      scrubbed on scroll; opacity instead of brightness for our black-on-light type).
+- [ ] **News / Open Topics polish** + real content. Still plain cards. **Blocked on schema
+      additions**: a `date` field (News/Open Topics) and an external `link`/`href` field
+      (real items carry both) — add to `content/schema.ts` + validator per CLAUDE.md rule 3.
 
 ## Phase 4 — WebGL façade
 - [~] Hero scene for R3F: an interactive **point cloud** (on-brand for a remote-sensing
-      group). **Started early and relocated** — instead of the idle-showreel backdrop it
-      now drives the **interactive home hero** (`apps/kiosk/src/experiments/showcase/`,
-      preview at `/?exp=showcase`): a city + satellites + car + sensor "data lines"
-      assembled from ~140k particles, scroll-disperses, cursor-orbits (§4/§6). Single
-      indigo asset color (off-token by the design-system "asset colors" exception).
-      Still WIP (composition/feel); not yet promoted into `packages/ui` or `webgl/`.
+      group). **Started early and relocated** — it drives the **interactive home hero**
+      (`apps/kiosk/src/scenes/Home.tsx` via `experiments/showcase/Scene.tsx`): a city +
+      satellites + car + sensor "data lines" assembled from ~140k particles,
+      scroll-disperses, cursor-orbits (§4/§6). Single indigo asset color (off-token by the
+      design-system "asset colors" exception). The live home geometry is still a
+      **procedural box stand-in**. Still WIP (composition/feel); not yet promoted into
+      `packages/ui` or `webgl/`.
+  - [~] **GLB-model variant** (experiment-only, preview at `/?exp=showcase`):
+        `experiments/showcase/SceneModels.tsx` + `sampleModels.ts` surface-sample real
+        Sketchfab GLBs (towers / car / satellite / drone / tree) into the same 140k-point
+        cloud — a far less crude city than the boxes. **Decoupled** from the live home hero
+        (the procedural `Scene.tsx` is untouched); promote into `Home.tsx` only once the
+        look is locked. GLB binaries are gitignored (`apps/kiosk/public/models/`, manifest
+        in its `README.md`); the two big towers still need decimation/texture-stripping
+        before they'd ever be committed.
 - [ ] Postprocessing pass (bloom/DOF) for the Lusion look, perf-budgeted for the kiosk
       hardware. NOTE: Bloom was deliberately dropped from the hero point cloud — it
       blew out the dense particles and hurt readability; density + crisp soft sprites

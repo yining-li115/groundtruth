@@ -1,0 +1,44 @@
+/* Home Spotlight section — pinned full-viewport stage holding the horizontal WebGL gallery
+   plus its heading. The gallery canvas (.gxgl-canvas) is fixed full-viewport; it only shows
+   planes where this section's placeholders sit, so it's transparent elsewhere. */
+
+.sg-section {
+  position: relative;
+  height: 100vh;
+  background: var(--gt-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sg-head {
+  position: absolute;
+  top: 8vh;
+  left: 2.5rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.sg-title {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+}
+
+/* Smaller, wide (cinematic 16:9) gallery images on the home: short enough to clear the big
+   "Spotlight" title, wide enough that 3 of them overflow the screen → real horizontal slide. */
+.sg-section .gxgl-media {
+  height: 46vh;
+  max-height: 46vh;
+  aspect-ratio: 16 / 9;
+}
+
+.sg-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 2.5rem;
+  z-index: 2;
+  font-weight: 500;
+  color: var(--gt-text-secondary);
+}

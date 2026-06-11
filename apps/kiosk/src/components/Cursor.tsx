@@ -3,6 +3,7 @@ import { socket } from "../lib/socket";
 import { SENSITIVITY } from "../config";
 import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
+import { scrollByPx } from "../lib/scroll";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Inertia: actual position eases toward target each frame (design-system §6). */
@@ -33,8 +34,9 @@ export function Cursor() {
     };
     const onScroll = ({ dy }: { dy: number }) => {
       // Natural (phone-native) scrolling: two fingers UP moves content up → page scrolls
-      // DOWN. `dy` is the raw finger delta (down = positive), so negate it.
-      window.scrollBy({ top: -dy * SENSITIVITY, behavior: "auto" });
+      // DOWN. `dy` is the raw finger delta (down = positive), so negate it. Routed through
+      // Lenis so the page eases with it instead of fighting the smooth-scroll loop.
+      scrollByPx(-dy * SENSITIVITY);
     };
     const onTap = () => {
       // Cursor has pointer-events:none, so this hits the UI underneath.
