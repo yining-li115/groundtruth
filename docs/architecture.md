@@ -93,11 +93,26 @@ so the small phone surface can drive the whole big screen, and the cursor never 
   sends it. The relay forwards to the kiosk. The kiosk moves its virtual cursor by
   `(dx, dy) * SENSITIVITY` (with smoothing/inertia — see design-system motion).
 - A short tap with no movement = `click` at current cursor position.
-- Two-finger drag (or an explicit scroll zone) = `scroll`.
+- Two-finger drag = `scroll`, with **natural (phone-native) direction**: two fingers up
+  moves content up → the page scrolls **down**. The protocol `dy` is the raw finger
+  delta (down = positive); the kiosk negates it when applying `window.scrollBy`.
 - Long-press / dedicated button = `back` / section exit (define in controller UX).
 
 The kiosk owns the cursor position. The controller is "blind" — it just streams
 intent. This keeps the phone simple and the screen authoritative.
+
+**Cursor-steered hero (home only).** While the home hero is pinned, the kiosk's cursor
+doubles as a view control: moving it orbits the point-cloud hero toward the cursor
+(drag-to-look). This needs **no extra gesture** — the cursor stays a normal, clickable
+cursor (so the MENU button is always reachable), and the orbit is just a side effect of
+its position. The phone is a trackpad and never reaches the canvas's `OrbitControls`
+directly (that's a desktop/dev affordance only). See `apps/kiosk/src/lib/heroInput.ts`.
+
+**Cursor-following garnishes.** `Cursor.tsx` publishes its smoothed position each frame to a
+shared singleton (`apps/kiosk/src/lib/cursorPosition.ts`) so decorative effects can follow the
+SAME kiosk pointer without re-deriving it. `activePointer()` returns a real mouse while it moves
+(desktop dev) else the phone-driven cursor (kiosk) — used by the home cursor-fluid garnish
+(`experiments/liquid/LiquidEther.tsx`).
 
 ---
 
@@ -154,27 +169,37 @@ protocol file. Names are fixed.
 - **Interactive**: a driver exists (`room:driverChanged hasDriver=true`). The kiosk now
   behaves like a **normal website** (this is the Lusion post-entry feel):
   - An **interactive home (landing)** — the first screen after takeover. Big display
-    headline (e.g. the group motto "Making Machines See and Think in 3D"), one TUM-blue
-    hero block, and entry points into the content.
-  - A **navigation menu (menu bar)** letting the driver jump between the five sections:
-    People, Research, Teaching, Photo, News.
-  - The five content sections themselves, browsed via the cursor.
+    headline (the group motto "Making Machines See and Think in 3D") over a full-bleed
+    **WebGL point-cloud hero** (the "interaction showcase": a remote-sensing digital-twin
+    of a city + satellites + car, assembled from particles). Scrolling disperses the
+    particles and releases into the content feed below; the cursor orbits the cloud (§4).
+    This is NOT the idle showreel — it's the home's own hero.
+  - A **navigation menu** implemented as **`StaggeredMenu`** (`packages/ui`): a collapsed
+    **"MENU" button** in the corner that opens a **side drawer** with the four sections
+    (People, Research topics, Student projects, Teaching), each numbered 01–04. (Earlier
+    drafts of this doc specified a horizontal row; the build settled on the drawer — this
+    is the recorded decision.)
+  - The four content sections themselves, browsed via the cursor.
+  - **Section navigation runs through a pixel page transition** (`lib/navigate` →
+    `lib/pixelTransition` + `components/PixelOverlay`): a full-screen grid of cells covers the
+    screen, the view (zustand `view` state) swaps behind the cover, then the cells reveal the new
+    page. The menu, the back-to-home button, and the controller `back` all route through
+    `navigate()`. Reduced motion skips straight to the swap.
 - Transition back to idle when the room loses its driver and the queue is empty, OR
   after a global inactivity timeout.
 
-### Showreel and home share one content source (DECIDED)
-The **idle showreel** and the **interactive home** display the **same underlying
-content** (`content/showreel.json` — spotlight / news / open-topics), differing only in
-*presentation mode*:
-- **`mode: 'idle'`** — auto-advancing, emphasis on smooth/fluid transitions. No input.
-- **`mode: 'interactive'`** — the same items, but paused and explorable: hover/click,
-  cursor-driven, and surfaced alongside the navigation menu into the five sections.
+### Showreel and home are independent (content data is shared, presentation is not)
+The **idle showreel** is its own thing: the screen the kiosk auto-plays when no one is
+driving. The **interactive home** is a separate screen with its own layout (headline +
+horizontal menu + a central interactive component). They are **built independently** —
+there is no shared "mode-switching" component.
 
-Implement this as **one shared content feed + one component family that takes a `mode`
-prop**, NOT two independently-built pages. Maintaining content in one JSON file updates
-both the idle showreel and the interactive home at once. The home additionally carries the
-navigation menu (which the showreel does not), since the menu leads into the detailed
-sections that the showreel only teases.
+What they *may* share is **source material**, not presentation: a given research
+highlight, image, or blurb might be used both in the showreel rotation and somewhere in
+the home/sections. That reuse happens the normal way — both read from the same content
+JSON (`content/showreel.json`, `people.json`, etc.). This is just the usual benefit of
+content-as-data; it requires no special binding, no `mode` prop, and no obligation to
+keep the two presentations looking alike. Each decides its own look independently.
 
 ---
 

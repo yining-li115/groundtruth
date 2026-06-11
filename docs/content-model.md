@@ -115,14 +115,25 @@ JSON file: `content/courses.json` (an array of these objects).
 type Course = {
   id: string;
   title: string;
-  level: "Bachelor" | "Master";
-  semester: string;          // "WS 2025/26", "SS 2026"
+  // The real PRS course table exposes these (not Bachelor/Master + ECTS):
+  courseNo?: string;         // TUMonline number, e.g. "0000000822"
+  courseType?: "VO" | "VI" | "UE" | "SE" | "PR"; // lecture / lec+ex / exercise / seminar / practical
+  hoursPerWeek?: number;     // SWS (hours per week)
+  semester: string;          // display term label, e.g. "Winter Term 2025/26"
+  // Not on the public table — optional, for future TUMonline enrichment:
+  level?: "Bachelor" | "Master";
   ects?: number;
-  instructorIds: string[];   // → Person.id
-  summary: string;
+  instructorIds?: string[];  // → Person.id
+  summary?: string;
   link?: string;             // TUMonline / Moodle
 };
 ```
+
+`content/courses.json` holds the **real** Winter 2025/26 + Summer 2026 courses (from
+`asg.ed.tum.de/en/pf/teaching/courses/`). The Teaching page renders them as a term-grouped,
+monospace table (Course no. / Title / Hours / Type) where each row "decode"-glitches on hover
+(`components/GlitchText.tsx`). The public page has no images/video; each course links to
+TUMonline.
 
 ## 5. Shared
 

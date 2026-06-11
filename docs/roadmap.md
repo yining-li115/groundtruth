@@ -58,6 +58,13 @@ This is the project's only make-or-break risk. Prove it first.
 - [x] Four browsable sections in `apps/kiosk/src/scenes`: People, Research, Student
       projects, Teaching — plain token-styled lists rendering `content/*.json` (id refs
       resolved to names). Navigated via zustand view-state (no router).
+  - [x] **Teaching upgraded to real content + custom treatment**: `courses.json` now holds the
+        real Winter 2025/26 + Summer 2026 courses (schema extended with `courseNo` / `courseType`
+        / `hoursPerWeek`, `level`/`ects`/`instructorIds`/`summary` made optional — see
+        content-model §4). The page is a term-grouped **monospace course table** where each row
+        terminal-"decode"-glitches on hover (`components/GlitchText.tsx`, reimplemented from
+        Codrops LineTextHoverAnimations without SplitType; fired by the kiosk cursor's `is-hover`).
+        People / Research / Projects are still plain placeholder lists.
 - [x] **Interactive home (landing) + navigation menu** — the post-takeover website shell
       that holds the sections (`docs/architecture.md` §6). Brand top-left, motto headline,
       bottom control hint, Logo / controller "back" → home. Nav is **`StaggeredMenu`** (a
@@ -80,7 +87,7 @@ This is the project's only make-or-break risk. Prove it first.
       two-finger scroll routes through Lenis (`scrollByPx`), the home hero keeps reading
       `window.scrollY` unchanged. Plumbing only — per-component scroll choreography
       (reveals / pins / parallax) lands with the content-feed polish below.
-- [~] **Home Spotlight = horizontal WebGL parallax gallery** (`components/SpotlightGallery.tsx`
+- [x] **Home Spotlight = horizontal WebGL parallax gallery** (`components/SpotlightGallery.tsx`
       + `experiments/gallery/galleryGL.ts`, ported from the Codrops horizontal-parallax-gallery
       demo, three.js — our stack). The section is **pinned** and a scrubbed ScrollTrigger maps
       vertical scroll → the gallery's horizontal position, so the visitor "scrolls on" to browse
@@ -88,14 +95,41 @@ This is the project's only make-or-break risk. Prove it first.
       two-finger `dy` already drives Lenis → ScrollTrigger converts it to horizontal (no
       controller change). Images are **picsum placeholders** for now; real content cards later.
       Note: adds a 2nd WebGL context on the home (alongside the hero point cloud).
+      Polish: `anticipatePin:1` smooths the vertical→horizontal handoff from the hero; the
+      per-image parallax strengthened; the reusable `BlurScrollText` / `HoverCaption` /
+      `HeroScrollHint` pieces migrated into `packages/ui` (each with a story).
 - [x] **Hero → Spotlight transition** polish: hero canvas bottom feathered (CSS mask) so the
       dispersed particles fade into the page; the motto + a bouncing "Spotlight ↓" hint
       (`HeroScrollHint`) blur/fade OUT and the big "Spotlight" title blurs IN, via a reusable
       `BlurScrollText` (adapted from Codrops ScrollBlurTypography — per-char `filter: blur()`
       scrubbed on scroll; opacity instead of brightness for our black-on-light type).
-- [ ] **News / Open Topics polish** + real content. Still plain cards. **Blocked on schema
-      additions**: a `date` field (News/Open Topics) and an external `link`/`href` field
-      (real items carry both) — add to `content/schema.ts` + validator per CLAUDE.md rule 3.
+- [~] **Home News = 3D staggered scroll grid** (`components/NewsGrid.tsx`, adapted from Codrops
+      Staggered3DGridAnimations to our light theme + a Lusion "Featured Work" layout: big
+      near-full-width two-column cards that rise with a restrained 3D tilt + blur as they scroll).
+      Picsum placeholders + fake copy for now. Real (mostly text-only) news still needs a `date`
+      field + external `link` on the schema (per CLAUDE.md rule 3) and likely a different
+      text-first treatment.
+- [x] **Home Open Topics = full-bleed depth gallery** (`components/OpenTopicsDepth.tsx` +
+      `experiments/depth/`, vendored from Codrops `codrops-depth-gallery`, three.js). The visitor
+      keeps scrolling DOWN; the section is a **sticky** stage inside a tall section so it rises
+      continuously from beneath News (no blank gap), then page-scroll drives the camera through a
+      stack of poster planes in 3D depth (a scrubbed ScrollTrigger → `setScrollProgress`, the
+      engine's own wheel hijack off via `externalScroll`). The entry plane reads like a normal
+      editorial section (heading + poster + caption beside it); deeper planes carry per-plane
+      "mood" backgrounds that the GLSL background blends through — a **white → gray → black**
+      descent (token grays). Preview at `/?exp=depth`. Posters are placeholder (`poster.webp`).
+- [x] **Cursor-fluid garnish on home** (`experiments/liquid/LiquidEther.tsx`, vendored from
+      React Bits' LiquidEther — a GPU stable-fluids sim, three.js). A faint, fixed full-page layer
+      (`.home-fluid`) in front of content whose trail follows the cursor across the whole home.
+      Driven by our cursor (`lib/cursorPosition`: `Cursor.tsx` publishes the kiosk pointer;
+      `activePointer()` prefers a real mouse in dev, the phone-driven cursor on the kiosk) instead
+      of the upstream window listeners. Brand palette (`assetColors`); reduced-motion skips it.
+      Preview at `/?exp=liquid`. Note: a 4th WebGL context on the home.
+- [x] **Pixel page transition** on section navigation (`components/PixelOverlay.tsx` +
+      `lib/pixelTransition.ts`, reimplemented from Codrops PixelTransition demo 4). A fixed
+      full-screen grid of cells scatter-scales IN to cover, the view swaps behind the cover, then
+      scatter-scales OUT to reveal. All user navigation routes through `lib/navigate` (menu items,
+      back-to-home, controller back). Black pixels (`brand-black`); reduced-motion skips to the swap.
 
 ## Phase 4 — WebGL façade
 - [~] Hero scene for R3F: an interactive **point cloud** (on-brand for a remote-sensing
