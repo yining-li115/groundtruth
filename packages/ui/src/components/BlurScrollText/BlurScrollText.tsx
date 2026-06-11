@@ -54,6 +54,12 @@ export function BlurScrollText({
       const sharp = { filter: "blur(0px)", opacity: 1 };
       const soft = { filter: `blur(${blur}px)`, opacity: 0 };
 
+      // Resolve a selector trigger to an element OURSELVES: a string passed to ScrollTrigger
+      // inside useGSAP's scope would be scoped to this text element, where an ancestor like
+      // ".hero-pin" doesn't exist — so it would silently fall back to the wrong element.
+      const triggerEl =
+        typeof trigger === "string" ? document.querySelector(trigger) : trigger;
+
       gsap.fromTo(
         chars,
         { ...(mode === "in" ? soft : sharp), willChange: "filter, opacity" },
@@ -62,7 +68,7 @@ export function BlurScrollText({
           ease: "none",
           stagger,
           scrollTrigger: {
-            trigger: trigger ?? ref.current,
+            trigger: triggerEl ?? ref.current,
             start: start ?? "top bottom-=15%",
             end: end ?? "bottom center+=15%",
             scrub: true,

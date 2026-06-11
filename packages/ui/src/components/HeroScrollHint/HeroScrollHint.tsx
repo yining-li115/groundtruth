@@ -34,11 +34,16 @@ export function HeroScrollHint({
   useGSAP(
     () => {
       if (prefersReducedMotion() || !ref.current || !fadeTrigger) return;
+      // Resolve a selector trigger ourselves so useGSAP's scope doesn't scope it to this
+      // element (where an ancestor like ".hero-pin" isn't found → wrong fallback element).
+      const triggerEl =
+        typeof fadeTrigger === "string" ? document.querySelector(fadeTrigger) : fadeTrigger;
+      if (!triggerEl) return;
       gsap.to(ref.current, {
         opacity: 0,
         filter: "blur(8px)",
         ease: "none",
-        scrollTrigger: { trigger: fadeTrigger, start: fadeStart, end: fadeEnd, scrub: true },
+        scrollTrigger: { trigger: triggerEl, start: fadeStart, end: fadeEnd, scrub: true },
       });
     },
     { scope: ref },
