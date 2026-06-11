@@ -1,32 +1,137 @@
 [
   {
-    "id": "photogrammetry-1",
-    "title": "Photogrammetry I",
-    "level": "Bachelor",
-    "semester": "WS 2025/26",
-    "ects": 6,
-    "instructorIds": ["lena-hartmann"],
-    "summary": "Foundations of image-based measurement: camera geometry, orientation, stereo, and bundle adjustment.",
-    "link": "https://campus.example.tum.de/courses/photogrammetry-1"
+    "id": "computer-vision-1",
+    "title": "Computer Vision 1",
+    "courseNo": "0000000822",
+    "courseType": "VI",
+    "hoursPerWeek": 3,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950841361&pSpracheNr=2"
   },
   {
-    "id": "remote-sensing-dl",
-    "title": "Deep Learning for Remote Sensing",
-    "level": "Master",
-    "semester": "SS 2026",
-    "ects": 5,
-    "instructorIds": ["marco-bianchi", "lena-hartmann"],
-    "summary": "Modern neural methods applied to optical and radar Earth observation: segmentation, change detection, and self-supervision.",
-    "link": "https://campus.example.tum.de/courses/rs-deep-learning"
+    "id": "dbv-image-processing",
+    "title": "DBV – Image Processing",
+    "courseNo": "0000005020",
+    "courseType": "VO",
+    "hoursPerWeek": 2,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950839043&pSpracheNr=2"
   },
   {
-    "id": "3d-vision",
-    "title": "3D Vision & Scene Understanding",
-    "level": "Master",
-    "semester": "WS 2025/26",
-    "ects": 6,
-    "instructorIds": ["lena-hartmann", "ananya-rao"],
-    "summary": "From multi-view geometry to learned 3D representations and semantic understanding of point clouds.",
-    "link": "https://campus.example.tum.de/courses/3d-vision"
+    "id": "labs-digital-image-processing",
+    "title": "Labs in Digital Image Processing",
+    "courseNo": "0240869663",
+    "courseType": "UE",
+    "hoursPerWeek": 1,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950836359&pSpracheNr=2"
+  },
+  {
+    "id": "prc-t-exercises",
+    "title": "PRC-T – Exercises in Photogrammetry, Remote Sensing and Image Processing",
+    "courseNo": "0000005024",
+    "courseType": "UE",
+    "hoursPerWeek": 1,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950839294&pSpracheNr=2"
+  },
+  {
+    "id": "prl-photogrammetry-remote-sensing",
+    "title": "PRL – Photogrammetry and Remote Sensing",
+    "courseNo": "0000001785",
+    "courseType": "VO",
+    "hoursPerWeek": 2,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950840618&pSpracheNr=2"
+  },
+  {
+    "id": "prl-t-tutorials",
+    "title": "PRL-T – Tutorials in Photogrammetry, Remote Sensing, and Image Processing",
+    "courseNo": "0000002838",
+    "courseType": "VO",
+    "hoursPerWeek": 1,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950838357&pSpracheNr=2"
+  },
+  {
+    "id": "photogrammetry-selected-chapters",
+    "title": "Photogrammetry – Selected Chapters (PSC)",
+    "courseNo": "0240605970",
+    "courseType": "VO",
+    "hoursPerWeek": 4,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950836021&pSpracheNr=2"
+  },
+  {
+    "id": "photogrammetry-remote-sensing-espace",
+    "title": "Photogrammetry and Remote Sensing (Espace)",
+    "courseNo": "0000000561",
+    "courseType": "VO",
+    "hoursPerWeek": 2,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950836903&pSpracheNr=2"
+  },
+  {
+    "id": "photogrammetry-remote-sensing-1",
+    "title": "Photogrammetry and Remote Sensing 1",
+    "courseNo": "0240603972",
+    "courseType": "VO",
+    "hoursPerWeek": 2,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950836360&pSpracheNr=2"
+  },
+  {
+    "id": "project-photogrammetry-remote-sensing",
+    "title": "Project Photogrammetry and Remote Sensing",
+    "courseNo": "0000001407",
+    "courseType": "SE",
+    "hoursPerWeek": 5,
+    "semester": "Winter Term 2025/26",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950842464&pSpracheNr=2"
+  },
+  {
+    "id": "computer-vision-2",
+    "title": "Computer Vision 2",
+    "courseNo": "0000000697",
+    "courseType": "VI",
+    "hoursPerWeek": 3,
+    "semester": "Summer Term 2026",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950882181&pSpracheNr=2"
+  },
+  {
+    "id": "sensors-close-range-photogrammetry",
+    "title": "Sensors and Applications in Close-Range / Industrial Photogrammetry",
+    "courseNo": "0000003088",
+    "courseType": "VO",
+    "hoursPerWeek": 2,
+    "semester": "Summer Term 2026",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950937030&pSpracheNr=2"
+  },
+  {
+    "id": "pf2-photogrammetry-remote-sensing-2",
+    "title": "PF2 – Photogrammetry and Remote Sensing 2",
+    "courseNo": "0000004085",
+    "courseType": "VO",
+    "hoursPerWeek": 4,
+    "semester": "Summer Term 2026",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950881704&pSpracheNr=2"
+  },
+  {
+    "id": "pf2-lab",
+    "title": "PF2-Ü – Lab for Photogrammetry and Remote Sensing 2",
+    "courseNo": "0000004087",
+    "courseType": "UE",
+    "hoursPerWeek": 1,
+    "semester": "Summer Term 2026",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950881932&pSpracheNr=2"
+  },
+  {
+    "id": "pr-advanced-3d-computer-vision",
+    "title": "PR Advanced Topics in 3D Computer Vision",
+    "courseNo": "0000003102",
+    "courseType": "PR",
+    "hoursPerWeek": 6,
+    "semester": "Summer Term 2026",
+    "link": "https://campus.tum.de/tumonline/wbLv.wbShowLVDetail?pStpSpNr=950937036&pSpracheNr=2"
   }
 ]

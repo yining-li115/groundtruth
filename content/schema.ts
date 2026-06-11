@@ -88,11 +88,16 @@ export const studentProjectSchema = z.object({
 export const courseSchema = z.object({
   id,
   title: nonEmpty,
-  level: z.enum(["Bachelor", "Master"]),
-  semester: nonEmpty, // "WS 2025/26", "SS 2026"
+  // Real PRS course-table fields (the site exposes these, not Bachelor/Master + ECTS):
+  courseNo: z.string().optional(), // TUMonline number, e.g. "0000000822"
+  courseType: z.enum(["VO", "VI", "UE", "SE", "PR"]).optional(), // lecture / lec+ex / exercise / seminar / practical
+  hoursPerWeek: z.number().optional(), // SWS
+  semester: nonEmpty, // display term label, e.g. "Winter Term 2025/26"
+  // Optional extras (not on the public course table; kept for future TUMonline enrichment):
+  level: z.enum(["Bachelor", "Master"]).optional(),
   ects: z.number().optional(),
-  instructorIds: z.array(id), // → Person.id
-  summary: nonEmpty,
+  instructorIds: z.array(id).optional(), // → Person.id
+  summary: z.string().optional(),
   link: z.string().url().optional(), // TUMonline / Moodle
 });
 

@@ -1,0 +1,99 @@
+/* Teaching / Courses page — a PRS-style course table (Course no. / Title / Hours / Type),
+   grouped by term, with the Codrops "decode" glitch on hover (GlitchText). The table is
+   MONOSPACE so the per-character scramble never reshapes the row. Colors are all tokens. */
+
+.tch {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  max-width: 1500px;
+}
+
+.tch-term + .tch-term {
+  margin-top: 4rem;
+}
+
+/* Term heading stays in the brand sans (the data below is mono). */
+.tch-term-title {
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gt-text-primary);
+  margin: 0 0 1.25rem;
+}
+
+/* Shared 4-column grid for the header + every row. */
+.tch-head,
+.tch-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 5rem 5rem;
+  gap: 2rem;
+  align-items: baseline;
+}
+
+.tch-head {
+  padding: 0 0 0.6rem;
+  border-bottom: 1px solid var(--gt-border);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gt-text-secondary);
+}
+
+.tch-row {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--gt-border);
+  font-size: clamp(0.9rem, 1.15vw, 1.15rem);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.tch-no,
+.tch-hours,
+.tch-type {
+  color: var(--gt-text-secondary);
+}
+.tch-title {
+  color: var(--gt-text-primary);
+  font-weight: 500;
+}
+
+/* Hover (kiosk cursor adds .is-hover; desktop uses :hover): lift the row to the accent. */
+.tch-row.is-hover .tch-title,
+.tch-row:hover .tch-title {
+  color: var(--gt-accent);
+}
+.tch-row.is-hover .tch-type,
+.tch-row:hover .tch-type {
+  color: var(--gt-text-primary);
+}
+
+.tch-legend {
+  margin-top: 2.5rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--gt-text-secondary);
+}
+
+/* --- Glitch primitives (GlitchText) --- */
+.gt-glitch {
+  position: relative;
+  white-space: nowrap;
+  font-kerning: none;
+}
+.gt-glitch-char {
+  position: relative;
+  display: inline-block;
+  --opa: 0;
+}
+/* Block "cursor-square" revealed (opacity --opa) while the char scrambles. */
+.gt-glitch-char::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1ch;
+  height: 100%;
+  background: currentColor;
+  opacity: var(--opa);
+  pointer-events: none;
+}
