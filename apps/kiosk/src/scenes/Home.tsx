@@ -1,55 +1,18 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Logo, BlurScrollText, HeroScrollHint } from "@groundtruth/ui";
-import { HomeBlock } from "../components/HomeBlock";
 import { KioskMenu } from "../components/KioskMenu";
 import { SpotlightGallery } from "../components/SpotlightGallery";
 import { NewsGrid } from "../components/NewsGrid";
+import { OpenTopicsDepth } from "../components/OpenTopicsDepth";
 import { useKioskStore } from "../state/store";
-import { showreel, viewForId } from "../lib/content";
 
 // Lazy — the WebGL scene (three.js) is heavy; code-split it out of the main bundle.
 const HeroScene = lazy(() =>
   import("../experiments/showcase/Scene").then((m) => ({ default: m.Scene })),
 );
 
-/** A plain preview card. Clickable (button) when it has a jump target, else static. */
-function Card({
-  title,
-  line,
-  onClick,
-}: {
-  title: string;
-  line?: string;
-  onClick?: () => void;
-}) {
-  const inner = (
-    <>
-      <p className="font-medium">{title}</p>
-      {line && (
-        <p className="mt-1 text-sm" style={{ color: "var(--gt-text-secondary)" }}>
-          {line}
-        </p>
-      )}
-    </>
-  );
-  return onClick ? (
-    <button type="button" className="gt-card w-full text-left" onClick={onClick}>
-      {inner}
-    </button>
-  ) : (
-    <div className="gt-card">{inner}</div>
-  );
-}
-
 export function Home() {
-  const setView = useKioskStore((s) => s.setView);
   const setHeroOrbitActive = useKioskStore((s) => s.setHeroOrbitActive);
-
-  const openTopics = showreel.filter((s) => s.kind === "open-topic");
-  const refJump = (refId?: string) => {
-    const v = refId ? viewForId(refId) : null;
-    return v ? () => setView(v) : undefined;
-  };
 
   // particle dispersal progress: 1 = assembled (top), → 0 as you scroll the hero runway.
   const progress = useRef(1);
@@ -133,16 +96,8 @@ export function Home() {
       {/* News — 3D staggered scroll grid (Lusion "Featured Work" layout). */}
       <NewsGrid />
 
-      {/* Content feed (info only — the four sections live in the menu). */}
-      <div className="flex flex-col gap-16 pb-28">
-        <HomeBlock title="Open Topics">
-          <div className="grid gap-4">
-            {openTopics.map((s) => (
-              <Card key={s.id} title={s.title} line={s.blurb} onClick={refJump(s.refId)} />
-            ))}
-          </div>
-        </HomeBlock>
-      </div>
+      {/* Open Topics — full-bleed depth gallery, browsed by continuing to scroll down (pinned). */}
+      <OpenTopicsDepth />
     </div>
   );
 }

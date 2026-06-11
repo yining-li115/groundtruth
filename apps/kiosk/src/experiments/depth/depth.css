@@ -1,0 +1,113 @@
+/* The depth scene (canvas + DOM overlays) live inside a "stage" box; the canvas fills it and
+   the overlays position against it. Two stage modes:
+   - --fixed  : standalone experiment (?exp=depth) — pinned to the viewport, engine hijacks wheel.
+   - --sticky : home Open Topics — sticky inside a tall section so it RISES up from beneath News
+                (continuous, no blank gap) and sticks while the camera travels through depth. */
+.depth-stage {
+  overflow: hidden;
+  background: transparent;
+}
+.depth-stage--fixed {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+.depth-stage--sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 4; /* full-bleed while active, but below the kiosk menu (z-40) */
+}
+
+.depth-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Home integration: a tall section. The sticky stage inside it stays at top:0 while these extra
+   viewports of scroll drive the depth travel (sectionHeight - 100vh = travel distance). */
+.depth-section {
+  position: relative;
+  height: 500vh;
+  background: transparent;
+}
+
+/* Plane label overlay (Label.ts) — the open-topic title + kind, anchored on the right edge,
+   vertically centered. Color is set per-plane from the label data (light/dark text). */
+.plane-label-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30; /* above the depth canvas, within the stage */
+  pointer-events: none;
+  transition: opacity 260ms ease;
+  color: rgba(244, 244, 244, 0.92);
+  font-family: var(--font-sans);
+}
+.plane-label-overlay__right {
+  position: absolute;
+  right: clamp(2.5rem, 7vw, 10rem);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.plane-label-card {
+  width: min(34vw, 460px);
+  display: grid;
+  gap: 0.6rem;
+  pointer-events: none;
+  color: inherit;
+  text-align: right;
+}
+.plane-label-card__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+.plane-label-card__kind {
+  margin: 0;
+  font-size: clamp(0.7rem, 0.9vw, 0.9rem);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  opacity: 0.8;
+}
+
+/* First plane only: the caption sits just to the RIGHT of the (left-shifted) poster and reads
+   left-to-right like a normal figure caption, instead of being pinned to the far screen edge. */
+.plane-label-overlay--cover .plane-label-overlay__right {
+  right: auto;
+  left: 57%;
+}
+.plane-label-overlay--cover .plane-label-card {
+  width: min(34vw, 460px);
+  text-align: left;
+}
+
+/* Intro heading — bound to the first plane: greets on entry, fades as plane 1 leaves.
+   On the light entry backdrop, so dark text. */
+.plane-intro-overlay {
+  position: absolute;
+  left: clamp(2.5rem, 7vw, 10rem);
+  top: clamp(1.5rem, 4vh, 3.5rem);
+  z-index: 30;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+  color: #1a1a1a;
+  font-family: var(--font-sans);
+}
+.plane-intro__eyebrow {
+  margin: 0 0 0.4rem;
+  font-size: clamp(0.7rem, 0.9vw, 0.9rem);
+  letter-spacing: 0.3em;
+  opacity: 0.55;
+}
+.plane-intro__title {
+  margin: 0;
+  font-size: clamp(2.2rem, 4.6vw, 4.6rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
