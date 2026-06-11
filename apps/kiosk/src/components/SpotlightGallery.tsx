@@ -60,6 +60,9 @@ export function SpotlightGallery() {
           end: () => "+=" + Math.max(1, engine.getLimit()),
           pin: true,
           scrub: true,
+          // Engage the pin a touch early so scrolling in from the hero doesn't "jump" the
+          // moment the section switches to fixed — smooths the vertical→horizontal handoff.
+          anticipatePin: 1,
           invalidateOnRefresh: true,
           onUpdate: (self) => engine.setTarget(self.progress * engine.getLimit()),
         });
@@ -81,7 +84,15 @@ export function SpotlightGallery() {
       <canvas className="gxgl-canvas" ref={canvas} />
       <section className="sg-section" ref={section}>
         <div className="sg-head">
-        <BlurScrollText as="h2" className="sg-title" text="Spotlight" mode="in" />
+        <BlurScrollText
+          as="h2"
+          className="sg-title"
+          text="Spotlight"
+          mode="in"
+          trigger=".sg-section"
+          start="top bottom"
+          end="top top"
+        />
       </div>
       <div className="gallery__wrapper" ref={wrapper}>
         <div className="gallery__image__container" ref={container}>

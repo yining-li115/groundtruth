@@ -82,7 +82,7 @@ class GLMedia {
   uniforms: MediaUniforms;
   mesh: THREE.Mesh;
   bounds: DOMRect;
-  parallaxIntensity = 0.4;
+  parallaxIntensity = 0.8;
 
   constructor(scene: THREE.Group, element: HTMLElement, viewport: Sizes, geometry: THREE.PlaneGeometry) {
     this.element = element;
@@ -95,7 +95,7 @@ class GLMedia {
       uResolution: { value: new THREE.Vector2(this.bounds.width || 1, this.bounds.height || 1) },
       uImageResolution: { value: new THREE.Vector2(1, 1) },
       uParallax: { value: 0 },
-      uUvScale: { value: 0.85 },
+      uUvScale: { value: 0.74 }, // more zoom-in headroom so the stronger parallax shift never reveals edges
       uShaderMultiplier: { value: 1.0 },
       uRadius: { value: 22 },
     };
