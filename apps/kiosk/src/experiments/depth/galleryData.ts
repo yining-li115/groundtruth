@@ -18,43 +18,43 @@ const galleryPlaneData = [
     label: { title: "3D Reconstruction", kind: "Master Thesis", color: "#2e2e2e" },
   },
   {
-    fallbackColor: "#80455a",
-    accentColor: "#80455a",
+    fallbackColor: "#CCCCCC",
+    accentColor: "#CCCCCC",
     textureSrc: POSTER,
     position: { x: 0.8, y: 0 },
-    backgroundColor: "#fffaf0",
-    blob1Color: "#d29a41",
-    blob2Color: "#bb96af",
+    backgroundColor: "#CCCCCC", // gray.20 — start of the white→black depth descent
+    blob1Color: "#FFFFFF", // light lift
+    blob2Color: "#808080", // gray.50 soft shade — neutral, no chroma
     label: { title: "Semantic Segmentation", kind: "Master Thesis", color: "#2e2e2e" },
   },
   {
-    fallbackColor: "#fa7b71",
-    accentColor: "#fa7b71",
+    fallbackColor: "#808080",
+    accentColor: "#808080",
     textureSrc: POSTER,
     position: { x: -0.7, y: 0 },
-    backgroundColor: "#5f81ab",
-    blob1Color: "#f88b8d",
-    blob2Color: "#cfbbdd",
+    backgroundColor: "#808080", // gray.50
+    blob1Color: "#CCCCCC", // gray.20 lift
+    blob2Color: "#333333", // gray.80 shade
     label: { title: "Point Cloud Learning", kind: "Guided Research", color: "#f4f4f4" },
   },
   {
-    fallbackColor: "#3c72c6",
-    accentColor: "#3c72c6",
+    fallbackColor: "#333333",
+    accentColor: "#333333",
     textureSrc: POSTER,
     position: { x: 1, y: 0 },
-    backgroundColor: "#5b9bc2",
-    blob1Color: "#ffaa00",
-    blob2Color: "#00e1ff",
+    backgroundColor: "#333333", // gray.80
+    blob1Color: "#808080", // gray.50 lift
+    blob2Color: "#000000", // black shade
     label: { title: "Monocular Depth Estimation", kind: "Bachelor Thesis", color: "#f4f4f4" },
   },
   {
-    fallbackColor: "#fdd895",
-    accentColor: "#fdd895",
+    fallbackColor: "#000000",
+    accentColor: "#000000",
     textureSrc: POSTER,
     position: { x: -0.7, y: 0 },
-    backgroundColor: "#7d936e",
-    blob1Color: "#fdd895",
-    blob2Color: "#a5b599",
+    backgroundColor: "#000000", // brand.black — deepest
+    blob1Color: "#333333", // gray.80 faint lift
+    blob2Color: "#000000", // stays black
     label: { title: "Neural Scene Rendering", kind: "Master Thesis", color: "#f4f4f4" },
   },
 ];
