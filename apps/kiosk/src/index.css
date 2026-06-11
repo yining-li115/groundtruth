@@ -70,33 +70,6 @@ html.lenis body {
   pointer-events: none;
 }
 
-/* Hero "Spotlight ↓" scroll hint (HeroScrollHint). The arrow bounces to invite a scroll;
-   the whole hint fades/blurs out with the motto (driven in JS). */
-.hero-hint {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--gt-text-secondary);
-  /* The whole hint (text + arrow) bounces together to invite a scroll. transform is free
-     for this — the scroll-fade animates opacity/filter, not transform. */
-  width: fit-content;
-  animation: gt-hint-bounce 1.4s ease-in-out infinite;
-}
-@keyframes gt-hint-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(7px);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-hint {
-    animation: none;
-  }
-}
-
 /* Plain content card used by the section pages. */
 .gt-card {
   background: var(--gt-surface);

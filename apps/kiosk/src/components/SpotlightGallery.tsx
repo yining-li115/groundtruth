@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { BlurScrollText, HoverCaption } from "@groundtruth/ui";
 import { GalleryGL } from "../experiments/gallery/galleryGL";
-import { BlurScrollText } from "./BlurScrollText";
 import { prefersReducedMotion } from "../lib/scroll";
 import "../experiments/gallery/gallery.css";
 import "./spotlightGallery.css";
@@ -86,15 +86,15 @@ export function SpotlightGallery() {
       <div className="gallery__wrapper" ref={wrapper}>
         <div className="gallery__image__container" ref={container}>
           {ITEMS.map((item) => (
-            <figure className="gxgl-media gx-figure" key={item.id} data-hover>
+            <HoverCaption
+              className="gxgl-media"
+              key={item.id}
+              title={item.title}
+              description={item.desc}
+            >
               {/* invisible — only defines layout bounds for its WebGL plane */}
               <img className="gxgl-img" src={item.src} alt="" draggable={false} />
-              {/* Sadie-style caption (adapted from Codrops HoverEffectIdeas) */}
-              <figcaption className="gx-cap">
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </figcaption>
-            </figure>
+            </HoverCaption>
           ))}
         </div>
       </div>

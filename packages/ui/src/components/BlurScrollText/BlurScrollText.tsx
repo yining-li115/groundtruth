@@ -2,19 +2,36 @@ import { createElement, useRef, type ElementType, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { prefersReducedMotion } from "../lib/scroll";
+import { prefersReducedMotion } from "../../lib/motion";
+
+gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Scroll-driven blur typography — adapted from Codrops' ScrollBlurTypography (MIT). Each
- * character animates `filter: blur()` per-character with a stagger, scrubbed to scroll
- * position. We swap their `brightness` for `opacity` (our type is black on a light bg, where
- * brightness(0%) would still read as solid black) so it genuinely fades.
+ * Scroll-driven blur typography — adapted from Codrops' ScrollBlurTypography. Each character
+ * animates `filter: blur()` with a stagger, scrubbed to scroll position; we use `opacity`
+ * (not `brightness`) so dark type on a light background genuinely fades.
  *
  *   mode="in"  — chars start blurred + transparent, sharpen as the element scrolls in.
  *   mode="out" — chars start sharp, blur + fade as the trigger range scrolls past.
  *
- * Built on our Lenis + ScrollTrigger foundation. Reduced motion: renders crisp, no effect.
+ * Uses GSAP ScrollTrigger (works on native or smooth scroll). Reduced motion: renders crisp.
  */
+export interface BlurScrollTextProps {
+  text: string;
+  /** Element tag to render (default "span"). */
+  as?: ElementType;
+  className?: string;
+  mode?: "in" | "out";
+  /** ScrollTrigger trigger (selector or element). Defaults to the text element itself. */
+  trigger?: string | Element;
+  start?: string;
+  end?: string;
+  /** Per-character stagger seconds (default 0.04). */
+  stagger?: number;
+  /** Max blur in px (default 10). */
+  blur?: number;
+}
+
 export function BlurScrollText({
   text,
   as,
@@ -23,36 +40,27 @@ export function BlurScrollText({
   trigger,
   start,
   end,
-}: {
-  text: string;
-  as?: ElementType;
-  className?: string;
-  mode?: "in" | "out";
-  /** ScrollTrigger trigger (selector or element). Defaults to the text element itself. */
-  trigger?: string | Element;
-  start?: string;
-  end?: string;
-}) {
+  stagger = 0.04,
+  blur = 10,
+}: BlurScrollTextProps) {
   const ref = useRef<HTMLElement>(null);
 
   useGSAP(
     () => {
-      if (prefersReducedMotion || !ref.current) return;
+      if (prefersReducedMotion() || !ref.current) return;
       const chars = ref.current.querySelectorAll<HTMLElement>(".bst-char");
       if (!chars.length) return;
 
       const sharp = { filter: "blur(0px)", opacity: 1 };
-      const soft = { filter: "blur(10px)", opacity: 0 };
-      const from = mode === "in" ? soft : sharp;
-      const to = mode === "in" ? sharp : soft;
+      const soft = { filter: `blur(${blur}px)`, opacity: 0 };
 
       gsap.fromTo(
         chars,
-        { ...from, willChange: "filter, opacity" },
+        { ...(mode === "in" ? soft : sharp), willChange: "filter, opacity" },
         {
-          ...to,
+          ...(mode === "in" ? sharp : soft),
           ease: "none",
-          stagger: 0.04,
+          stagger,
           scrollTrigger: {
             trigger: trigger ?? ref.current,
             start: start ?? "top bottom-=15%",
@@ -61,7 +69,6 @@ export function BlurScrollText({
           },
         },
       );
-      return () => ScrollTrigger.getAll().forEach((s) => s.vars.trigger === (trigger ?? ref.current) && s.kill());
     },
     { scope: ref, dependencies: [text, mode] },
   );

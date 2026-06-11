@@ -1,0 +1,24 @@
+/* HeroScrollHint — the whole "<label> ↓" bobs to invite a scroll. The bounce uses transform
+   so it's free for the scroll-fade, which animates opacity/filter. */
+.ui-hint {
+  width: fit-content;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--gt-text-secondary);
+  animation: ui-hint-bounce 1.4s ease-in-out infinite;
+}
+@keyframes ui-hint-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-hint {
+    animation: none;
+  }
+}

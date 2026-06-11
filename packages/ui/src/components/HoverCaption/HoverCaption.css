@@ -1,0 +1,78 @@
+/* HoverCaption — "Sadie"-style hover reveal (Codrops HoverEffectIdeas).
+   Default = clean media. On :hover / .is-hover only: gradient scrim rises, title + desc
+   fade in. Scrim/shadow use the black token via color-mix (CLAUDE.md rule 1 — no raw hex). */
+
+.ui-hovercap {
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  border-radius: 22px;
+}
+
+.ui-hovercap__cap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  color: var(--gt-brand-white);
+}
+.ui-hovercap__cap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--gt-brand-black) 82%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transform: translateY(50%);
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+.ui-hovercap__title {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  padding: 0 1em;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-50%) translateY(12px);
+  font-size: clamp(1.5rem, 2.4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 16px color-mix(in srgb, var(--gt-brand-black) 55%, transparent);
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+.ui-hovercap__desc {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 2em;
+  text-align: center;
+  font-size: clamp(0.95rem, 1.2vw, 1.25rem);
+  line-height: 1.45;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+/* hover only — native :hover (mouse) or .is-hover (custom cursor) */
+.ui-hovercap:hover .ui-hovercap__cap::before,
+.ui-hovercap.is-hover .ui-hovercap__cap::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ui-hovercap:hover .ui-hovercap__title,
+.ui-hovercap.is-hover .ui-hovercap__title {
+  opacity: 1;
+  transform: translateY(-50%) translateY(-1.6em);
+}
+.ui-hovercap:hover .ui-hovercap__desc,
+.ui-hovercap.is-hover .ui-hovercap__desc {
+  opacity: 1;
+  transform: translateY(0);
+}

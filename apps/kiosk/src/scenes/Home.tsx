@@ -1,10 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Logo } from "@groundtruth/ui";
+import { Logo, BlurScrollText, HeroScrollHint } from "@groundtruth/ui";
 import { HomeBlock } from "../components/HomeBlock";
 import { KioskMenu } from "../components/KioskMenu";
 import { SpotlightGallery } from "../components/SpotlightGallery";
-import { BlurScrollText } from "../components/BlurScrollText";
-import { HeroScrollHint } from "../components/HeroScrollHint";
 import { useKioskStore } from "../state/store";
 import { showreel, viewForId } from "../lib/content";
 
@@ -124,7 +122,7 @@ export function Home() {
               start="30% top"
               end="80% top"
             />
-            <HeroScrollHint className="mt-8" />
+            <HeroScrollHint className="mt-8" fadeTrigger=".hero-pin" />
           </div>
         </section>
       </div>
