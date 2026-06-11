@@ -14,6 +14,11 @@ const GalleryExperiment = lazy(() =>
     default: m.GalleryExperiment,
   })),
 );
+const NewsGridExperiment = lazy(() =>
+  import("./experiments/news/NewsGridExperiment").then((m) => ({
+    default: m.NewsGridExperiment,
+  })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -25,6 +30,8 @@ const experiment =
     <ShowcaseExperiment />
   ) : exp === "gallery" ? (
     <GalleryExperiment />
+  ) : exp === "news" ? (
+    <NewsGridExperiment />
   ) : null;
 
 createRoot(root).render(

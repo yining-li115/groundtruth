@@ -3,6 +3,7 @@ import { Logo, BlurScrollText, HeroScrollHint } from "@groundtruth/ui";
 import { HomeBlock } from "../components/HomeBlock";
 import { KioskMenu } from "../components/KioskMenu";
 import { SpotlightGallery } from "../components/SpotlightGallery";
+import { NewsGrid } from "../components/NewsGrid";
 import { useKioskStore } from "../state/store";
 import { showreel, viewForId } from "../lib/content";
 
@@ -44,7 +45,6 @@ export function Home() {
   const setView = useKioskStore((s) => s.setView);
   const setHeroOrbitActive = useKioskStore((s) => s.setHeroOrbitActive);
 
-  const news = showreel.filter((s) => s.kind === "news");
   const openTopics = showreel.filter((s) => s.kind === "open-topic");
   const refJump = (refId?: string) => {
     const v = refId ? viewForId(refId) : null;
@@ -130,16 +130,11 @@ export function Home() {
       {/* Spotlight — horizontal WebGL parallax gallery, browsed by scrolling on (pinned). */}
       <SpotlightGallery />
 
+      {/* News — 3D staggered scroll grid (Lusion "Featured Work" layout). */}
+      <NewsGrid />
+
       {/* Content feed (info only — the four sections live in the menu). */}
       <div className="flex flex-col gap-16 pb-28">
-        <HomeBlock title="News">
-          <div className="grid gap-4">
-            {news.map((s) => (
-              <Card key={s.id} title={s.title} line={s.blurb} onClick={refJump(s.refId)} />
-            ))}
-          </div>
-        </HomeBlock>
-
         <HomeBlock title="Open Topics">
           <div className="grid gap-4">
             {openTopics.map((s) => (

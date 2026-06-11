@@ -1,0 +1,79 @@
+/* Home News section — 3D staggered scroll grid (Codrops' Staggered3DGridAnimations
+   `animateScrollGrid`, adapted to our light theme + a Lusion "Featured Work" layout: big
+   near-full-width two-column cards, each with a meta line + title; cards rise with a
+   restrained 3D tilt as they scroll. The transform is driven by NewsGrid.tsx. */
+
+.news-section {
+  padding: 6vh 0 12vh;
+  overflow-x: hidden;
+}
+.news-section__head {
+  padding: 0 4vw;
+}
+.news-section__head h2 {
+  font-size: clamp(3rem, 9vw, 9rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+.news-grid {
+  --grid-item-ratio: 1.5;
+  --grid-item-radius: 10px;
+  --grid-item-translate: 0px;
+
+  width: 100%;
+  max-width: min(94vw, 1760px); /* near-full-width, like the Lusion "Featured Work" grid */
+  margin: 0 auto;
+  padding: 6vh 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10vh 4vw; /* big row gap leaves room for the 3D rise + the captions */
+}
+
+.grid__item {
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  perspective: 900px; /* smaller = stronger 3D; 900 keeps a clear-but-elegant tilt on big cards */
+  will-change: transform, opacity;
+}
+.grid__item-imgwrap {
+  width: 100%;
+  aspect-ratio: var(--grid-item-ratio);
+  border-radius: var(--grid-item-radius);
+  transform-style: preserve-3d;
+  position: relative;
+  overflow: hidden;
+  will-change: filter;
+}
+.grid__item-img {
+  position: absolute;
+  top: calc(-1 * var(--grid-item-translate));
+  left: calc(-1 * var(--grid-item-translate));
+  height: calc(100% + var(--grid-item-translate) * 2);
+  width: calc(100% + var(--grid-item-translate) * 2);
+  background-size: cover;
+  background-position: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Lusion-style caption under each card. */
+.grid__item-cap {
+  padding: 1.6rem 0.25rem 0;
+}
+.grid__item-tag {
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gt-text-secondary);
+}
+.grid__item-title {
+  margin-top: 0.6rem;
+  font-size: clamp(1.75rem, 3.4vw, 3.6rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
