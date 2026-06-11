@@ -4,6 +4,7 @@ import { SENSITIVITY } from "../config";
 import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
 import { scrollByPx } from "../lib/scroll";
+import { setCursorPosition } from "../lib/cursorPosition";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Inertia: actual position eases toward target each frame (design-system §6). */
@@ -64,6 +65,8 @@ export function Cursor() {
     const loop = () => {
       pos.current.x += (target.current.x - pos.current.x) * FOLLOW;
       pos.current.y += (target.current.y - pos.current.y) * FOLLOW;
+      // Publish for cursor-following effects (LiquidEther hero fluid).
+      setCursorPosition(pos.current.x, pos.current.y);
       const node = ringRef.current;
       if (node) {
         node.style.transform = `translate3d(${pos.current.x - SIZE / 2}px, ${pos.current.y - SIZE / 2}px, 0)`;

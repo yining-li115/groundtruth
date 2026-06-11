@@ -1,0 +1,15 @@
+.liquid-ether-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* Standalone experiment (?exp=liquid): full-viewport stage on the page background so the fluid
+   trail is visible. The home hero hosts it differently (overlaid on the particle canvas). */
+.liquid-exp {
+  position: fixed;
+  inset: 0;
+  background: var(--gt-bg);
+}

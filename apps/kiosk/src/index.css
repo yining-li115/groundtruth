@@ -58,6 +58,17 @@ html.lenis body {
   -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 82%);
   mask-image: linear-gradient(to bottom, #000 45%, transparent 82%);
 }
+/* Cursor-fluid (LiquidEther): a GLOBAL fixed layer in FRONT of all page content (above the
+   sections + the opaque Open Topics depth scene, below the cursor z-100), so the trail follows
+   the cursor across the whole home. Kept faint via opacity so type stays readable underneath.
+   pointer-events:none — purely a garnish. */
+.home-fluid {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  opacity: 0.28;
+  pointer-events: none;
+}
 /* Text overlays on top of the particles. pointer-events:none so wheel scroll passes
    through to the page; nothing here is interactive. */
 .hero-overlay {

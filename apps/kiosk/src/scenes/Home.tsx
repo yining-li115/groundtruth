@@ -6,9 +6,16 @@ import { NewsGrid } from "../components/NewsGrid";
 import { OpenTopicsDepth } from "../components/OpenTopicsDepth";
 import { useKioskStore } from "../state/store";
 
+import { activePointer } from "../lib/cursorPosition";
+import { liquidColors } from "../experiments/liquid/assetColors";
+
 // Lazy — the WebGL scene (three.js) is heavy; code-split it out of the main bundle.
 const HeroScene = lazy(() =>
   import("../experiments/showcase/Scene").then((m) => ({ default: m.Scene })),
+);
+// Cursor-fluid garnish over the hero; also three.js-heavy, so lazy too.
+const HeroFluid = lazy(() =>
+  import("../experiments/liquid/LiquidEther").then((m) => ({ default: m.LiquidEther })),
 );
 
 export function Home() {
@@ -41,6 +48,23 @@ export function Home() {
 
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
+      {/* Global cursor-fluid — a fixed layer behind ALL content (hero → Open Topics) that trails
+          the cursor across the whole page. Reduced-motion: skipped. */}
+      {!reduced && (
+        <div className="home-fluid">
+          <Suspense fallback={null}>
+            <HeroFluid
+              colors={liquidColors}
+              mouseForce={19}
+              cursorSize={55}
+              resolution={0.5}
+              autoDemo={false}
+              pointerSource={activePointer}
+            />
+          </Suspense>
+        </div>
+      )}
+
       <KioskMenu />
 
       {/* HERO — full-bleed particle canvas with the text overlaid on top. Scrolling
