@@ -98,7 +98,6 @@ export function SpotlightGallery() {
           ))}
         </div>
       </div>
-        <p className="sg-hint">Keep scrolling → browse spotlights</p>
       </section>
     </>
   );

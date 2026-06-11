@@ -42,12 +42,3 @@
   position: relative;
   z-index: 2;
 }
-
-.sg-hint {
-  position: absolute;
-  bottom: 2rem;
-  left: 2.5rem;
-  z-index: 2;
-  font-weight: 500;
-  color: var(--gt-text-secondary);
-}
