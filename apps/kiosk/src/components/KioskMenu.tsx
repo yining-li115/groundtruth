@@ -1,5 +1,6 @@
 import { StaggeredMenu, type StaggeredMenuItem } from "@groundtruth/ui";
 import { useKioskStore, type View } from "../state/store";
+import { navigate } from "../lib/navigate";
 
 const SECTIONS: { key: Exclude<View, "home">; label: string }[] = [
   { key: "teaching", label: "Teaching" },
@@ -12,13 +13,12 @@ const SECTIONS: { key: Exclude<View, "home">; label: string }[] = [
  *  Fixed so the MENU toggle + panel follow the viewport while the long page scrolls. */
 export function KioskMenu() {
   const view = useKioskStore((s) => s.view);
-  const setView = useKioskStore((s) => s.setView);
 
   const items: StaggeredMenuItem[] = SECTIONS.map((s) => ({
     label: s.label,
     ariaLabel: s.label,
     active: view === s.key,
-    onClick: () => setView(s.key),
+    onClick: () => navigate(s.key),
   }));
 
   return <StaggeredMenu items={items} isFixed displayItemNumbering />;

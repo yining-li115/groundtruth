@@ -1,0 +1,19 @@
+/* Pixel transition cover (PixelOverlay / lib/pixelTransition). A full-screen grid of cells,
+   above EVERYTHING (cursor z-100, fluid z-90), that GSAP scales in to cover and out to reveal.
+   Idle: fully transparent, cells collapsed, never intercepts input. */
+.pixel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+}
+.pixel-overlay > div {
+  background: var(--gt-brand-black); /* black pixel wipe (theme-independent) */
+  transform: scale(0);
+  opacity: 0;
+  will-change: transform, opacity;
+}

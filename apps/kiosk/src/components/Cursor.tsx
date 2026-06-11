@@ -5,6 +5,7 @@ import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
 import { scrollByPx } from "../lib/scroll";
 import { setCursorPosition } from "../lib/cursorPosition";
+import { navigate } from "../lib/navigate";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
 /** Inertia: actual position eases toward target each frame (design-system §6). */
@@ -52,8 +53,8 @@ export function Cursor() {
       }
     };
     const onBack = () => {
-      // Controller "back" returns the website shell to the home screen.
-      useKioskStore.getState().setView("home");
+      // Controller "back" returns the website shell to the home screen (with the transition).
+      navigate("home");
     };
 
     socket.on("kiosk:cursor.move", onMove);

@@ -1,18 +1,17 @@
 import type { ReactNode } from "react";
 import { KioskMenu } from "./KioskMenu";
-import { useKioskStore } from "../state/store";
+import { navigate } from "../lib/navigate";
 
 /** Shared chrome for the four section pages: the same floating sticky tab bar as Home,
  *  a non-sticky group name (→ home, scrolls away), and the section title. */
 export function SectionLayout({ title, children }: { title: string; children: ReactNode }) {
-  const setView = useKioskStore((s) => s.setView);
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
       <KioskMenu />
       <div className="px-10 pt-8">
         <button
           type="button"
-          onClick={() => setView("home")}
+          onClick={() => navigate("home")}
           className="max-w-[24ch] text-left text-sm font-bold leading-snug"
           aria-label="Back to home"
         >

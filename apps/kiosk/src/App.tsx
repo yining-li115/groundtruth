@@ -5,6 +5,7 @@ import { SESSION_ID } from "./config";
 import { useKioskStore } from "./state/store";
 import { Cursor } from "./components/Cursor";
 import { KioskQR } from "./components/KioskQR";
+import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
 import { PeopleSection } from "./scenes/PeopleSection";
 import { ResearchSection } from "./scenes/ResearchSection";
@@ -84,6 +85,9 @@ export default function App() {
         />
         {connected ? `relay · ${SESSION_ID}` : "connecting…"}
       </div>
+
+      {/* Pixel page transition cover — above everything; played on section navigation. */}
+      <PixelOverlay />
     </main>
   );
 }
