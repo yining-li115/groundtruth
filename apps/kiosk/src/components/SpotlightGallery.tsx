@@ -16,10 +16,24 @@ import "./spotlightGallery.css";
  * Images are picsum placeholders for now — real spotlight content cards land later. Note:
  * this adds a second WebGL context on the home (alongside the hero point cloud).
  */
-const ITEMS = Array.from({ length: 3 }, (_, i) => ({
-  id: i + 1,
-  src: `https://picsum.photos/seed/gt-spot-${i + 1}/1600/900`,
-}));
+// Placeholder spotlights — fake (but on-theme) titles/descriptions until real content lands.
+const ITEMS = [
+  {
+    id: 1,
+    title: "Digital Twins",
+    desc: "Photorealistic, geometrically precise 3D replicas of real-world environments.",
+  },
+  {
+    id: 2,
+    title: "Sensor Fusion",
+    desc: "LiDAR, radar and imagery fused into one coherent 3D understanding.",
+  },
+  {
+    id: 3,
+    title: "Agentic 3D Vision",
+    desc: "From raw pixels to geometry, dynamics, and agents that reason in 3D.",
+  },
+].map((it) => ({ ...it, src: `https://picsum.photos/seed/gt-spot-${it.id}/1600/900` }));
 
 export function SpotlightGallery() {
   const section = useRef<HTMLElement>(null);
@@ -60,21 +74,32 @@ export function SpotlightGallery() {
   );
 
   return (
-    <section className="sg-section" ref={section}>
+    <>
+      {/* The canvas lives OUTSIDE the pinned section: ScrollTrigger leaves a transform on the
+          section, and a transform makes position:fixed descendants anchor to it (not the
+          viewport), which offsets the planes from the DOM captions during scroll. */}
       <canvas className="gxgl-canvas" ref={canvas} />
-      <div className="sg-head">
+      <section className="sg-section" ref={section}>
+        <div className="sg-head">
         <BlurScrollText as="h2" className="sg-title" text="Spotlight" mode="in" />
       </div>
       <div className="gallery__wrapper" ref={wrapper}>
         <div className="gallery__image__container" ref={container}>
           {ITEMS.map((item) => (
-            <picture className="gxgl-media" key={item.id}>
+            <figure className="gxgl-media gx-figure" key={item.id} data-hover>
+              {/* invisible — only defines layout bounds for its WebGL plane */}
               <img className="gxgl-img" src={item.src} alt="" draggable={false} />
-            </picture>
+              {/* Sadie-style caption (adapted from Codrops HoverEffectIdeas) */}
+              <figcaption className="gx-cap">
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </figcaption>
+            </figure>
           ))}
         </div>
       </div>
-      <p className="sg-hint">Keep scrolling → browse spotlights</p>
-    </section>
+        <p className="sg-hint">Keep scrolling → browse spotlights</p>
+      </section>
+    </>
   );
 }

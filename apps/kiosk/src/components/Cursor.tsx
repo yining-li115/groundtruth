@@ -21,6 +21,7 @@ export function Cursor() {
   const rippleRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const pos = useRef({ x: target.current.x, y: target.current.y });
+  const hovered = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const onMove = ({ dx, dy }: { dx: number; dy: number }) => {
@@ -71,6 +72,15 @@ export function Cursor() {
       if (useKioskStore.getState().heroOrbitActive) {
         heroOrbit.aim(pos.current.x / window.innerWidth, pos.current.y / window.innerHeight);
       }
+      // Drive hover effects from the phone cursor (no native :hover on the kiosk): toggle
+      // `.is-hover` on the [data-hover] element under the cursor (e.g. Spotlight cards).
+      const under = document.elementFromPoint(pos.current.x, pos.current.y);
+      const hot = (under?.closest("[data-hover]") as HTMLElement | null) ?? null;
+      if (hot !== hovered.current) {
+        hovered.current?.classList.remove("is-hover");
+        hot?.classList.add("is-hover");
+        hovered.current = hot;
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
@@ -81,6 +91,7 @@ export function Cursor() {
       socket.off("kiosk:cursor.tap", onTap);
       socket.off("kiosk:cursor.back", onBack);
       cancelAnimationFrame(raf);
+      hovered.current?.classList.remove("is-hover");
     };
   }, []);
 

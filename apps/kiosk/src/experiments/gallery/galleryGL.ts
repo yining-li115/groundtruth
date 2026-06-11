@@ -123,14 +123,15 @@ class GLMedia {
     this.uniforms.uResolution.value.set(this.bounds.width, this.bounds.height);
   }
 
-  updatePosition(scroll: number) {
-    this.mesh.position.x =
-      this.bounds.left - scroll - this.viewport.width / 2 + this.bounds.width / 2;
+  updatePosition() {
+    // bounds are the LIVE on-screen rect of the placeholder (the DOM row is translated by
+    // the scroll), so the plane sits exactly on its placeholder — no extra scroll offset.
+    this.mesh.position.x = this.bounds.left - this.viewport.width / 2 + this.bounds.width / 2;
     this.mesh.position.y = -this.bounds.top + this.viewport.height / 2 - this.bounds.height / 2;
   }
 
-  updateParallax(scroll: number) {
-    const elementLeft = this.bounds.left - scroll;
+  updateParallax() {
+    const elementLeft = this.bounds.left;
     const elementRight = elementLeft + this.bounds.width;
     if (elementRight >= 0 && elementLeft <= window.innerWidth) {
       const elementCenter = elementLeft + this.bounds.width / 2;
@@ -139,12 +140,12 @@ class GLMedia {
     }
   }
 
-  render(scroll: number) {
-    // Live bounds: the placeholder may move vertically (e.g. when the home section is
-    // pinned by ScrollTrigger), so re-read each frame rather than caching from construct.
+  render() {
+    // Live bounds: the placeholder moves (the row is translated by scroll, and it may move
+    // vertically when the home section is pinned), so re-read each frame.
     this.bounds = this.element.getBoundingClientRect();
-    this.updateParallax(scroll);
-    this.updatePosition(scroll);
+    this.updateParallax();
+    this.updatePosition();
   }
 
   onResize(viewport: Sizes) {
@@ -242,7 +243,10 @@ export class GalleryGL {
     this.scroll.current = this.selfWheel
       ? this.scroll.current + (this.scroll.target - this.scroll.current) * this.scroll.ease
       : this.scroll.target;
-    this.medias.forEach((m) => m.render(this.scroll.current));
+    // Translate the DOM row by the scroll so its (invisible-image) figures — and the Sadie
+    // captions inside them — track the WebGL planes exactly.
+    this.container.style.transform = `translateX(${-this.scroll.current}px)`;
+    this.medias.forEach((m) => m.render());
     this.renderer.render(this.scene, this.camera);
     this.raf = requestAnimationFrame(this.render);
   }
