@@ -14,7 +14,13 @@ import { RoomManager, type SocketData } from "./rooms";
  * event to the manager. The relay is the SOLE authority for the token (CLAUDE.md
  * rule 4); it forwards only abstract input intents, never arbitrary actions (§9).
  */
-const httpServer = createServer();
+// Minimal HTTP handler so a health check (Render) or a browser can confirm the relay is
+// live. socket.io attaches its own listener for /socket.io/* and handles those first; any
+// other path (e.g. GET /) falls through to here and gets a plain 200.
+const httpServer = createServer((_req, res) => {
+  res.writeHead(200, { "content-type": "text/plain" });
+  res.end("groundtruth relay ok");
+});
 
 const io = new Server<
   ClientToRelayEvents,

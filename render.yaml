@@ -1,0 +1,85 @@
+# Render Blueprint — deploys the whole Groundtruth stack on the FREE tier:
+#   • gt-relay      — the socket.io relay (Node web service; sleeps when idle)
+#   • gt-kiosk      — the big-screen app (static site; never sleeps)
+#   • gt-controller — the phone trackpad app (static site; never sleeps)
+#
+# Deploy: Render Dashboard → New → Blueprint → connect this repo. Render reads this file
+# and creates all three. The relay URL is auto-wired into the two static sites via
+# `fromService`, so there is no manual copy-paste of URLs. See DEPLOY.md for the walk-through.
+#
+# Why a relay at all: the phone (4G) and the kiosk (eduroam) can't reach each other
+# directly across networks — both connect OUT to this public relay, which forwards input
+# (architecture §1). Once deployed, the phone and kiosk no longer need the same Wi-Fi.
+
+services:
+  # ---- relay: the cloud authority both clients connect to (architecture §1) ----
+  - type: web
+    name: gt-relay
+    runtime: node
+    plan: free
+    rootDir: .
+    # Root install resolves the npm workspaces (incl. @groundtruth/protocol).
+    buildCommand: npm install
+    # Runs the TS entry directly via tsx (a runtime dep); protocol is consumed as TS source.
+    startCommand: npm run start -w @groundtruth/relay
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # PORT is injected by Render automatically — the relay already reads process.env.PORT.
+      # CORS: permissive for now. To lock down, set this to the two static-site origins,
+      # comma-separated, e.g. https://gt-kiosk.onrender.com,https://gt-controller.onrender.com
+      - key: CORS_ORIGIN
+        value: "*"
+
+  # ---- controller: the phone trackpad SPA (static files) ----
+  - type: web
+    name: gt-controller
+    runtime: static
+    rootDir: .
+    buildCommand: npm install && npm run build -w @groundtruth/controller
+    staticPublishPath: apps/controller/dist
+    pullRequestPreviewsEnabled: false
+    # SPA fallback: the controller opens at /c/<sessionId>, so every path must serve
+    # index.html (the app parses the room id from the path itself — lib/session.ts).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Bare host from the relay service; the app prepends https:// (config.ts withScheme).
+      - key: VITE_RELAY_URL
+        fromService:
+          name: gt-relay
+          type: web
+          property: host
+
+  # ---- kiosk: the big-screen SPA (static files) ----
+  - type: web
+    name: gt-kiosk
+    runtime: static
+    rootDir: .
+    buildCommand: npm install && npm run build -w @groundtruth/kiosk
+    staticPublishPath: apps/kiosk/dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_RELAY_URL
+        fromService:
+          name: gt-relay
+          type: web
+          property: host
+      # The QR the kiosk renders points the phone at the controller site (CONTROLLER_LINK).
+      - key: VITE_CONTROLLER_URL
+        fromService:
+          name: gt-controller
+          type: web
+          property: host
+      - key: VITE_SESSION_ID
+        value: gt-entrance
