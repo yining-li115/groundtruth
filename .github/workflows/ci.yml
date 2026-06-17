@@ -1,0 +1,36 @@
+name: CI
+
+# Quality gate: typecheck, validate content JSON, and build both front-ends on every
+# push and PR. Render deploys separately (render.yaml); this catches breakage early and
+# independently of deploy. A failed build here means the same build would fail on Render.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck (all workspaces)
+        run: npm run typecheck
+
+      - name: Validate content JSON
+        run: npm run check:content
+
+      - name: Build controller
+        run: npm run build -w @groundtruth/controller
+
+      - name: Build kiosk
+        run: npm run build -w @groundtruth/kiosk

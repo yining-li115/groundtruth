@@ -22,6 +22,14 @@ services:
     buildCommand: npm install
     # Runs the TS entry directly via tsx (a runtime dep); protocol is consumed as TS source.
     startCommand: npm run start -w @groundtruth/relay
+    # Only auto-redeploy when something the relay depends on actually changed (it imports
+    # @groundtruth/protocol). Avoids rebuilding the relay on a front-end-only push.
+    buildFilter:
+      paths:
+        - apps/relay/**
+        - packages/protocol/**
+        - package.json
+        - package-lock.json
     envVars:
       - key: NODE_VERSION
         value: "22"
@@ -39,6 +47,13 @@ services:
     buildCommand: npm install && npm run build -w @groundtruth/controller
     staticPublishPath: apps/controller/dist
     pullRequestPreviewsEnabled: false
+    # Rebuild only on controller or shared-package changes (it pulls in packages/ui etc.).
+    buildFilter:
+      paths:
+        - apps/controller/**
+        - packages/**
+        - package.json
+        - package-lock.json
     # SPA fallback: the controller opens at /c/<sessionId>, so every path must serve
     # index.html (the app parses the room id from the path itself — lib/session.ts).
     routes:
@@ -63,6 +78,13 @@ services:
     buildCommand: npm install && npm run build -w @groundtruth/kiosk
     staticPublishPath: apps/kiosk/dist
     pullRequestPreviewsEnabled: false
+    # Rebuild only on kiosk or shared-package changes (it pulls in packages/ui/tokens etc.).
+    buildFilter:
+      paths:
+        - apps/kiosk/**
+        - packages/**
+        - package.json
+        - package-lock.json
     routes:
       - type: rewrite
         source: /*
