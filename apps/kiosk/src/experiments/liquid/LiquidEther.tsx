@@ -126,7 +126,9 @@ export function LiquidEther({
       }
       init(container) {
         this.container = container;
-        this.pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        // Cap at 1.5, not full retina (2): a full-screen fluid sim at dpr 2 is a constant
+        // GPU cost that eats the headroom fast scrolling needs.
+        this.pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.resize();
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         this.renderer.autoClear = false;

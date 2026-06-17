@@ -180,7 +180,9 @@ export class GalleryGL {
     this.screen = { width: window.innerWidth, height: window.innerHeight };
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Cap at 1.5, not full retina (2): this gallery is scrubbed on scroll, and dpr 2
+    // quadruples fragment work → stutter under fast scrolling (same call the hero made).
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setSize(this.screen.width, this.screen.height);
 
     // Perspective camera mapped so 1 world unit = 1px at z = 0 (plane sits there).
@@ -231,7 +233,9 @@ export class GalleryGL {
     this.camera.fov = 2 * Math.atan(this.screen.height / 2 / 100) * (180 / Math.PI);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.screen.width, this.screen.height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Cap at 1.5, not full retina (2): this gallery is scrubbed on scroll, and dpr 2
+    // quadruples fragment work → stutter under fast scrolling (same call the hero made).
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.setLimit();
     this.medias.forEach((m) => m.onResize(this.screen));
   }

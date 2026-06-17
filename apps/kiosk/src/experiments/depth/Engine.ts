@@ -32,7 +32,9 @@ class Engine {
     this.scroll = new Scroll(this.camera, this.experience.gallery, this.debug);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Cap at 1.5, not full retina (2): the depth stack is scrubbed on scroll, where dpr 2
+    // quadruples fragment work and stutters (matching the hero's dpr cap).
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = false;
 
