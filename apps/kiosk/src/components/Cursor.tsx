@@ -1,6 +1,14 @@
 import { useEffect, useRef } from "react";
 import { socket } from "../lib/socket";
-import { SENSITIVITY } from "../config";
+import {
+  SENSITIVITY,
+  CURSOR_ACCEL,
+  CURSOR_MAX_GAIN,
+  CURSOR_FOLLOW,
+  SCROLL_SENSITIVITY,
+  SCROLL_ACCEL,
+  SCROLL_MAX_GAIN,
+} from "../config";
 import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
 import { scrollByPx } from "../lib/scroll";
@@ -8,8 +16,6 @@ import { setCursorPosition } from "../lib/cursorPosition";
 import { navigate } from "../lib/navigate";
 
 const clamp = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
-/** Inertia: actual position eases toward target each frame (design-system §6). */
-const FOLLOW = 0.2;
 const SIZE = 28;
 
 /**
@@ -27,8 +33,18 @@ export function Cursor() {
 
   useEffect(() => {
     const onMove = ({ dx, dy }: { dx: number; dy: number }) => {
-      target.current.x = clamp(target.current.x + dx * SENSITIVITY, 0, window.innerWidth);
-      target.current.y = clamp(target.current.y + dy * SENSITIVITY, 0, window.innerHeight);
+      // Pointer ballistics (architecture §4 / design-system §6): a slow finger keeps the
+      // base gain for precise aiming; a fast flick accelerates so one swipe can cross the
+      // whole big screen. `screenScale` lifts the gain on a large kiosk display so the
+      // same swipe travels proportionally further than it would on a dev laptop.
+      const mag = Math.hypot(dx, dy);
+      const screenScale = clamp(window.innerWidth / 1920, 1, 2.4);
+      const gain = Math.min(
+        CURSOR_MAX_GAIN * screenScale,
+        SENSITIVITY * screenScale * (1 + mag * CURSOR_ACCEL),
+      );
+      target.current.x = clamp(target.current.x + dx * gain, 0, window.innerWidth);
+      target.current.y = clamp(target.current.y + dy * gain, 0, window.innerHeight);
       // On the pinned home hero, moving the cursor also orbits the cloud (drag-to-look),
       // while the cursor stays usable for the MENU button.
       if (useKioskStore.getState().heroOrbitActive) {
@@ -39,7 +55,12 @@ export function Cursor() {
       // Natural (phone-native) scrolling: two fingers UP moves content up → page scrolls
       // DOWN. `dy` is the raw finger delta (down = positive), so negate it. Routed through
       // Lenis so the page eases with it instead of fighting the smooth-scroll loop.
-      scrollByPx(-dy * SENSITIVITY);
+      // Ballistics: a fast two-finger flick accelerates to cross long pinned sections.
+      const gain = Math.min(
+        SCROLL_MAX_GAIN,
+        SCROLL_SENSITIVITY * (1 + Math.abs(dy) * SCROLL_ACCEL),
+      );
+      scrollByPx(-dy * gain);
     };
     const onTap = () => {
       // Cursor has pointer-events:none, so this hits the UI underneath.
@@ -64,8 +85,8 @@ export function Cursor() {
 
     let raf = 0;
     const loop = () => {
-      pos.current.x += (target.current.x - pos.current.x) * FOLLOW;
-      pos.current.y += (target.current.y - pos.current.y) * FOLLOW;
+      pos.current.x += (target.current.x - pos.current.x) * CURSOR_FOLLOW;
+      pos.current.y += (target.current.y - pos.current.y) * CURSOR_FOLLOW;
       // Publish for cursor-following effects (LiquidEther hero fluid).
       setCursorPosition(pos.current.x, pos.current.y);
       const node = ringRef.current;
