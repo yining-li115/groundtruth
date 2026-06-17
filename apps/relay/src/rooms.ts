@@ -95,6 +95,11 @@ export class RoomManager {
     if (room) this.toKiosks(room, "kiosk:cursor.scroll", payload);
   }
 
+  forwardScrollHold(socket: Sock, payload: { dir: "up" | "down"; active: boolean }): void {
+    const room = this.precheck(socket);
+    if (room) this.toKiosks(room, "kiosk:cursor.scrollHold", payload);
+  }
+
   forwardBack(socket: Sock): void {
     const room = this.precheck(socket);
     if (room) this.toKiosks(room, "kiosk:cursor.back", {});

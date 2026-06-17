@@ -63,3 +63,6 @@ export const SCROLL_SENSITIVITY = tune("scrollSens", env.VITE_SCROLL_SENSITIVITY
 export const SCROLL_ACCEL = tune("scrollAccel", env.VITE_SCROLL_ACCEL, 0.025);
 /** Ceiling on the per-message scroll gain so a fast flick can't outrun the WebGL redraw. */
 export const SCROLL_MAX_GAIN = tune("scrollMax", env.VITE_SCROLL_MAX_GAIN, 12);
+/** Hold-to-scroll velocity (page px per frame ≈ ×60 for px/sec) while a ↑/↓ button is held.
+ *  Kiosk-driven and constant, so it stays smooth regardless of wireless jitter. */
+export const SCROLL_HOLD_SPEED = tune("holdSpeed", env.VITE_SCROLL_HOLD_SPEED, 16);

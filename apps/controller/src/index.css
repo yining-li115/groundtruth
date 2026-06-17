@@ -13,6 +13,14 @@
   color: var(--gt-text-primary);
 }
 
+/* Driver surface: trackpad (move + tap) on the left, hold-to-scroll buttons on the right. */
+.gt-driver {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
 .gt-trackpad {
   position: relative;
   flex: 1 1 auto;
@@ -38,6 +46,37 @@
   text-align: center;
   font-size: 0.8rem;
   color: var(--gt-text-secondary);
+}
+
+/* Hold-to-scroll buttons — a narrow vertical strip beside the trackpad. */
+.gt-scrollpad {
+  flex: 0 0 auto;
+  width: 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.gt-scrollbtn {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  line-height: 1;
+  border-radius: 1.25rem;
+  border: 1px solid var(--gt-border);
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: pointer;
+}
+.gt-scrollbtn:active {
+  background: var(--gt-bg);
+  border-color: var(--gt-accent);
+  color: var(--gt-accent);
 }
 
 /* Pill buttons (design-system §5). */

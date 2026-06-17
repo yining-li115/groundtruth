@@ -34,6 +34,10 @@ export type CtrlJoinPayload = { sessionId: SessionId };
 /** Relative cursor delta, like a laptop trackpad (architecture §4). */
 export type CtrlInputMovePayload = { dx: number; dy: number };
 export type CtrlInputScrollPayload = { dy: number };
+/** Press-and-hold scroll: the kiosk scrolls at a steady, locally-driven velocity while
+ *  `active`, so scrolling is immune to wireless jitter (unlike the per-finger two-finger
+ *  scroll). `active:false` on release stops it. */
+export type CtrlInputScrollHoldPayload = { dir: "up" | "down"; active: boolean };
 
 // Relay → Clients
 export type RoomRolePayload = { role: ControllerRole; position?: number };
@@ -41,6 +45,7 @@ export type RoomQueuePayload = { position: number; total: number };
 export type RoomDriverChangedPayload = { hasDriver: boolean };
 export type KioskCursorMovePayload = { dx: number; dy: number };
 export type KioskCursorScrollPayload = { dy: number };
+export type KioskCursorScrollHoldPayload = { dir: "up" | "down"; active: boolean };
 
 /* ------------------------------------------------------------------ *
  * Event maps (socket.io listener signatures)
@@ -58,6 +63,8 @@ export interface ClientToRelayEvents {
   "ctrl:input.tap": (payload: Empty) => void;
   /** driver only — scroll. */
   "ctrl:input.scroll": (payload: CtrlInputScrollPayload) => void;
+  /** driver only — press-and-hold scroll (kiosk drives a steady velocity while active). */
+  "ctrl:input.scrollHold": (payload: CtrlInputScrollHoldPayload) => void;
   /** driver only — go back / exit section. */
   "ctrl:input.back": (payload: Empty) => void;
   /** driver only — voluntarily release the token. */
@@ -82,6 +89,8 @@ export interface RelayToClientEvents {
   "kiosk:cursor.tap": (payload: Empty) => void;
   /** → kiosk: forwarded scroll. */
   "kiosk:cursor.scroll": (payload: KioskCursorScrollPayload) => void;
+  /** → kiosk: forwarded press-and-hold scroll (start/stop a steady local scroll). */
+  "kiosk:cursor.scrollHold": (payload: KioskCursorScrollHoldPayload) => void;
   /** → kiosk: forwarded back. */
   "kiosk:cursor.back": (payload: Empty) => void;
 }

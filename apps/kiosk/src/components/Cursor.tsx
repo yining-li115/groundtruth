@@ -8,6 +8,7 @@ import {
   SCROLL_SENSITIVITY,
   SCROLL_ACCEL,
   SCROLL_MAX_GAIN,
+  SCROLL_HOLD_SPEED,
 } from "../config";
 import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
@@ -30,6 +31,8 @@ export function Cursor() {
   const target = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   const pos = useRef({ x: target.current.x, y: target.current.y });
   const hovered = useRef<HTMLElement | null>(null);
+  /** Press-and-hold scroll direction: -1 up, +1 down, 0 idle (driven by ↑/↓ buttons). */
+  const scrollHoldDir = useRef(0);
 
   useEffect(() => {
     const onMove = ({ dx, dy }: { dx: number; dy: number }) => {
@@ -77,14 +80,23 @@ export function Cursor() {
       // Controller "back" returns the website shell to the home screen (with the transition).
       navigate("home");
     };
+    const onScrollHold = ({ dir, active }: { dir: "up" | "down"; active: boolean }) => {
+      // Drive a steady, kiosk-local scroll while a button is held — set the direction here,
+      // apply a constant velocity each frame in the loop below (smooth, jitter-immune).
+      scrollHoldDir.current = active ? (dir === "down" ? 1 : -1) : 0;
+    };
 
     socket.on("kiosk:cursor.move", onMove);
     socket.on("kiosk:cursor.scroll", onScroll);
     socket.on("kiosk:cursor.tap", onTap);
     socket.on("kiosk:cursor.back", onBack);
+    socket.on("kiosk:cursor.scrollHold", onScrollHold);
 
     let raf = 0;
     const loop = () => {
+      // Hold-to-scroll: constant velocity per frame while a button is held (architecture §4).
+      if (scrollHoldDir.current !== 0) scrollByPx(scrollHoldDir.current * SCROLL_HOLD_SPEED);
+
       pos.current.x += (target.current.x - pos.current.x) * CURSOR_FOLLOW;
       pos.current.y += (target.current.y - pos.current.y) * CURSOR_FOLLOW;
       // Publish for cursor-following effects (LiquidEther hero fluid).
@@ -115,6 +127,8 @@ export function Cursor() {
       socket.off("kiosk:cursor.scroll", onScroll);
       socket.off("kiosk:cursor.tap", onTap);
       socket.off("kiosk:cursor.back", onBack);
+      socket.off("kiosk:cursor.scrollHold", onScrollHold);
+      scrollHoldDir.current = 0;
       cancelAnimationFrame(raf);
       hovered.current?.classList.remove("is-hover");
     };

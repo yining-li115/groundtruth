@@ -5,6 +5,7 @@ import { socket } from "./lib/socket";
 import { parseSessionId } from "./lib/session";
 import { useControllerStore } from "./state/store";
 import { TrackpadSurface } from "./components/TrackpadSurface";
+import { ScrollButtons } from "./components/ScrollButtons";
 
 const SESSION_ID = parseSessionId();
 
@@ -150,7 +151,10 @@ export default function App() {
 
       {SESSION_ID && role === "driver" && (
         <>
-          <TrackpadSurface onActivity={onActivity} />
+          <div className="gt-driver">
+            <TrackpadSurface onActivity={onActivity} />
+            <ScrollButtons onActivity={onActivity} />
+          </div>
           <footer className="flex items-center justify-between gap-4">
             <span className="text-xs" style={{ color: "var(--gt-text-secondary)" }}>
               Idle release in {idleLeft}s

@@ -180,7 +180,7 @@ export function TrackpadSurface({ onActivity }: { onActivity?: () => void }) {
   return (
     <div ref={ref} className="gt-trackpad" style={{ touchAction: "none" }}>
       <span className="gt-trackpad__hint">
-        Drag to move · tap to click · two fingers to scroll
+        Drag to move · tap to click · hold ↑↓ (or two fingers) to scroll
       </span>
     </div>
   );

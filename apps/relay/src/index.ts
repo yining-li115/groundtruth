@@ -40,6 +40,7 @@ io.on("connection", (socket) => {
   socket.on("ctrl:input.move", (payload) => rooms.forwardMove(socket, payload));
   socket.on("ctrl:input.tap", () => rooms.forwardTap(socket));
   socket.on("ctrl:input.scroll", (payload) => rooms.forwardScroll(socket, payload));
+  socket.on("ctrl:input.scrollHold", (payload) => rooms.forwardScrollHold(socket, payload));
   socket.on("ctrl:input.back", () => rooms.forwardBack(socket));
 
   socket.on("ctrl:pass", () => rooms.pass(socket));
