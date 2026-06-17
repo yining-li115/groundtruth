@@ -17,6 +17,9 @@ services:
     name: gt-relay
     runtime: node
     plan: free
+    # EU region — the relay is the per-input hop, so put it near the users (Munich).
+    # Oregon (the default) added a transatlantic round-trip per cursor move → laggy.
+    region: frankfurt
     rootDir: .
     # Root install resolves the npm workspaces (incl. @groundtruth/protocol).
     buildCommand: npm install
