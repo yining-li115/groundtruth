@@ -63,12 +63,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      # Bare host from the relay service; the app prepends https:// (config.ts withScheme).
+      # Public relay URL. (fromService `host` returns the PRIVATE service name, not the
+      # public onrender.com domain — so the browser-facing URL is set explicitly here.)
       - key: VITE_RELAY_URL
-        fromService:
-          name: gt-relay
-          type: web
-          property: host
+        value: https://gt-relay.onrender.com
 
   # ---- kiosk: the big-screen SPA (static files) ----
   - type: web
@@ -93,15 +91,9 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: VITE_RELAY_URL
-        fromService:
-          name: gt-relay
-          type: web
-          property: host
+        value: https://gt-relay.onrender.com
       # The QR the kiosk renders points the phone at the controller site (CONTROLLER_LINK).
       - key: VITE_CONTROLLER_URL
-        fromService:
-          name: gt-controller
-          type: web
-          property: host
+        value: https://gt-controller.onrender.com
       - key: VITE_SESSION_ID
         value: gt-entrance
