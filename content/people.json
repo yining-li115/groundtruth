@@ -1,58 +1,200 @@
 [
   {
-    "id": "lena-hartmann",
-    "name": "Prof. Dr. Lena Hartmann",
-    "role": "Professor",
-    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Lena%20Hartmann",
-    "email": "lena.hartmann@example.tum.de",
-    "shortBio": "Chair of Photogrammetry & Remote Sensing. Builds large-scale 3D reconstructions of cities from aerial imagery and LiDAR.",
-    "longBio": "Lena Hartmann leads the Professorship of Photogrammetry and Remote Sensing. Her group develops methods to turn raw airborne and satellite measurements into accurate, semantically rich 3D models of the built environment — bridging classical photogrammetry with modern deep learning. Before joining TUM she worked on national-scale digital terrain mapping.",
-    "researchInterests": ["3D reconstruction", "point cloud", "photogrammetry", "digital twin"],
-    "photos": [
-      { "src": "https://picsum.photos/seed/hartmann-lab/800/600", "caption": "Reconstruction lab, demonstrating a city-scale point cloud." },
-      { "src": "https://picsum.photos/seed/hartmann-field/800/600", "caption": "Airborne LiDAR field campaign over Munich." }
-    ],
-    "links": [
-      { "label": "Google Scholar", "url": "https://scholar.google.com/citations?user=example-lh" },
-      { "label": "Group page", "url": "https://www.pf.example.tum.de/team/hartmann" }
-    ],
-    "relatedTopicIds": ["urban-3d-reconstruction", "semantic-lidar"],
-    "relatedProjectIds": ["ms-pointcloud-registration"]
+    "id": "benjamin-busam",
+    "firstName": "Benjamin",
+    "lastName": "Busam",
+    "category": "Director",
+    "title": "Prof. Dr. rer. nat.",
+    "email": "b.busam@tum.de",
+    "room": "1781"
   },
   {
-    "id": "marco-bianchi",
-    "name": "Dr. Marco Bianchi",
-    "role": "PostDoc",
-    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Marco%20Bianchi",
-    "email": "marco.bianchi@example.tum.de",
-    "shortBio": "PostDoc working on deep learning for Synthetic Aperture Radar — despeckling, InSAR, and change detection.",
-    "longBio": "Marco Bianchi develops learning-based methods for radar remote sensing, with a focus on turning noisy SAR and InSAR stacks into reliable measurements of ground deformation and land-cover change. He is interested in self-supervised approaches that reduce the need for scarce labelled radar data.",
-    "researchInterests": ["SAR", "InSAR", "deep learning", "change detection"],
-    "photos": [
-      { "src": "https://picsum.photos/seed/bianchi-sar/800/600", "caption": "Interferogram of a subsidence-prone region." }
-    ],
-    "links": [
-      { "label": "Google Scholar", "url": "https://scholar.google.com/citations?user=example-mb" }
-    ],
-    "relatedTopicIds": ["sar-deep-learning"],
-    "relatedProjectIds": ["bs-sar-despeckling"]
+    "id": "susanne-oxe",
+    "firstName": "Susanne",
+    "lastName": "Oxé",
+    "category": "Secretary",
+    "email": "susanne.oxe@tum.de"
   },
   {
-    "id": "ananya-rao",
-    "name": "Ananya Rao",
-    "role": "PhD Researcher",
-    "photo": "https://api.dicebear.com/9.x/bottts/svg?seed=Ananya%20Rao",
-    "email": "ananya.rao@example.tum.de",
-    "shortBio": "PhD researcher on semantic understanding of LiDAR point clouds and building living digital twins of urban scenes.",
-    "researchInterests": ["LiDAR", "semantic segmentation", "digital twin", "3D reconstruction"],
-    "photos": [
-      { "src": "https://picsum.photos/seed/rao-scan/800/600", "caption": "Mobile-mapping scan of a campus courtyard." },
-      { "src": "https://picsum.photos/seed/rao-twin/800/600", "caption": "Semantic labels projected onto the reconstructed mesh." }
+    "id": "luca-collorone",
+    "firstName": "Luca",
+    "lastName": "Collorone",
+    "category": "Research Associates",
+    "title": "Dr.",
+    "email": "go93rij@mytum.de"
+  },
+  {
+    "id": "florian-eberhardt",
+    "firstName": "Florian",
+    "lastName": "Eberhardt",
+    "category": "Research Associates",
+    "title": "Dr. rer. nat.",
+    "email": "florian.eberhardt@tum.de",
+    "room": "1776"
+  },
+  {
+    "id": "florian-eichinger",
+    "firstName": "Florian",
+    "lastName": "Eichinger",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "florian.eichinger@tum.de",
+    "room": "1772"
+  },
+  {
+    "id": "michael-greza",
+    "firstName": "Michael",
+    "lastName": "Greza",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "michael.greza@tum.de",
+    "room": "1772"
+  },
+  {
+    "id": "liming-kuang",
+    "firstName": "Liming",
+    "lastName": "Kuang",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "liming.kuang@tum.de"
+  },
+  {
+    "id": "weihang-li",
+    "firstName": "Weihang",
+    "lastName": "Li",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "weihang.li@tum.de",
+    "room": "STC",
+    "researchInterests": [
+      "World Model",
+      "Embodied AI / Robotics",
+      "3D / 4D Vision (Object / Scene-level Pose, Depth)"
     ],
-    "links": [
-      { "label": "GitHub", "url": "https://github.com/example-ananya" }
-    ],
-    "relatedTopicIds": ["semantic-lidar"],
-    "relatedProjectIds": ["idp-digital-twin-campus"]
+    "links": [{ "label": "Personal Website", "url": "https://colin-de.github.io/" }]
+  },
+  {
+    "id": "yordanka-velikova",
+    "firstName": "Yordanka",
+    "lastName": "Velikova",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "dani.velikova@tum.de"
+  },
+  {
+    "id": "junwen-huang",
+    "firstName": "Junwen",
+    "lastName": "Huang",
+    "category": "Research Associates",
+    "email": "junwen.huang@tum.de",
+    "room": "STC"
+  },
+  {
+    "id": "manoj-biswanath",
+    "firstName": "Manoj Kumar",
+    "lastName": "Biswanath",
+    "category": "Guests (Externals, Scholarships)",
+    "title": "M.Sc.",
+    "email": "manoj.biswanath@tum.de",
+    "room": "1776"
+  },
+  {
+    "id": "abdelrahman-elskhawy",
+    "firstName": "Abdelrahman",
+    "lastName": "Elskhawy",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "a.elskhawy@tum.de"
+  },
+  {
+    "id": "mert-kiray",
+    "firstName": "Mert",
+    "lastName": "Kıray",
+    "category": "Guests (Externals, Scholarships)",
+    "title": "M.Sc.",
+    "email": "mert.kiray@tum.de"
+  },
+  {
+    "id": "michael-spiegel",
+    "firstName": "Michael",
+    "lastName": "Spiegel",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "spiegel@tum.de"
+  },
+  {
+    "id": "sigrid-strand",
+    "firstName": "Sigrid",
+    "lastName": "Strand",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "sigrid.strand@tum.de"
+  },
+  {
+    "id": "tianyi-you",
+    "firstName": "Tianyi",
+    "lastName": "You",
+    "category": "Guests (Externals, Scholarships)",
+    "title": "M.Sc.",
+    "email": "tianyi.you@tum.de",
+    "room": "1776"
+  },
+  {
+    "id": "qilin-zhang",
+    "firstName": "Qilin",
+    "lastName": "Zhang",
+    "category": "Guests (Externals, Scholarships)",
+    "title": "M.Sc.",
+    "email": "qilin.zhang@tum.de",
+    "room": "1776"
+  },
+  {
+    "id": "christian-albrecht",
+    "firstName": "Christian",
+    "lastName": "Albrecht",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "christian.albrecht@cariad.technology"
+  },
+  {
+    "id": "enea-dragoni",
+    "firstName": "Enea",
+    "lastName": "Dragoni",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "e.dragoni@studenti.unipi.it",
+    "room": "1774"
+  },
+  {
+    "id": "mert-karaoglu",
+    "firstName": "Mert",
+    "lastName": "Karaoglu",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "mert.karaoglu@tum.de"
+  },
+  {
+    "id": "hyeongkyun-kim",
+    "firstName": "Hyeongkyun",
+    "lastName": "Kim",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "hyeongkyun.kim@dlr.de"
+  },
+  {
+    "id": "alberto-rota",
+    "firstName": "Alberto",
+    "lastName": "Rota",
+    "category": "Guests (Externals, Scholarships)",
+    "email": "alberto1.rota@polimi.it"
+  },
+  {
+    "id": "yiru-li",
+    "firstName": "Yiru",
+    "lastName": "Li",
+    "category": "Student Assistants",
+    "title": "B.Sc.",
+    "email": "ga94moc@mytum.de"
+  },
+  {
+    "id": "gunter-strunz",
+    "firstName": "Günter",
+    "lastName": "Strunz",
+    "category": "Associate Lecturers",
+    "title": "Prof. Dr.-Ing.",
+    "email": "guenter.strunz@tum.de"
   }
 ]

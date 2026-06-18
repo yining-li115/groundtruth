@@ -41,20 +41,34 @@ objects).
 
 ```ts
 type Person = {
-  id: string;              // slug, e.g. "jane-doe"
-  name: string;
-  role: string;            // "Professor", "PhD Researcher", "PostDoc", ...
-  photo: string;           // main headshot — shown on the thumbnail card
-  photos?: { src: string; caption?: string }[];  // extra photos for the detail page
+  id: string;              // slug, e.g. "weihang-li"
+  firstName: string;
+  lastName: string;
+  category: string;        // roster group — "Director", "Secretary",
+                           // "Research Associates", "Guests (Externals, Scholarships)",
+                           // "Student Assistants", "Associate Lecturers", "Alumni", ...
+  title?: string;          // academic degree, e.g. "Prof. Dr. rer. nat.", "M.Sc."
   email?: string;
-  shortBio: string;        // 1–2 sentences for cards
+  room?: string;           // office, e.g. "1781" or "STC"
+  photo?: string;          // main headshot for the card; a placeholder avatar is
+                           // generated from the name when this is absent
+  photos?: { src: string; caption?: string }[];  // extra photos for the detail page
+  shortBio?: string;       // 1–2 sentences for cards
   longBio?: string;        // full profile view
-  researchInterests: string[];
+  researchInterests?: string[];
   links?: { label: string; url: string }[];  // scholar, github, personal site
   relatedTopicIds?: string[];   // → ResearchTopic.id
   relatedProjectIds?: string[]; // → StudentProject.id
 };
 ```
+
+The **People section** renders the roster grouped by `category` (the section orders the
+known categories Director → Secretary → Research Associates → Guests → Student Assistants
+→ Associate Lecturers → Alumni, then appends any others). Adding a member is just a JSON
+object with `firstName`/`lastName`/`category` (+ optional `title`/`email`/`room`) — they
+appear in the right group automatically, no code change. Only the **required** fields are
+the name parts + `category` + `id`; everything else is optional and filled in for members
+who have a full detail page.
 
 Note on photos: `Person.photo` is the single main headshot used on the thumbnail card.
 `Person.photos` is the set of additional images shown on the individual detail page

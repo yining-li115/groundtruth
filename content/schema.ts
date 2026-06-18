@@ -36,16 +36,24 @@ export const personPhotoSchema = z.object({
   caption: z.string().optional(),
 });
 
-/** People — individual profiles. Photos are folded in here (no separate gallery). */
+/** People — individual profiles. Photos are folded in here (no separate gallery).
+ *  The roster (People section) groups members by `category`; the only required fields are
+ *  the name parts + category + a stable id, so adding a person is just a few lines of JSON.
+ *  The richer fields (bio, interests, photos, links) are optional, filled in for whoever has
+ *  a detail page. `photo` is optional too — when absent the section shows a generated
+ *  placeholder avatar, so a new member needs no image to appear. */
 export const personSchema = z.object({
   id,
-  name: nonEmpty,
-  role: nonEmpty, // "Professor", "PostDoc", "PhD Researcher", ...
-  photo: nonEmpty, // main avatar, used on cards
+  firstName: nonEmpty,
+  lastName: nonEmpty,
+  category: nonEmpty, // roster group, e.g. "Director", "Secretary", "Research Associates"
+  title: z.string().optional(), // academic degree, e.g. "Prof. Dr. rer. nat.", "M.Sc."
   email: z.string().email().optional(),
-  shortBio: nonEmpty, // 1–2 sentences for cards
+  room: z.string().optional(), // office, e.g. "1781" or "STC"
+  photo: z.string().optional(), // main avatar (filename/URL); placeholder generated if absent
+  shortBio: z.string().optional(), // 1–2 sentences for cards
   longBio: z.string().optional(), // full profile view
-  researchInterests: z.array(nonEmpty),
+  researchInterests: z.array(nonEmpty).optional(),
   photos: z.array(personPhotoSchema).optional(), // detail-page gallery
   links: z.array(linkSchema).optional(),
   relatedTopicIds: z.array(id).optional(), // → ResearchTopic.id

@@ -6,7 +6,7 @@
     "description": "We develop end-to-end pipelines that fuse multi-view aerial imagery with airborne LiDAR to reconstruct buildings, vegetation, and terrain at city scale. Research questions include robust multi-view stereo, mesh regularisation under noisy observations, and keeping models consistent as new data arrives.",
     "cover": "https://picsum.photos/seed/topic-urban3d/1200/800",
     "tags": ["point cloud", "photogrammetry", "3D reconstruction", "multi-view stereo"],
-    "leadPersonIds": ["lena-hartmann"],
+    "leadPersonIds": ["benjamin-busam"],
     "publications": [
       {
         "title": "Regularised Mesh Reconstruction from Fused Aerial LiDAR and Imagery",
@@ -24,7 +24,7 @@
     "description": "Synthetic Aperture Radar sees through clouds and works day or night, but its speckle noise and complex geometry make interpretation hard. We design neural methods — often self-supervised — for despeckling, interferometric phase estimation, and detecting change between acquisitions, with applications in deformation monitoring.",
     "cover": "https://picsum.photos/seed/topic-sar/1200/800",
     "tags": ["SAR", "InSAR", "deep learning", "change detection"],
-    "leadPersonIds": ["marco-bianchi"],
+    "leadPersonIds": ["florian-eberhardt"],
     "publications": [
       {
         "title": "Self-Supervised Despeckling of Single-Look Complex SAR",
@@ -42,6 +42,6 @@
     "description": "Beyond geometry, we label every point — facade, road, tree, vehicle — so a 3D scene becomes queryable. We then study how to maintain a digital twin over time as the real environment changes, fusing repeated mobile-mapping scans into a single, up-to-date semantic model.",
     "cover": "https://picsum.photos/seed/topic-semantic/1200/800",
     "tags": ["LiDAR", "semantic segmentation", "digital twin", "point cloud"],
-    "leadPersonIds": ["ananya-rao", "lena-hartmann"]
+    "leadPersonIds": ["weihang-li", "benjamin-busam"]
   }
 ]

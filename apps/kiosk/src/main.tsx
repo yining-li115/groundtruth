@@ -25,6 +25,11 @@ const DepthExperiment = lazy(() =>
 const LiquidExperiment = lazy(() =>
   import("./experiments/liquid/LiquidExperiment").then((m) => ({ default: m.LiquidExperiment })),
 );
+const PersonDetailExperiment = lazy(() =>
+  import("./experiments/people/PersonDetailExperiment").then((m) => ({
+    default: m.PersonDetailExperiment,
+  })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -42,6 +47,8 @@ const experiment =
     <DepthExperiment />
   ) : exp === "liquid" ? (
     <LiquidExperiment />
+  ) : exp === "person" ? (
+    <PersonDetailExperiment />
   ) : null;
 
 createRoot(root).render(

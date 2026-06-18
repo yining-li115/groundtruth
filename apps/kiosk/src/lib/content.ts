@@ -32,8 +32,11 @@ const topicById = new Map(topics.map((t) => [t.id, t]));
 const projectById = new Map(projects.map((p) => [p.id, p]));
 const courseById = new Map(courses.map((c) => [c.id, c]));
 
-/** Resolve a Person id to a display name (falls back to the id). */
-export const personName = (id: string): string => personById.get(id)?.name ?? id;
+/** Resolve a Person id to a display name "First Last" (falls back to the id). */
+export const personName = (id: string): string => {
+  const p = personById.get(id);
+  return p ? `${p.firstName} ${p.lastName}` : id;
+};
 /** Resolve a ResearchTopic id to its title (falls back to the id). */
 export const topicTitle = (id: string): string => topicById.get(id)?.title ?? id;
 

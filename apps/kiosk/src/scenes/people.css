@@ -1,0 +1,154 @@
+/* People section — the real roster (apps/kiosk/src/scenes/PeopleSection.tsx).
+   Light Lusion layout: a sticky intro (brand top-left + oversized "TEAM" headline) beside a
+   roster of portrait cards grouped by category. A cursor-proximity "lens" scales the cards,
+   group labels and headline (driven by the kiosk cursor via lib/cursorPosition). Tokens only. */
+
+.ppl {
+  min-height: 100vh;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  padding: clamp(2.5rem, 7vh, 6rem) clamp(1.5rem, 5vw, 5rem) 12vh;
+}
+
+/* Brand / chair block, fixed top-left (→ home), like the other sections' frame. */
+/* Same proportions as the other sections' frame (scenes/projects.css .frame). */
+.ppl__brand {
+  position: fixed;
+  top: 2rem;
+  left: 2.5rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--gt-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.ppl__brand-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--gt-text-secondary);
+}
+.ppl__brand-strong {
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+
+.ppl__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(2.5rem, 6vw, 6rem);
+}
+
+.ppl__intro {
+  max-width: 34rem;
+}
+
+.ppl__title {
+  /* Top margin clears the fixed brand block above and lines the headline up with the
+     first group label on the right. */
+  margin: clamp(6rem, 16vh, 12rem) 0 0;
+  font-size: clamp(3.5rem, 8vw, 8rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--gt-text-primary);
+  display: inline-block;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.ppl__roster {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2.5rem, 5vh, 4rem);
+}
+
+.ppl-group {
+  margin: 0;
+}
+
+.ppl-group__label {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-sans);
+  font-size: clamp(1.1rem, 1.6vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--gt-text-primary);
+  display: inline-block;
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.ppl-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: clamp(1.25rem, 2.5vw, 2.25rem) clamp(1rem, 2vw, 2rem);
+}
+
+.ppl-card {
+  margin: 0;
+  position: relative;
+  transform-origin: center center;
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+.ppl-card__photo {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+.ppl-card__photo img {
+  width: 88%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ppl-card__name {
+  margin-top: 0.85rem;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gt-accent);
+}
+
+.ppl-card__role {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--gt-text-secondary);
+}
+
+/* Wide: sticky-intro + roster two-column, headline top aligned with the first label. */
+@media (min-width: 64rem) {
+  .ppl__layout {
+    grid-template-columns: minmax(20rem, 0.85fr) 1.6fr;
+    align-items: start;
+  }
+  .ppl__intro {
+    position: sticky;
+    top: clamp(2.5rem, 7vh, 6rem);
+  }
+  .ppl__roster {
+    margin-top: clamp(6rem, 16vh, 12rem);
+  }
+}
