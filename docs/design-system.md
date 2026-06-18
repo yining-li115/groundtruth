@@ -175,10 +175,10 @@ Imagery: apply a duotone tint toward `brand.electric` (the accent) for hero/sect
 media to match the reference. Keep this as a reusable treatment (a component/util), not
 per-image hacks.
 
-### `theme.dark` — OPTIONAL kiosk idle backdrop only
-Not a landing page, not user-navigable. Purpose: a calmer, less glaring backdrop for the
-**idle showreel** when the kiosk runs unattended (e.g. evenings, to reduce glare/reflection
-behind the glass). The interactive content sections always use `theme.light`.
+### `theme.dark` — idle backdrop + the Projects section
+Originally only the optional idle backdrop. Purpose there: a calmer, less glaring backdrop
+for the **idle showreel** when the kiosk runs unattended (e.g. evenings, to reduce
+glare/reflection behind the glass). Most interactive content sections use `theme.light`.
 
 - Build it only if/when wanted; `theme.light` is the priority. If unsure, ship light-only
   for the idle showreel too and add dark later.
@@ -197,6 +197,18 @@ behind the glass). The interactive content sections always use `theme.light`.
 | `accent`         | `brand.electric` `#3A3AF0` | the single hero color block, links, focus |
 | `button.solid`   | `brand.white` bg / `brand.black` text | primary pill |
 | `button.outline` | transparent bg / white text / `gray.80` border | secondary pill |
+
+### Exception — the Projects section is dark (DECIDED)
+The **Projects section** (`apps/kiosk/src/scenes/ProjectsSection.tsx` — the group's
+papers/publications) is rendered in **`theme.dark`** (`data-theme="dark"` on its root),
+a **deliberate exception** to the light-first rule. It's the one full-page dark surface a
+visitor navigates into; the oversized white "PROJECTS" type, dimmed menu, and the accent
+on hover/links read best on black, and the paper figures (varied, often dark) sit cleaner
+on a true-black ground than on the lavender base. The rest of the kiosk (Home, People,
+Research, Teaching, the controller) stays `theme.light`. This is scoped via `data-theme`
+on that section only — no hardcoded colors; it just swaps the token set (see Token
+discipline below). If more sections ever want dark, revisit whether dark should become a
+selectable mode rather than a per-section exception.
 
 ### Token discipline
 Both theme sets define the **same token NAMES** (`bg`, `surface`, `text.primary`,
