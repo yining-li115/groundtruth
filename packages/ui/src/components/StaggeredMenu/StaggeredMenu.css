@@ -103,6 +103,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Optical alignment: uppercase caps sit high in their line box (empty descender space
+     below), so geometric centering leaves the icon visually low. Nudge it up to match the
+     caps' optical centre. margin (not transform) so it doesn't fight the GSAP rotate. */
+  margin-top: -0.16em;
   will-change: transform;
 }
 
