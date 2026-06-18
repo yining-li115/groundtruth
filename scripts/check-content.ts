@@ -18,6 +18,7 @@ import {
   researchTopicsFileSchema,
   studentProjectsFileSchema,
   coursesFileSchema,
+  papersFileSchema,
   showreelFileSchema,
 } from "../content/schema";
 
@@ -28,6 +29,8 @@ const MEDIA = resolve(CONTENT, "media");
 const errors: string[] = [];
 const fail = (file: string, msg: string) => errors.push(`${file}: ${msg}`);
 const isUrl = (s: string) => /^https?:\/\//i.test(s);
+/** External URL or an app-served absolute path (e.g. "/papers/..."): not on disk here. */
+const isExternal = (s: string) => isUrl(s) || s.startsWith("/");
 
 /** Parse + schema-validate one file. Returns the typed array, or undefined on failure. */
 function load(file: string, schema: ZodTypeAny): any[] | undefined {
@@ -73,7 +76,7 @@ function checkRefs(file: string, ownerId: string, field: string, refs: string[] 
 /** A non-URL media value must resolve to a real file under content/media/<dir>/. */
 function checkMedia(file: string, ownerId: string, dir: string, values: (string | undefined)[]) {
   for (const value of values) {
-    if (!value || isUrl(value)) continue;
+    if (!value || isExternal(value)) continue;
     const path = resolve(MEDIA, dir, value);
     if (!existsSync(path)) {
       fail(file, `"${ownerId}" media "${value}" not found at content/media/${dir}/${value}`);
@@ -85,6 +88,7 @@ const people = load("people.json", peopleFileSchema);
 const topics = load("research-topics.json", researchTopicsFileSchema);
 const projects = load("student-projects.json", studentProjectsFileSchema);
 const courses = load("courses.json", coursesFileSchema);
+const papers = load("papers.json", papersFileSchema);
 const showreel = load("showreel.json", showreelFileSchema);
 
 const idsOf = (items?: any[]) => new Set((items ?? []).map((i) => i.id));
@@ -132,6 +136,13 @@ if (courses) {
   }
 }
 
+if (papers) {
+  checkUniqueIds("papers.json", papers);
+  for (const p of papers) {
+    checkMedia("papers.json", p.id, "papers", p.images ?? []);
+  }
+}
+
 if (showreel) {
   checkUniqueIds("showreel.json", showreel);
   for (const s of showreel) {
@@ -145,6 +156,7 @@ const counts = {
   topics: topics?.length ?? "ERR",
   projects: projects?.length ?? "ERR",
   courses: courses?.length ?? "ERR",
+  papers: papers?.length ?? "ERR",
   showreel: showreel?.length ?? "ERR",
 };
 
@@ -157,5 +169,5 @@ if (errors.length) {
 
 console.log("✓ check:content passed");
 console.log(
-  `  people ${counts.people} · topics ${counts.topics} · projects ${counts.projects} · courses ${counts.courses} · showreel ${counts.showreel}`,
+  `  people ${counts.people} · topics ${counts.topics} · projects ${counts.projects} · courses ${counts.courses} · papers ${counts.papers} · showreel ${counts.showreel}`,
 );

@@ -101,6 +101,21 @@ export const courseSchema = z.object({
   link: z.string().url().optional(), // TUMonline / Moodle
 });
 
+/** Papers / publications — the group's research output, shown on the Projects page.
+ *  Figures live app-served under apps/kiosk/public/papers/<id>/ (large, gitignored) and
+ *  are referenced as "/papers/..."; the validator skips disk-checking app/URL paths. */
+export const paperSchema = z.object({
+  id,
+  title: nonEmpty,
+  authors: z.array(nonEmpty),
+  venue: nonEmpty,
+  year: z.number().int(),
+  type: nonEmpty, // hover sub-label / detail tag, e.g. "CVPR 2026", "Master thesis"
+  abstract: nonEmpty,
+  url: z.string().url().optional(),
+  images: z.array(nonEmpty).optional(),
+});
+
 /** Showreel / idle feed. News lives here as a SpotlightItem with kind: "news". */
 export const spotlightItemSchema = z.object({
   id,
@@ -117,6 +132,7 @@ export const peopleFileSchema = z.array(personSchema);
 export const researchTopicsFileSchema = z.array(researchTopicSchema);
 export const studentProjectsFileSchema = z.array(studentProjectSchema);
 export const coursesFileSchema = z.array(courseSchema);
+export const papersFileSchema = z.array(paperSchema);
 export const showreelFileSchema = z.array(spotlightItemSchema);
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
@@ -125,4 +141,5 @@ export type ResearchTopic = z.infer<typeof researchTopicSchema>;
 export type Publication = z.infer<typeof publicationSchema>;
 export type StudentProject = z.infer<typeof studentProjectSchema>;
 export type Course = z.infer<typeof courseSchema>;
+export type Paper = z.infer<typeof paperSchema>;
 export type SpotlightItem = z.infer<typeof spotlightItemSchema>;

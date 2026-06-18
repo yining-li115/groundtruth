@@ -1,0 +1,374 @@
+/* Student projects menu — adapted from the Codrops RapidImageHoverMenuEffects demo 5.
+   Layout/hover mechanics kept faithful; colours + typeface mapped to our tokens, the
+   cursor-following image + custom cursor dropped, and left-aligned full-screen.
+   Dark via [data-theme="dark"] on .projects. Preview at /?exp=publications. */
+
+.projects,
+.projects *,
+.projects *::after,
+.projects *::before {
+  box-sizing: border-box;
+}
+
+.projects {
+  position: relative;
+  min-height: 100dvh;
+  color: var(--gt-text-primary);
+  background-color: var(--gt-bg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ---- frame (top-left chair + university) ---- */
+.projects .frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 2rem 2.5rem;
+  z-index: 1000;
+  pointer-events: none;
+}
+.projects .frame__logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.projects .frame__brand-text {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.projects .frame__brand-line {
+  white-space: nowrap;
+  color: var(--gt-text-secondary);
+}
+.projects .frame__brand-strong {
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+
+/* ---- oversized title (behind the menu) ---- */
+.projects .title {
+  position: fixed;
+  bottom: 0;
+  left: 50vw;
+  margin-bottom: 12vh;
+  z-index: 0;
+  pointer-events: none;
+}
+.projects .title__main {
+  margin: 0;
+  font-size: 6.5vw;
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.projects .title__main .oh {
+  display: block;
+}
+.projects .title__main .oh__inner {
+  display: inline-block;
+}
+
+/* ---- menu (demo 5) ---- */
+.projects .menu {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  /* Start the list near the vertical middle (like the CLT stack's 50vh top margin) and
+     give scroll room below; the list flows down from there. */
+  padding: 45vh 2.5rem 25vh;
+  counter-reset: menucounter;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.projects .menu__item {
+  flex: none;
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 0 2rem 0 6vw;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Number badge — revealed on hover (left edge). */
+.projects .menu__item::before {
+  counter-increment: menucounter;
+  content: counters(menucounter, ".", decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gt-accent);
+  border-left: 3px solid currentColor;
+  opacity: 0;
+  transform: translateX(-1rem);
+  transition: transform 0.3s, opacity 0.3s;
+}
+.projects .menu__item:hover::before,
+.projects .menu__item.is-hover::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Title row — overflow-hidden mask for the reveal. */
+.projects .menu__item-text {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 0.45vh 0;
+  font-size: clamp(0.95rem, 1.45vw, 1.55rem);
+}
+.projects .menu__item-textinner {
+  display: block;
+  white-space: nowrap;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--gt-text-primary), var(--gt-bg) 55%);
+  transition: color 0.3s;
+}
+.projects .menu__item:hover .menu__item-textinner,
+.projects .menu__item.is-hover .menu__item-textinner {
+  color: var(--gt-text-primary);
+}
+
+/* Project-type sub-label — revealed on hover, after the title, with a diagonal slash. */
+.projects .menu__item-sub {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-left: 2rem;
+  padding-left: 3rem;
+  white-space: nowrap;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--gt-accent);
+  opacity: 0;
+  transform: translateX(-1rem);
+  transition: transform 0.3s, opacity 0.3s;
+}
+.projects .menu__item:hover .menu__item-sub,
+.projects .menu__item.is-hover .menu__item-sub {
+  opacity: 1;
+  transform: translateX(0);
+}
+.projects .menu__item-sub::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 15%;
+  width: 1px;
+  height: 70%;
+  background: currentColor;
+  transform-origin: 0 100%;
+  transform: rotate(22.5deg) scale3d(1, 0, 1);
+  transition: transform 0.3s;
+}
+.projects .menu__item:hover .menu__item-sub::before,
+.projects .menu__item.is-hover .menu__item-sub::before {
+  transform: rotate(22.5deg) scale3d(1, 1, 1);
+}
+
+/* ---- detail view (click a project) — ContentLayoutTransition content layout ----
+   Left column: big accent title + strong authors + narrow abstract; right column: the
+   paper's figures, stacked and scrollable. "Back" up top. */
+.projects .pub-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr 48vw;
+  align-items: center;
+  background: var(--gt-bg);
+  overflow: hidden;
+}
+.projects .pub-detail-text {
+  justify-self: stretch;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 8rem 3vw 4rem 5vw;
+}
+/* Right column: up arrow (prev paper) · one figure · dots · down arrow (next paper). */
+.projects .pub-detail-right {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 1.4rem 2rem;
+}
+.projects .pub-detail-media {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.projects .pub-detail-media::-webkit-scrollbar {
+  display: none;
+}
+.projects .pub-detail-img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  scroll-snap-align: center;
+}
+.projects .pub-detail-dots {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.projects .pub-dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--gt-text-primary), transparent 70%);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.projects .pub-dot:hover,
+.projects .pub-dot.is-hover {
+  background: var(--gt-text-primary);
+}
+.projects .pub-dot.is-active {
+  background: var(--gt-accent);
+  transform: scale(1.35);
+}
+.projects .pub-nav {
+  flex: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--gt-text-primary);
+}
+.projects .pub-nav svg {
+  display: block;
+  height: 40px;
+  width: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.projects .pub-nav--prev svg {
+  transform: rotate(180deg);
+}
+.projects .pub-nav:hover svg,
+.projects .pub-nav.is-hover svg {
+  opacity: 1;
+}
+.projects .pub-nav--prev:hover svg,
+.projects .pub-nav--prev.is-hover svg {
+  transform: rotate(180deg) translateY(-4px);
+}
+.projects .pub-nav--next:hover svg,
+.projects .pub-nav--next.is-hover svg {
+  transform: translateY(4px);
+}
+.projects .pub-nav:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.projects .pub-detail-back {
+  position: absolute;
+  top: 2.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--gt-text-primary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.projects .pub-detail-back:hover,
+.projects .pub-detail-back.is-hover {
+  color: var(--gt-accent);
+}
+.projects .pub-detail-type {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gt-accent);
+}
+.projects .pub-detail-title {
+  margin: 0.9rem 0 0;
+  /* font-size is set by the auto-fit hook (JS); this is just a pre-fit fallback. */
+  font-size: 4vw;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--gt-accent);
+}
+.projects .pub-detail-authors {
+  margin: 1.8rem 0 0;
+  max-width: 600px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+.projects .pub-detail-venue {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--gt-text-secondary);
+}
+.projects .pub-detail-abstract {
+  margin: 1.4rem 0 0;
+  max-width: 460px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--gt-text-secondary);
+}
+.projects .pub-detail-link {
+  margin-top: 2.8rem;
+  padding: 0.55rem 1.2rem;
+  border: 1px solid var(--gt-accent);
+  border-radius: 9999px;
+  color: var(--gt-accent);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.projects .pub-detail-link:hover,
+.projects .pub-detail-link.is-hover {
+  background: var(--gt-accent);
+  color: var(--gt-brand-white);
+}
+
+/* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
+.projects .frame__logo {
+  pointer-events: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}

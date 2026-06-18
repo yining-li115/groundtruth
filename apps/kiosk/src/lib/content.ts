@@ -9,6 +9,7 @@ import type {
   ResearchTopic,
   StudentProject,
   Course,
+  Paper,
   SpotlightItem,
 } from "../../../../content/schema";
 import type { View } from "../state/store";
@@ -16,12 +17,14 @@ import peopleRaw from "../../../../content/people.json";
 import topicsRaw from "../../../../content/research-topics.json";
 import projectsRaw from "../../../../content/student-projects.json";
 import coursesRaw from "../../../../content/courses.json";
+import papersRaw from "../../../../content/papers.json";
 import showreelRaw from "../../../../content/showreel.json";
 
 export const people = peopleRaw as unknown as Person[];
 export const topics = topicsRaw as unknown as ResearchTopic[];
 export const projects = projectsRaw as unknown as StudentProject[];
 export const courses = coursesRaw as unknown as Course[];
+export const papers = papersRaw as unknown as Paper[];
 export const showreel = showreelRaw as unknown as SpotlightItem[];
 
 const personById = new Map(people.map((p) => [p.id, p]));

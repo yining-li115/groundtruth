@@ -21,10 +21,18 @@ interface KioskState {
   setHeroOrbitActive: (v: boolean) => void;
 }
 
+/** Optional deep-link: `?view=projects` opens that section directly (else home). */
+const initialView = ((): View => {
+  if (typeof window === "undefined") return "home";
+  const v = new URLSearchParams(window.location.search).get("view");
+  const valid: View[] = ["home", "people", "research", "projects", "teaching"];
+  return valid.includes(v as View) ? (v as View) : "home";
+})();
+
 export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
-  view: "home",
+  view: initialView,
   heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
