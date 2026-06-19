@@ -198,7 +198,14 @@ glare/reflection behind the glass). Most interactive content sections use `theme
 | `button.solid`   | `brand.white` bg / `brand.black` text | primary pill |
 | `button.outline` | transparent bg / white text / `gray.80` border | secondary pill |
 
-### Exception — the Projects section is dark (DECIDED)
+### Exception — the Projects AND Research sections are dark (DECIDED)
+Two sections now opt into `theme.dark` (`data-theme="dark"` on their root): **Projects**
+(papers) and **Research** (`apps/kiosk/src/scenes/ResearchSection.tsx` — the topics shown as
+an Osmo-style draggable image slider; the photography reads best on black). With a second dark
+section, the note below ("If more sections ever want dark, revisit whether dark should become a
+selectable mode") is now live — worth revisiting if a third wants it. People, Home, Teaching and
+the controller stay `theme.light`.
+
 The **Projects section** (`apps/kiosk/src/scenes/ProjectsSection.tsx` — the group's
 papers/publications) is rendered in **`theme.dark`** (`data-theme="dark"` on its root),
 a **deliberate exception** to the light-first rule. It's the one full-page dark surface a

@@ -1,0 +1,265 @@
+/* Research section — the Osmo "Draggable Infinite Slider" (codepen.io/osmosupply/pen/NPKqByd),
+   re-implemented with our tokens + font. A deliberate DARK section (data-theme="dark", like
+   Projects): the images read best on black. Layout/animation kept 1:1 with the reference; the
+   added piece is the description block (.rsl-desc) under the 01/06 counter. em-based sizing
+   (like the original) scales off a viewport-relative root font-size. */
+.rsl {
+  --rsl-ease: cubic-bezier(0.625, 0.05, 0, 1);
+  /* This font's digits ride high in their line box (large ascent) — a constant nudge,
+     independent of line-height, drops them onto the "/" divider's centre. Tweak to taste. */
+  --rsl-num-nudge: 0.14em;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  /* The whole layout is em-based off this root size, exactly like the reference (1.1vw), so
+     it scales with the viewport. No upper cap — a cap shrinks every em on big screens and
+     pulls the slider left. Floor only, for tiny dev windows. */
+  font-size: max(12px, 1.1vw);
+}
+
+/* Brand / chair block, fixed top-left (→ home). White logo on the dark section. */
+.rsl-brand {
+  position: fixed;
+  top: 2rem;
+  left: 2.5rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: var(--gt-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.rsl-brand-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--gt-text-secondary);
+}
+.rsl-brand-strong {
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+
+/* ── Left overlay (counter + description + nav), fading the slides under a gradient ── */
+.rsl-overlay {
+  z-index: 2;
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  align-items: center;
+  width: 37.5em;
+  height: 100%;
+  padding-left: 5em;
+  background-image: linear-gradient(90deg, var(--gt-bg) 85%, transparent);
+}
+.rsl-overlay-inner {
+  display: flex;
+  flex-flow: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  height: 30em;
+}
+
+/* ── 01 / 06 counter — the step column slides vertically as the active slide changes ── */
+.rsl-count-row {
+  display: flex;
+  flex-flow: row;
+  align-items: center;
+  gap: 0.2em;
+  font-size: 5.625em;
+  font-weight: 700;
+  line-height: 1;
+}
+/* The number "slot": a generous line-height splits the extra leading evenly above & below the
+   glyph, so the digit sits centred in the slot (this font's tall ascenders otherwise ride high)
+   and lines up with the "/" divider — and the slot clips cleanly with no top cut / next-number
+   sliver. Column height, heading line-height and the JS step translate all share this 1.6. */
+.rsl-count-column {
+  height: 1.6em;
+  overflow: hidden;
+}
+.rsl-count-steps {
+  display: flex;
+  flex-direction: column;
+}
+.rsl-count-heading {
+  width: 2ch;
+  margin: 0;
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+  /* Drop the digit to the slot centre so it lines up with the "/" (see --rsl-num-nudge).
+     Independent of the gsap step-translate, which is applied to the parent .rsl-count-steps. */
+  transform: translateY(var(--rsl-num-nudge));
+}
+.rsl-count-divider {
+  width: 2px;
+  height: 0.75em;
+  background-color: var(--gt-accent);
+  transform: rotate(15deg);
+}
+
+/* ── Description of the active slide, under the counter ── */
+.rsl-desc {
+  max-width: 18em;
+}
+.rsl-desc-title {
+  margin: 0;
+  font-size: 1.6em;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.rsl-desc-blurb {
+  margin: 0.5em 0 0;
+  font-size: 0.95em;
+  line-height: 1.45;
+  color: var(--gt-text-secondary);
+}
+
+/* ── Prev / next buttons with the animated corner brackets ── */
+.rsl-nav-row {
+  display: flex;
+  gap: 2em;
+}
+.rsl-button {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 4em;
+  height: 4em;
+  padding: 0;
+  background: transparent;
+  color: var(--gt-text-primary);
+  border: 1px solid var(--gt-border);
+  border-radius: 0.4em;
+  font: inherit;
+  cursor: pointer;
+}
+.rsl-button-arrow {
+  flex: none;
+  width: 1em;
+  height: 0.75em;
+}
+.rsl-button-arrow.next {
+  transform: rotate(180deg);
+}
+.rsl-button-overlay {
+  z-index: 2;
+  display: block;
+  position: absolute;
+  inset: -1px;
+}
+/* display:block is required because these are <span>s — the first (static, top-left) corner
+   would otherwise be an inline box that ignores width/height and collapses into a stray bar. */
+.rsl-corner {
+  display: block;
+  width: 1em;
+  height: 1em;
+  border-top: 1px solid var(--gt-text-primary);
+  border-left: 1px solid var(--gt-text-primary);
+  border-top-left-radius: 0.4em;
+}
+.rsl-corner.top-right {
+  position: absolute;
+  inset: 0 0 auto auto;
+  transform: rotate(90deg);
+}
+.rsl-corner.bottom-left {
+  position: absolute;
+  inset: auto auto 0 0;
+  transform: rotate(-90deg);
+}
+.rsl-corner.bottom-right {
+  position: absolute;
+  inset: auto 0 0 auto;
+  transform: rotate(180deg);
+}
+.rsl-button,
+.rsl-button-overlay {
+  transition: transform 0.475s var(--rsl-ease), opacity 0.475s var(--rsl-ease);
+}
+.rsl-button:hover .rsl-button-overlay,
+.rsl-button.is-hover .rsl-button-overlay {
+  transform: scale(1.4);
+}
+.rsl-nav-row:hover:has(.rsl-button:hover) .rsl-button {
+  opacity: 0.4;
+}
+.rsl-button:hover,
+.rsl-button.is-hover {
+  transform: scale(0.85);
+  opacity: 1 !important;
+}
+
+/* ── Slider ── */
+.rsl-main {
+  z-index: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.rsl-wrap {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+.rsl-list {
+  position: relative;
+  display: flex;
+  flex-flow: row;
+  align-items: stretch;
+}
+.rsl-slide {
+  flex: none;
+  position: relative;
+  width: 42.5em;
+  height: 28em;
+  padding: 0 1.25em;
+  opacity: 0.2;
+  transition: opacity 0.4s;
+  cursor: pointer;
+}
+.rsl-slide.active {
+  opacity: 1;
+}
+.rsl-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5em;
+  overflow: hidden;
+}
+.rsl-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rsl-slide,
+  .rsl-button,
+  .rsl-button-overlay {
+    transition: none;
+  }
+}

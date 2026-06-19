@@ -43,5 +43,32 @@
     "cover": "https://picsum.photos/seed/topic-semantic/1200/800",
     "tags": ["LiDAR", "semantic segmentation", "digital twin", "point cloud"],
     "leadPersonIds": ["weihang-li", "benjamin-busam"]
+  },
+  {
+    "id": "neural-implicit-surfaces",
+    "title": "Neural Implicit Surfaces",
+    "summary": "Continuous surface reconstruction from oblique aerial photogrammetry.",
+    "description": "We represent buildings and terrain as neural implicit fields rather than discrete meshes, learning a continuous signed-distance or occupancy function directly from multi-view oblique imagery. This yields watertight, level-of-detail-adaptive surfaces that interpolate cleanly across sparsely observed facades.",
+    "cover": "https://picsum.photos/seed/gt-research-neural/1200/800",
+    "tags": ["neural fields", "implicit surfaces", "photogrammetry", "3D reconstruction"],
+    "leadPersonIds": ["weihang-li"]
+  },
+  {
+    "id": "cross-view-geolocalisation",
+    "title": "Cross-View Geo-Localisation",
+    "summary": "Matching ground-level photos to satellite tiles to recover where they were taken.",
+    "description": "Given a single street-level photograph, we estimate its geographic location by matching it against a database of overhead satellite tiles. The challenge is the extreme viewpoint gap between ground and aerial imagery; we learn a shared embedding in which co-located views are close despite that gap.",
+    "cover": "https://picsum.photos/seed/gt-research-geoloc/1200/800",
+    "tags": ["geo-localisation", "cross-view", "retrieval", "deep learning"],
+    "leadPersonIds": ["florian-eichinger"]
+  },
+  {
+    "id": "multitemporal-change-detection",
+    "title": "Multi-Temporal Change Detection",
+    "summary": "Spotting what changed between SAR acquisitions with transformer attention.",
+    "description": "By aligning long stacks of Synthetic Aperture Radar acquisitions and attending across time, we detect and characterise change — new construction, subsidence, flooding — while separating real surface change from speckle and seasonal nuisance variation.",
+    "cover": "https://picsum.photos/seed/gt-research-change/1200/800",
+    "tags": ["SAR", "change detection", "transformer", "time series"],
+    "leadPersonIds": ["florian-eberhardt"]
   }
 ]
