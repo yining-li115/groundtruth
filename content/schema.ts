@@ -109,19 +109,43 @@ export const courseSchema = z.object({
   link: z.string().url().optional(), // TUMonline / Moodle
 });
 
-/** Papers / publications — the group's research output, shown on the Projects page.
- *  Figures live app-served under apps/kiosk/public/papers/<id>/ (large, gitignored) and
- *  are referenced as "/papers/..."; the validator skips disk-checking app/URL paths. */
+/** Papers / publications — the group's research output, shown on the Publications page
+ *  (PhD papers, with figure galleries). Figures live app-served under
+ *  apps/kiosk/public/papers/<id>/ (large, gitignored) and are referenced as
+ *  "/papers/..."; the validator skips disk-checking app/URL paths. */
 export const paperSchema = z.object({
   id,
   title: nonEmpty,
   authors: z.array(nonEmpty),
   venue: nonEmpty,
   year: z.number().int(),
-  type: nonEmpty, // hover sub-label / detail tag, e.g. "CVPR 2026", "Master thesis"
+  type: nonEmpty, // hover sub-label / detail tag, e.g. "CVPR 2026"
   abstract: nonEmpty,
   url: z.string().url().optional(),
   images: z.array(nonEmpty).optional(),
+});
+
+/** Open topics — student projects OFFERED by the group (not completed work), shown on the
+ *  Student Projects page and filtered by `type` via the GooeyNav tabs. Each is an offer a
+ *  student can take; it has no authors/venue/year (those belong to a finished project). */
+export const openTopicType = z.enum([
+  "IDP",
+  "Guided Research",
+  "Semester Arbeit",
+  "Bachelor Thesis",
+  "Master Thesis",
+]);
+export const openTopicSchema = z.object({
+  id,
+  title: nonEmpty,
+  // One or more of the five filter categories — a topic may be open as several kinds at
+  // once (e.g. both an IDP and a Master Thesis). The page filter matches by membership.
+  types: z.array(openTopicType).min(1),
+  summary: nonEmpty, // one-line teaser (hover / detail intro)
+  description: nonEmpty, // the offer: what the student would do
+  posted: z.string().optional(), // ISO date "YYYY-MM-DD" — sorts the "All" tab (newest first)
+  supervisorId: id.optional(), // → Person.id
+  prerequisites: z.array(nonEmpty).optional(),
 });
 
 /** Showreel / idle feed. News lives here as a SpotlightItem with kind: "news". */
@@ -141,6 +165,7 @@ export const researchTopicsFileSchema = z.array(researchTopicSchema);
 export const studentProjectsFileSchema = z.array(studentProjectSchema);
 export const coursesFileSchema = z.array(courseSchema);
 export const papersFileSchema = z.array(paperSchema);
+export const openTopicsFileSchema = z.array(openTopicSchema);
 export const showreelFileSchema = z.array(spotlightItemSchema);
 
 export type MediaItem = z.infer<typeof mediaItemSchema>;
@@ -150,4 +175,6 @@ export type Publication = z.infer<typeof publicationSchema>;
 export type StudentProject = z.infer<typeof studentProjectSchema>;
 export type Course = z.infer<typeof courseSchema>;
 export type Paper = z.infer<typeof paperSchema>;
+export type OpenTopicType = z.infer<typeof openTopicType>;
+export type OpenTopic = z.infer<typeof openTopicSchema>;
 export type SpotlightItem = z.infer<typeof spotlightItemSchema>;

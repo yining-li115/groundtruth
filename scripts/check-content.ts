@@ -19,6 +19,7 @@ import {
   studentProjectsFileSchema,
   coursesFileSchema,
   papersFileSchema,
+  openTopicsFileSchema,
   showreelFileSchema,
 } from "../content/schema";
 
@@ -88,7 +89,8 @@ const people = load("people.json", peopleFileSchema);
 const topics = load("research-topics.json", researchTopicsFileSchema);
 const projects = load("student-projects.json", studentProjectsFileSchema);
 const courses = load("courses.json", coursesFileSchema);
-const papers = load("papers.json", papersFileSchema);
+const papers = load("publications.json", papersFileSchema);
+const openTopics = load("open-topics.json", openTopicsFileSchema);
 const showreel = load("showreel.json", showreelFileSchema);
 
 const idsOf = (items?: any[]) => new Set((items ?? []).map((i) => i.id));
@@ -137,9 +139,16 @@ if (courses) {
 }
 
 if (papers) {
-  checkUniqueIds("papers.json", papers);
+  checkUniqueIds("publications.json", papers);
   for (const p of papers) {
-    checkMedia("papers.json", p.id, "papers", p.images ?? []);
+    checkMedia("publications.json", p.id, "papers", p.images ?? []);
+  }
+}
+
+if (openTopics) {
+  checkUniqueIds("open-topics.json", openTopics);
+  for (const t of openTopics) {
+    checkRefs("open-topics.json", t.id, "supervisorId", t.supervisorId ? [t.supervisorId] : [], personIds);
   }
 }
 
@@ -157,6 +166,7 @@ const counts = {
   projects: projects?.length ?? "ERR",
   courses: courses?.length ?? "ERR",
   papers: papers?.length ?? "ERR",
+  openTopics: openTopics?.length ?? "ERR",
   showreel: showreel?.length ?? "ERR",
 };
 
@@ -169,5 +179,5 @@ if (errors.length) {
 
 console.log("✓ check:content passed");
 console.log(
-  `  people ${counts.people} · topics ${counts.topics} · projects ${counts.projects} · courses ${counts.courses} · papers ${counts.papers} · showreel ${counts.showreel}`,
+  `  people ${counts.people} · topics ${counts.topics} · projects ${counts.projects} · courses ${counts.courses} · publications ${counts.papers} · open-topics ${counts.openTopics} · showreel ${counts.showreel}`,
 );

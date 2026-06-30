@@ -9,3 +9,4 @@ export * from "./components/StaggeredMenu";
 export * from "./components/BlurScrollText";
 export * from "./components/HoverCaption";
 export * from "./components/HeroScrollHint";
+export * from "./components/GooeyNav";

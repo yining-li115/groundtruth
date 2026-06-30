@@ -10,6 +10,7 @@ import type {
   StudentProject,
   Course,
   Paper,
+  OpenTopic,
   SpotlightItem,
 } from "../../../../content/schema";
 import type { View } from "../state/store";
@@ -17,20 +18,26 @@ import peopleRaw from "../../../../content/people.json";
 import topicsRaw from "../../../../content/research-topics.json";
 import projectsRaw from "../../../../content/student-projects.json";
 import coursesRaw from "../../../../content/courses.json";
-import papersRaw from "../../../../content/papers.json";
+import publicationsRaw from "../../../../content/publications.json";
+import openTopicsRaw from "../../../../content/open-topics.json";
 import showreelRaw from "../../../../content/showreel.json";
 
 export const people = peopleRaw as unknown as Person[];
 export const topics = topicsRaw as unknown as ResearchTopic[];
 export const projects = projectsRaw as unknown as StudentProject[];
 export const courses = coursesRaw as unknown as Course[];
-export const papers = papersRaw as unknown as Paper[];
+/** PhD papers shown on the Publications page (with figure galleries). */
+export const publications = publicationsRaw as unknown as Paper[];
+/** Student project offers shown on the Student Projects page (filtered by `type`). */
+export const openTopics = openTopicsRaw as unknown as OpenTopic[];
 export const showreel = showreelRaw as unknown as SpotlightItem[];
 
 const personById = new Map(people.map((p) => [p.id, p]));
 const topicById = new Map(topics.map((t) => [t.id, t]));
 const projectById = new Map(projects.map((p) => [p.id, p]));
 const courseById = new Map(courses.map((c) => [c.id, c]));
+const publicationById = new Map(publications.map((p) => [p.id, p]));
+const openTopicById = new Map(openTopics.map((t) => [t.id, t]));
 
 /** Resolve a Person id to a display name "First Last" (falls back to the id). */
 export const personName = (id: string): string => {
@@ -44,7 +51,8 @@ export const topicTitle = (id: string): string => topicById.get(id)?.title ?? id
 export function viewForId(id: string): View | null {
   if (personById.has(id)) return "people";
   if (topicById.has(id)) return "research";
-  if (projectById.has(id)) return "projects";
+  if (projectById.has(id) || openTopicById.has(id)) return "projects";
+  if (publicationById.has(id)) return "publications";
   if (courseById.has(id)) return "teaching";
   return null;
 }

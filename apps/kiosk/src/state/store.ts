@@ -3,7 +3,7 @@ import { create } from "zustand";
 /** Which screen the interactive website shell is showing. No router needed — the kiosk
  *  is a single cursor-driven surface, so navigation is just view state (architecture
  *  §6: the kiosk owns navigation). */
-export type View = "home" | "people" | "research" | "projects" | "teaching";
+export type View = "home" | "people" | "research" | "projects" | "publications" | "teaching";
 
 interface KioskState {
   /** Socket connected to the relay. */
@@ -25,7 +25,7 @@ interface KioskState {
 const initialView = ((): View => {
   if (typeof window === "undefined") return "home";
   const v = new URLSearchParams(window.location.search).get("view");
-  const valid: View[] = ["home", "people", "research", "projects", "teaching"];
+  const valid: View[] = ["home", "people", "research", "projects", "publications", "teaching"];
   return valid.includes(v as View) ? (v as View) : "home";
 })();
 

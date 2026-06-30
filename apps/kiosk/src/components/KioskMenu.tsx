@@ -5,7 +5,8 @@ import { navigate } from "../lib/navigate";
 const SECTIONS: { key: Exclude<View, "home">; label: string }[] = [
   { key: "teaching", label: "Teaching" },
   { key: "research", label: "Research" },
-  { key: "projects", label: "Projects" },
+  { key: "projects", label: "Student projects" },
+  { key: "publications", label: "Publications" },
   { key: "people", label: "People" },
 ];
 

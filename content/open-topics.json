@@ -1,0 +1,284 @@
+[
+  {
+    "id": "ot-campus-digital-twin",
+    "title": "A Living Digital Twin of the TUM Campus",
+    "types": [
+      "IDP",
+      "Master Thesis"
+    ],
+    "summary": "Build a continuously updated semantic 3D twin of the campus from repeated mobile-mapping runs.",
+    "description": "You will fuse repeated mobile-mapping sessions into a single, continuously updated semantic 3D model of the TUM campus, and build a lightweight web viewer that highlights what changed between scans. The project spans data registration, semantic segmentation, and change detection — pick the part that excites you most and we shape the scope together.",
+    "posted": "2026-06-18",
+    "supervisorId": "weihang-li",
+    "prerequisites": [
+      "Python",
+      "Basic 3D geometry",
+      "Interest in point clouds"
+    ]
+  },
+  {
+    "id": "ot-mobile-mapping-panoptic",
+    "title": "Panoptic Segmentation of Street-Level Mobile-Mapping Point Clouds",
+    "types": [
+      "IDP",
+      "Master Thesis"
+    ],
+    "summary": "Resolve both 'stuff' and 'things' in dense street-level scans with a sparse-convolution panoptic head.",
+    "description": "Mobile-mapping clouds mix stuff (road, vegetation) and things (cars, poles, pedestrians). You will adapt a sparse-convolution panoptic head to resolve instances even in the long, thin geometry of street furniture, and evaluate on a re-annotated Munich subset.",
+    "posted": "2026-06-05",
+    "supervisorId": "michael-greza",
+    "prerequisites": [
+      "PyTorch",
+      "Deep learning basics"
+    ]
+  },
+  {
+    "id": "ot-osm-footprints",
+    "title": "Weakly-Supervised Building Footprint Extraction from Noisy OSM Labels",
+    "types": [
+      "IDP"
+    ],
+    "summary": "Treat misaligned OpenStreetMap footprints as weak supervision for a robust segmentation model.",
+    "description": "OpenStreetMap footprints are plentiful but misaligned. You will treat them as weak supervision, training a segmentation model robust to label shift through an alignment-tolerant loss, and aim to recover sharper footprints than the noisy labels themselves.",
+    "posted": "2026-05-22",
+    "supervisorId": "florian-eberhardt",
+    "prerequisites": [
+      "Python",
+      "Remote sensing or CV basics"
+    ]
+  },
+  {
+    "id": "ot-bridge-monitoring",
+    "title": "Photogrammetric Deformation Monitoring of Bridges from Consumer Cameras",
+    "types": [
+      "IDP"
+    ],
+    "summary": "Resolve sub-millimetre structural deflection from a calibrated cluster of consumer cameras.",
+    "description": "Sub-millimetre structural monitoring usually needs survey-grade gear. You will investigate whether a calibrated cluster of consumer cameras, combined with careful bundle adjustment and temporal averaging, can resolve bridge deflection trends at a fraction of the cost.",
+    "posted": "2026-05-09",
+    "supervisorId": "luca-collorone",
+    "prerequisites": [
+      "Photogrammetry basics",
+      "Linear algebra"
+    ]
+  },
+  {
+    "id": "ot-cross-view-geoloc",
+    "title": "Cross-View Geo-Localisation Between Ground Photos and Satellite Tiles",
+    "types": [
+      "Guided Research",
+      "Master Thesis"
+    ],
+    "summary": "Learn a shared embedding across the extreme viewpoint gap between phone photos and satellite imagery.",
+    "description": "Given a single street photo, where on the map was it taken? You will learn a shared embedding across the extreme viewpoint gap between phone photos and satellite imagery, and add an orientation head that recovers heading to within a few degrees.",
+    "posted": "2026-04-27",
+    "supervisorId": "junwen-huang",
+    "prerequisites": [
+      "PyTorch",
+      "Metric learning interest"
+    ]
+  },
+  {
+    "id": "ot-sentinel-temporal-sr",
+    "title": "Temporal Super-Resolution of Sentinel-2 Time Series",
+    "types": [
+      "Guided Research"
+    ],
+    "summary": "Interpolate cloud-punched gaps in optical time series with a SAR-conditioned temporal model.",
+    "description": "Clouds punch gaps in optical time series. You will interpolate the missing acquisitions with a temporal model conditioned on SAR, reconstructing plausible surface reflectance for agricultural monitoring even through extended overcast periods.",
+    "posted": "2026-04-12",
+    "supervisorId": "florian-eichinger",
+    "prerequisites": [
+      "Python",
+      "Time-series or remote sensing basics"
+    ]
+  },
+  {
+    "id": "ot-differentiable-ba",
+    "title": "Differentiable Bundle Adjustment for End-to-End Photogrammetry",
+    "types": [
+      "Guided Research",
+      "Master Thesis"
+    ],
+    "summary": "Make the classical bundle-adjustment step differentiable so the front-end network trains for the optimiser.",
+    "description": "You will make the classical bundle-adjustment step differentiable so that feature extraction and geometry optimisation train jointly. Gradients from reprojection error reach the front-end network, yielding features tuned for the optimiser rather than for matching alone.",
+    "posted": "2026-03-30",
+    "supervisorId": "weihang-li",
+    "prerequisites": [
+      "Strong maths",
+      "PyTorch",
+      "Multi-view geometry"
+    ]
+  },
+  {
+    "id": "ot-eo-foundation-survey",
+    "title": "Foundation Models for Earth Observation: A Critical Survey",
+    "types": [
+      "Guided Research"
+    ],
+    "summary": "Survey pretraining data, architectures, and evaluation for general-purpose remote sensing models.",
+    "description": "Large pretrained models promise general-purpose remote sensing, but claims outpace evidence. You will survey pretraining data, architectures, and evaluation, and argue for benchmarks that test geographic generalisation and physical consistency rather than in-distribution accuracy alone.",
+    "posted": "2026-03-15",
+    "supervisorId": "yordanka-velikova",
+    "prerequisites": [
+      "Strong reading and writing",
+      "ML literacy"
+    ]
+  },
+  {
+    "id": "ot-sar-despeckle-edge",
+    "title": "Real-Time SAR Despeckling on Embedded Hardware",
+    "types": [
+      "Semester Arbeit",
+      "Bachelor Thesis"
+    ],
+    "summary": "Benchmark pruned and quantised despeckling networks against quality and latency targets.",
+    "description": "Can a compact CNN despeckle SAR imagery fast enough to run on-board a small satellite? You will benchmark pruned and quantised despeckling networks against quality and latency targets, and characterise the accuracy/speed trade-off.",
+    "posted": "2026-02-28",
+    "supervisorId": "florian-eberhardt",
+    "prerequisites": [
+      "Python",
+      "Interest in efficient inference"
+    ]
+  },
+  {
+    "id": "ot-neural-implicit-oblique",
+    "title": "Neural Implicit Surfaces from Oblique Aerial Photogrammetry",
+    "types": [
+      "Semester Arbeit"
+    ],
+    "summary": "Fit a neural signed-distance field to oblique image sets for watertight building shells.",
+    "description": "Oblique aerial captures rich facade detail that 2.5D meshes flatten. You will fit a neural signed-distance field directly to oblique image sets, recovering watertight building shells with crisp eaves and balconies, and export them to standard mesh formats for GIS use.",
+    "posted": "2026-02-11",
+    "supervisorId": "luca-collorone",
+    "prerequisites": [
+      "Python",
+      "3D vision interest"
+    ]
+  },
+  {
+    "id": "ot-gsplat-viewer",
+    "title": "Interactive Visualisation of City-Scale Gaussian Splats",
+    "types": [
+      "Semester Arbeit",
+      "IDP"
+    ],
+    "summary": "Build a real-time web viewer that streams and renders large-scale Gaussian-splat captures.",
+    "description": "3D Gaussian splatting renders streets photorealistically, but city-scale captures are huge. You will build a real-time web viewer that streams and level-of-detail-culls splats so a visitor can fly through a neighbourhood on commodity hardware.",
+    "posted": "2026-01-26",
+    "supervisorId": "michael-greza",
+    "prerequisites": [
+      "WebGL or three.js",
+      "TypeScript"
+    ]
+  },
+  {
+    "id": "ot-registration-descriptors",
+    "title": "Benchmarking Local Descriptors for Point-Cloud Registration",
+    "types": [
+      "Semester Arbeit",
+      "Guided Research"
+    ],
+    "summary": "Compare learned rotation-equivariant descriptors against hand-crafted ones under density variation.",
+    "description": "You will revisit hand-crafted geometric descriptors through a learned lens, training rotation-equivariant features that stay discriminative under heavy density variation, and benchmark them inside standard RANSAC registration pipelines on cross-source data.",
+    "posted": "2026-01-09",
+    "supervisorId": "junwen-huang",
+    "prerequisites": [
+      "Python",
+      "Linear algebra"
+    ]
+  },
+  {
+    "id": "ot-sar-change-detection",
+    "title": "Change Detection in Multi-Temporal SAR with Transformer Attention",
+    "types": [
+      "Bachelor Thesis"
+    ],
+    "summary": "Let attention decide which dates matter per pixel across a stack of co-registered SAR acquisitions.",
+    "description": "You will model a stack of co-registered SAR acquisitions as a temporal sequence and let attention decide which dates matter for each pixel, aiming to flag construction and flooding earlier than bi-temporal differencing, with calibrated uncertainty for operational use.",
+    "posted": "2025-12-15",
+    "supervisorId": "florian-eichinger",
+    "prerequisites": [
+      "PyTorch",
+      "Interest in SAR / time series"
+    ]
+  },
+  {
+    "id": "ot-domain-adaptation-cities",
+    "title": "Domain Adaptation Across Cities for Semantic Aerial Mapping",
+    "types": [
+      "Bachelor Thesis"
+    ],
+    "summary": "Close the cross-city gap with adversarial feature alignment plus targeted pseudo-labelling.",
+    "description": "A model trained on one city degrades on the next as roof materials and street patterns shift. You will close the gap with an adversarial alignment of feature statistics plus targeted pseudo-labelling, aiming to recover most of the lost accuracy without new annotations.",
+    "posted": "2025-11-28",
+    "supervisorId": "weihang-li",
+    "prerequisites": [
+      "PyTorch",
+      "Semantic segmentation basics"
+    ]
+  },
+  {
+    "id": "ot-flood-mapping",
+    "title": "Flood Extent Mapping with Physics-Guided Neural Networks",
+    "types": [
+      "Bachelor Thesis",
+      "Semester Arbeit"
+    ],
+    "summary": "Constrain a flood-mapping network with a coarse hydrological prior so predictions respect terrain flow.",
+    "description": "You will constrain a flood-mapping network with a coarse hydrological prior so predictions respect terrain flow. The guidance should suppress false positives on dark, smooth surfaces that mimic water in SAR, improving reliability for rapid disaster response.",
+    "posted": "2025-11-10",
+    "supervisorId": "florian-eberhardt",
+    "prerequisites": [
+      "Python",
+      "Deep learning basics"
+    ]
+  },
+  {
+    "id": "ot-canopy-height-fusion",
+    "title": "Uncertainty-Aware Canopy Height Mapping from Lidar–Optical Fusion",
+    "types": [
+      "Master Thesis"
+    ],
+    "summary": "Fuse sparse spaceborne lidar with dense optical imagery, propagating per-pixel uncertainty end to end.",
+    "description": "You will fuse sparse spaceborne lidar footprints with dense optical imagery to produce wall-to-wall canopy height, propagating per-pixel uncertainty end to end so that downstream carbon estimates can report honest confidence intervals.",
+    "posted": "2025-10-22",
+    "supervisorId": "yordanka-velikova",
+    "prerequisites": [
+      "PyTorch",
+      "Remote sensing basics"
+    ]
+  },
+  {
+    "id": "ot-open-vocab-pointcloud",
+    "title": "Open-Vocabulary Querying of City-Scale Point Clouds",
+    "types": [
+      "Master Thesis",
+      "Guided Research"
+    ],
+    "summary": "Attach language features to points so users can ask for 'bike racks near the entrance'.",
+    "description": "You will attach language features to points so a user can ask for 'bike racks near the entrance' and get a spatial answer. By distilling a vision-language model into a sparse 3D backbone, the system should answer free-form queries over hundreds of millions of points.",
+    "posted": "2025-10-03",
+    "supervisorId": "liming-kuang",
+    "prerequisites": [
+      "PyTorch",
+      "Deep learning",
+      "3D vision interest"
+    ]
+  },
+  {
+    "id": "ot-snow-cover-fusion",
+    "title": "Snow-Cover Monitoring in Alpine Terrain from Fused Optical and SAR",
+    "types": [
+      "Master Thesis"
+    ],
+    "summary": "Reconcile optical reflectance with SAR backscatter under terrain-aware geometry for daily snow maps.",
+    "description": "Steep terrain confounds single-sensor snow mapping through shadow and layover. You will build a fusion model that reconciles optical reflectance with SAR backscatter under a terrain-aware geometry, producing daily snow-cover maps validated against in-situ stations.",
+    "posted": "2025-09-18",
+    "supervisorId": "florian-eichinger",
+    "prerequisites": [
+      "PyTorch",
+      "Remote sensing basics"
+    ]
+  }
+]

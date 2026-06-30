@@ -10,6 +10,7 @@ import { Home } from "./scenes/Home";
 import { PeopleSection } from "./scenes/PeopleSection";
 import { ResearchSection } from "./scenes/ResearchSection";
 import { ProjectsSection } from "./scenes/ProjectsSection";
+import { PublicationsSection } from "./scenes/PublicationsSection";
 import { TeachingSection } from "./scenes/TeachingSection";
 
 function CurrentView() {
@@ -21,6 +22,8 @@ function CurrentView() {
       return <ResearchSection />;
     case "projects":
       return <ProjectsSection />;
+    case "publications":
+      return <PublicationsSection />;
     case "teaching":
       return <TeachingSection />;
     default:

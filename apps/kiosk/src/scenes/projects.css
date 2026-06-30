@@ -1,7 +1,7 @@
-/* Student projects menu — adapted from the Codrops RapidImageHoverMenuEffects demo 5.
-   Layout/hover mechanics kept faithful; colours + typeface mapped to our tokens, the
-   cursor-following image + custom cursor dropped, and left-aligned full-screen.
-   Dark via [data-theme="dark"] on .projects. Preview at /?exp=publications. */
+/* Student Projects — the open-topics list with a GooeyNav filter on top. The list/hover
+   mechanics are adapted from the Codrops RapidImageHoverMenuEffects demo 5; colours +
+   typeface mapped to our tokens, left-aligned full-screen. Dark via [data-theme="dark"] on
+   .projects (design-system §5 exception). Preview at /?view=projects. */
 
 .projects,
 .projects *,
@@ -35,6 +35,12 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  pointer-events: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
 }
 .projects .frame__brand-text {
   font-size: 0.72rem;
@@ -49,12 +55,28 @@
   color: var(--gt-text-primary);
 }
 
-/* ---- oversized title (behind the menu) ---- */
+/* ---- filter tabs (GooeyNav), fixed top-centre ---- */
+.projects .projects-filter {
+  position: fixed;
+  top: 1.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  transition: opacity 0.3s ease;
+}
+/* Hide the filter while a topic detail is open (its "← Back" sits where the tabs are). */
+.projects:has(.sp-detail) .projects-filter {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- oversized two-line title (behind the menu) ---- */
 .projects .title {
   position: fixed;
-  bottom: 0;
+  /* Sit above the QR card (bottom-8 + ~280px tall) — rem-based so it clears the
+     fixed-pixel QR on any viewport height. Two-line title grows upward from here. */
+  bottom: 21rem;
   left: 50vw;
-  margin-bottom: 12vh;
   z-index: 0;
   pointer-events: none;
 }
@@ -68,6 +90,7 @@
 }
 .projects .title__main .oh {
   display: block;
+  /* No overflow:hidden here — with line-height 0.9 it clips the cap tops of the title. */
 }
 .projects .title__main .oh__inner {
   display: inline-block;
@@ -79,12 +102,18 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  /* Start the list near the vertical middle (like the CLT stack's 50vh top margin) and
-     give scroll room below; the list flows down from there. */
-  padding: 45vh 2.5rem 25vh;
+  /* Leave room for the fixed filter bar at the top, then flow the list down. */
+  padding: 32vh 2.5rem 25vh;
   counter-reset: menucounter;
   -webkit-user-select: none;
   user-select: none;
+}
+.projects .menu__empty {
+  padding-left: 6vw;
+  max-width: 40ch;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
 }
 .projects .menu__item {
   flex: none;
@@ -180,119 +209,95 @@
 .projects .menu__item.is-hover .menu__item-sub::before {
   transform: rotate(22.5deg) scale3d(1, 1, 1);
 }
+/* Muted pipe between multiple colour-coded tags. */
+.projects .tag-sep {
+  margin: 0 0.5em;
+  color: var(--gt-text-secondary);
+}
 
-/* ---- detail view (click a project) — ContentLayoutTransition content layout ----
-   Left column: big accent title + strong authors + narrow abstract; right column: the
-   paper's figures, stacked and scrollable. "Back" up top. */
-.projects .pub-detail {
+/* ---- text-only detail (click a topic) ---- */
+.projects .sp-detail {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  grid-template-columns: 1fr 48vw;
-  align-items: center;
-  background: var(--gt-bg);
-  overflow: hidden;
-}
-.projects .pub-detail-text {
-  justify-self: stretch;
-  max-height: 100vh;
-  overflow-y: auto;
-  padding: 8rem 3vw 4rem 5vw;
-}
-/* Right column: up arrow (prev paper) · one figure · dots · down arrow (next paper). */
-.projects .pub-detail-right {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1.1rem;
-  padding: 1.4rem 2rem;
+  justify-content: center;
+  background: var(--gt-bg);
+  overflow-y: auto;
+  padding: 7rem 8vw 6rem;
 }
-.projects .pub-detail-media {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+.projects .sp-detail-inner {
+  max-width: 70ch;
 }
-.projects .pub-detail-media::-webkit-scrollbar {
-  display: none;
+.projects .sp-detail-type {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gt-accent);
 }
-.projects .pub-detail-img {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  scroll-snap-align: center;
-}
-.projects .pub-detail-dots {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-.projects .pub-dot {
-  width: 9px;
-  height: 9px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  background: color-mix(in srgb, var(--gt-text-primary), transparent 70%);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-.projects .pub-dot:hover,
-.projects .pub-dot.is-hover {
-  background: var(--gt-text-primary);
-}
-.projects .pub-dot.is-active {
-  background: var(--gt-accent);
-  transform: scale(1.35);
-}
-.projects .pub-nav {
-  flex: none;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
+.projects .sp-detail-title {
+  margin: 0.9rem 0 0;
+  font-size: clamp(2rem, 4.4vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
   color: var(--gt-text-primary);
 }
-.projects .pub-nav svg {
-  display: block;
-  height: 40px;
-  width: auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.55;
-  transition: opacity 0.3s, transform 0.3s;
+.projects .sp-detail-summary {
+  margin: 1.6rem 0 0;
+  max-width: 60ch;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--gt-text-primary);
 }
-.projects .pub-nav--prev svg {
-  transform: rotate(180deg);
+.projects .sp-detail-desc {
+  margin: 1.4rem 0 0;
+  max-width: 62ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--gt-text-secondary);
 }
-.projects .pub-nav:hover svg,
-.projects .pub-nav.is-hover svg {
-  opacity: 1;
+.projects .sp-detail-meta {
+  margin-top: 2.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem 4rem;
 }
-.projects .pub-nav--prev:hover svg,
-.projects .pub-nav--prev.is-hover svg {
-  transform: rotate(180deg) translateY(-4px);
+.projects .sp-meta-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
-.projects .pub-nav--next:hover svg,
-.projects .pub-nav--next.is-hover svg {
-  transform: translateY(4px);
+.projects .sp-meta-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
 }
-.projects .pub-nav:disabled {
-  opacity: 0;
-  pointer-events: none;
+.projects .sp-meta-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--gt-text-primary);
 }
-.projects .pub-detail-back {
+.projects .sp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+.projects .sp-chip {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--gt-text-primary);
+}
+
+.projects .sp-detail-back {
   position: absolute;
   top: 2.2rem;
   left: 50%;
@@ -307,68 +312,58 @@
   cursor: pointer;
   transition: color 0.2s ease;
 }
-.projects .pub-detail-back:hover,
-.projects .pub-detail-back.is-hover {
+.projects .sp-detail-back:hover,
+.projects .sp-detail-back.is-hover {
   color: var(--gt-accent);
-}
-.projects .pub-detail-type {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--gt-accent);
-}
-.projects .pub-detail-title {
-  margin: 0.9rem 0 0;
-  /* font-size is set by the auto-fit hook (JS); this is just a pre-fit fallback. */
-  font-size: 4vw;
-  font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-  color: var(--gt-accent);
-}
-.projects .pub-detail-authors {
-  margin: 1.8rem 0 0;
-  max-width: 600px;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--gt-text-primary);
-}
-.projects .pub-detail-venue {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-  color: var(--gt-text-secondary);
-}
-.projects .pub-detail-abstract {
-  margin: 1.4rem 0 0;
-  max-width: 460px;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--gt-text-secondary);
-}
-.projects .pub-detail-link {
-  margin-top: 2.8rem;
-  padding: 0.55rem 1.2rem;
-  border: 1px solid var(--gt-accent);
-  border-radius: 9999px;
-  color: var(--gt-accent);
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-.projects .pub-detail-link:hover,
-.projects .pub-detail-link.is-hover {
-  background: var(--gt-accent);
-  color: var(--gt-brand-white);
 }
 
-/* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
-.projects .frame__logo {
-  pointer-events: auto;
+.projects .sp-detail-nav {
+  position: absolute;
+  bottom: 2.4rem;
+  left: 8vw;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+.projects .sp-nav-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
+  min-width: 4ch;
+  text-align: center;
+}
+.projects .sp-nav {
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  text-align: left;
+  color: var(--gt-text-primary);
+}
+.projects .sp-nav svg {
+  display: block;
+  height: 28px;
+  width: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.projects .sp-nav:hover svg,
+.projects .sp-nav.is-hover svg {
+  opacity: 1;
+}
+.projects .sp-nav--prev:hover svg,
+.projects .sp-nav--prev.is-hover svg {
+  transform: translateX(-4px);
+}
+.projects .sp-nav--next:hover svg,
+.projects .sp-nav--next.is-hover svg {
+  transform: translateX(4px);
+}
+.projects .sp-nav:disabled {
+  opacity: 0;
+  pointer-events: none;
 }

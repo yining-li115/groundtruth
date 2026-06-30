@@ -1,0 +1,13 @@
+/* FluidLens overlay — a fixed, full-screen, click-through WebGL layer that sits above the
+   detail content (z 50) but below the kiosk cursor dot (z 100), so the glass lens magnifies
+   the page while the precise cursor stays crisp on top. */
+.fluid-lens {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.fluid-lens canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
