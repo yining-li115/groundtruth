@@ -10,6 +10,22 @@
   padding: clamp(2.5rem, 7vh, 6rem) clamp(1.5rem, 5vw, 5rem) 12vh;
 }
 
+/* TEST entry button (top-right) → LEGO avatar lab. Remove once real portraits land. */
+.ppl__legolab {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 50;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: var(--gt-accent);
+  color: var(--gt-button-solid-text);
+  border: none;
+  cursor: pointer;
+}
+
 /* Brand / chair block, fixed top-left (→ home), like the other sections' frame. */
 /* Same proportions as the other sections' frame (scenes/projects.css .frame). */
 .ppl__brand {
@@ -106,6 +122,7 @@
   display: flex;
   flex-direction: column;
   text-align: center;
+  cursor: pointer;
 }
 
 .ppl-card__photo {

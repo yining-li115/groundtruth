@@ -1,0 +1,106 @@
+/* LegoAvatarLab overlay — dev/test tool. Token-driven (CLAUDE.md rule 1). */
+
+.lab-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.lab-panel {
+  width: min(640px, 92vw);
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  color: var(--gt-text-primary);
+}
+
+.lab-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.lab-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.lab-close {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--gt-text-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+}
+.lab-close:hover {
+  color: var(--gt-text-primary);
+}
+
+.lab-stage {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--gt-bg);
+}
+
+.lab-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.lab-bricks {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex: 1;
+  min-width: 180px;
+  white-space: nowrap;
+}
+.lab-bricks input[type="range"] {
+  accent-color: var(--gt-accent);
+  flex: 1;
+}
+
+.lab-btn {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lab-btn--solid {
+  background: var(--gt-button-solid-bg);
+  color: var(--gt-button-solid-text);
+  border: 1px solid var(--gt-button-solid-bg);
+}
+.lab-btn--outline {
+  background: var(--gt-button-outline-bg);
+  color: var(--gt-button-outline-text);
+  border: 1px solid var(--gt-button-outline-border);
+}
+
+.lab-hint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--gt-text-secondary);
+}

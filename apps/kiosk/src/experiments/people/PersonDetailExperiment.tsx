@@ -1,13 +1,15 @@
 import { PersonDetail } from "./PersonDetail";
-import { weihang } from "./peopleData";
+import { people } from "../../lib/content";
 import "./detail.css";
 
 /**
- * Standalone preview (?exp=person) of the person-detail page — the Codrops TypeShuffle
- * "terminal" (effect 5) on Weihang Li. Kept separate from the real People roster so the
- * decode treatment can be locked on its own before it's wired into the section. "← back"
- * jumps to the real People list (?view=people).
+ * Standalone preview (?exp=person) of the person-detail page on a real roster entry
+ * (Weihang Li, from content/people.json). "← back" jumps to the real People list.
  */
 export function PersonDetailExperiment() {
-  return <PersonDetail person={weihang} onBack={() => (window.location.search = "?view=people")} />;
+  const person = people.find((p) => p.id === "weihang-li");
+  if (!person) return null;
+  return (
+    <PersonDetail person={person} onBack={() => (window.location.search = "?view=people")} />
+  );
 }

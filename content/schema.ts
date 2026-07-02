@@ -42,6 +42,14 @@ export const personPhotoSchema = z.object({
  *  The richer fields (bio, interests, photos, links) are optional, filled in for whoever has
  *  a detail page. `photo` is optional too — when absent the section shows a generated
  *  placeholder avatar, so a new member needs no image to appear. */
+export const publicationSchema = z.object({
+  title: nonEmpty,
+  authors: nonEmpty,
+  venue: nonEmpty,
+  year: z.number().int(),
+  url: z.string().url().optional(),
+});
+
 export const personSchema = z.object({
   id,
   firstName: nonEmpty,
@@ -49,23 +57,18 @@ export const personSchema = z.object({
   category: nonEmpty, // roster group, e.g. "Director", "Secretary", "Research Associates"
   title: z.string().optional(), // academic degree, e.g. "Prof. Dr. rer. nat.", "M.Sc."
   email: z.string().email().optional(),
+  phone: z.string().optional(), // office phone, e.g. "+49 89 289 22876"
   room: z.string().optional(), // office, e.g. "1781" or "STC"
+  officeHours: z.string().optional(), // Sprechstunde, e.g. "09:00–18:00", "By appointment"
   photo: z.string().optional(), // main avatar (filename/URL); placeholder generated if absent
   shortBio: z.string().optional(), // 1–2 sentences for cards
   longBio: z.string().optional(), // full profile view
   researchInterests: z.array(nonEmpty).optional(),
   photos: z.array(personPhotoSchema).optional(), // detail-page gallery
+  publications: z.array(publicationSchema).optional(), // scraped verbatim from mediaTUM / Scholar
   links: z.array(linkSchema).optional(),
   relatedTopicIds: z.array(id).optional(), // → ResearchTopic.id
   relatedProjectIds: z.array(id).optional(), // → StudentProject.id
-});
-
-export const publicationSchema = z.object({
-  title: nonEmpty,
-  authors: nonEmpty,
-  venue: nonEmpty,
-  year: z.number().int(),
-  url: z.string().url().optional(),
 });
 
 export const researchTopicSchema = z.object({

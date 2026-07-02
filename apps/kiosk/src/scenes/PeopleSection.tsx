@@ -1,8 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@groundtruth/ui";
 import type { Person } from "../../../../content/schema";
 import { people } from "../lib/content";
 import { KioskMenu } from "../components/KioskMenu";
+import { LegoAvatarLab } from "../components/lego/LegoAvatarLab";
+import { PersonDetail } from "../experiments/people/PersonDetail";
 import { navigate } from "../lib/navigate";
 import { activePointer } from "../lib/cursorPosition";
 import "./people.css";
@@ -29,9 +31,20 @@ const CATEGORY_ORDER = [
 
 const AVATAR_STYLE = "personas"; // unified placeholder-avatar style (see docs/design-system asset note)
 
-/** A member's card image: their `photo` if set, else a generated placeholder from the name. */
+// TRYING real cut-out photos on the roster thumbnails (previously cartoon-only). Cut-outs are
+// the transparent-background PNGs under content/media/people/<id>.png, bundled by Vite.
+// To revert: return the DiceBear URL unconditionally in avatarUrl().
+const cutouts = import.meta.glob<string>("../../../../content/media/people/*.png", {
+  eager: true,
+  import: "default",
+});
+const cutoutUrl = (id: string): string | undefined =>
+  Object.entries(cutouts).find(([path]) => path.endsWith(`/${id}.png`))?.[1]; // 15 real cut-outs
+
+/** A member's card image: their real cut-out photo if we have one, else a generated cartoon. */
 function avatarUrl(p: Person): string {
-  if (p.photo) return p.photo;
+  const cut = cutoutUrl(p.id);
+  if (cut) return cut;
   return `https://api.dicebear.com/9.x/${AVATAR_STYLE}/svg?seed=${encodeURIComponent(
     `${p.firstName} ${p.lastName}`,
   )}&backgroundColor=transparent`;
@@ -101,12 +114,24 @@ function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>) {
 export function PeopleSection() {
   const pageRef = useRef<HTMLDivElement>(null);
   useProximityScale(pageRef);
+  // TEST entry (remove once real portraits land): try the LEGO avatar effect on an uploaded photo.
+  const [legoLab, setLegoLab] = useState(false);
+  // Which member's detail page is open (null = roster).
+  const [selected, setSelected] = useState<Person | null>(null);
 
   const groups = groupByCategory(people);
+
+  if (selected) return <PersonDetail person={selected} onBack={() => setSelected(null)} />;
 
   return (
     <div className="ppl" ref={pageRef} style={{ color: "var(--gt-text-primary)" }}>
       <KioskMenu />
+
+      {/* Dev/test entry — opens the LEGO avatar lab (upload a photo, preview, save PNG). */}
+      <button type="button" className="ppl__legolab" onClick={() => setLegoLab(true)}>
+        🧱 LEGO avatar test
+      </button>
+      {legoLab && <LegoAvatarLab onClose={() => setLegoLab(false)} />}
 
       <button type="button" className="ppl__brand" aria-label="Back to home" onClick={() => navigate("home")}>
         <span className="ppl__brand-text">
@@ -130,7 +155,12 @@ export function PeopleSection() {
               <h2 className="ppl-group__label">{group.label}</h2>
               <ul className="ppl-grid">
                 {group.people.map((person) => (
-                  <li className="ppl-card" key={person.id}>
+                  <li
+                    className="ppl-card"
+                    key={person.id}
+                    data-hover
+                    onClick={() => setSelected(person)}
+                  >
                     <span className="ppl-card__photo">
                       <img src={avatarUrl(person)} alt="" loading="lazy" />
                     </span>

@@ -30,6 +30,9 @@ const PersonDetailExperiment = lazy(() =>
     default: m.PersonDetailExperiment,
   })),
 );
+const LegoExperiment = lazy(() =>
+  import("./experiments/lego/LegoExperiment").then((m) => ({ default: m.LegoExperiment })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -49,6 +52,8 @@ const experiment =
     <LiquidExperiment />
   ) : exp === "person" ? (
     <PersonDetailExperiment />
+  ) : exp === "lego" ? (
+    <LegoExperiment />
   ) : null;
 
 createRoot(root).render(

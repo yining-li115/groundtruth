@@ -6,14 +6,27 @@
     "category": "Director",
     "title": "Prof. Dr. rer. nat.",
     "email": "b.busam@tum.de",
-    "room": "1781"
+    "phone": "+49 89 289 19412",
+    "room": "1781",
+    "photo": "benjamin-busam.jpg",
+    "longBio": "Benjamin Busam is a Professor and Director of Photogrammetry and Remote Sensing with the Technical University of Munich. Formerly Head of Research at FRAMOS Imaging Systems, he led the 3D Computer Vision Team at Huawei Research, London from 2018 to 2020 and has been coordinating the Computer Vision activities at the Chair for Computer Aided Medical Procedures until 2025. Benjamin studied Mathematics at TUM. In his subsequent postgraduate programme, he continued in Mathematics and Physics at ParisTech, France and at the University of Melbourne, Australia, before he graduated with distinction at TU Munich in 2014. In continuation to a mathematical focus on projective geometry and 3D point cloud matching, he now works on photogrammetry, 3D computer vision, and embodied AI. For his work on adaptable high-resolution real-time stereo tracking he received the EMVA Young Professional Award 2015 from the European Machine Vision Association and was awarded Innovation Pioneer of the Year 2019 by Noah's Ark Laboratory, London. He regularly serves in the programme committees for the main computer vision conferences such as CVPR, ICCV, ECCV and was given multiple Outstanding Reviewer / Area Chair Awards at 3DV 2020, 3DV 2021, ECCV 2022, CVPR 2024, NeurIPS 2025, CVPR 2026."
   },
   {
     "id": "susanne-oxe",
     "firstName": "Susanne",
     "lastName": "Oxé",
     "category": "Secretary",
-    "email": "susanne.oxe@tum.de"
+    "email": "susanne.oxe@tum.de",
+    "phone": "+49 89 289 22467",
+    "room": "0204.03.304",
+    "officeHours": "Tue & Thu afternoons (Photogrammetry & Remote Sensing)",
+    "photo": "susanne-oxe.jpg",
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://www.ltg.ar.tum.de/"
+      }
+    ]
   },
   {
     "id": "luca-collorone",
@@ -30,7 +43,22 @@
     "category": "Research Associates",
     "title": "Dr. rer. nat.",
     "email": "florian.eberhardt@tum.de",
-    "room": "1776"
+    "room": "1776",
+    "photo": "florian-eberhardt.jpg",
+    "longBio": "Hi, I'm Florian Eberhardt, a computer vision researcher at Prof. Ben Busam’s Lab for Photogrammetry and Remote Sensing at the Technical University of Munich. My research lies at the intersection of computer vision, photogrammetry, and industrial applications, with a focus on integrating computer vision, AI, and photogrammetry into the core of automation, industrial quality control, and IIoT.",
+    "researchInterests": [
+      "3D Deformable Mesh Reconstruction",
+      "Pose Estimation in X-ray Images",
+      "Synthetic Data Generation",
+      "Synthetic-to-Real Domain Adaptation",
+      "AI Agents for Industrial Applications"
+    ],
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://f10r1an.github.io/"
+      }
+    ]
   },
   {
     "id": "florian-eichinger",
@@ -39,7 +67,15 @@
     "category": "Research Associates",
     "title": "M.Sc.",
     "email": "florian.eichinger@tum.de",
-    "room": "1772"
+    "phone": "+49 89 289 22688",
+    "room": "1772",
+    "photo": "florian-eichinger.jpg",
+    "researchInterests": [
+      "3D Reconstruction",
+      "Photorealistic Photogrammetry",
+      "Agentic Scene Interaction (3D)",
+      "Vision-Language Models"
+    ]
   },
   {
     "id": "michael-greza",
@@ -48,7 +84,39 @@
     "category": "Research Associates",
     "title": "M.Sc.",
     "email": "michael.greza@tum.de",
-    "room": "1772"
+    "phone": "+49 89 289 22672",
+    "room": "1772",
+    "photo": "michael-greza.jpg",
+    "publications": [
+      {
+        "title": "GAN-Based Dual Image Super Resolution for Satellite Imagery Decreasing Radiometric Uncertainty",
+        "authors": "Greza, Michael; Bhattacharya, Indraditya; Hoegner, Ludwig; Jutzi, Boris",
+        "venue": "ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, 2024, 155--162",
+        "year": 2024,
+        "url": "https://dx.doi.org/10.5194/isprs-annals-x-3-2024-155-2024"
+      },
+      {
+        "title": "Bayerisches Satellitennetzwerk für Fernerkundung und Biomonitoring",
+        "authors": "Bauer, Rainer; Pail, Roland; Schilling, Klaus; Stilla, Uwe; Schleder, Daniela; Dotterweich, Michael; Roschlaub, Robert; Kleinschrodt, Alexander; Draschka, Lukas; Gruber, Thomas; Zingerle, Philipp; Greza, Michael",
+        "venue": "zfv – Zeitschrift für Geodäsie, Geoinformation und Landmanagement 148 (4/2023), 2023, 219-229",
+        "year": 2023,
+        "url": "https://dx.doi.org/10.12902/zfv-0436-2023"
+      },
+      {
+        "title": "Grundlagen zur automatisierten Ermittlung hoch­genauer Passpunkte für CubeSat-Satellitenbilder mittels Deep-Learning-gestützter Delaunay-Triangulation basierend auf Gebäudedaten des Liegenschaftskatasters",
+        "authors": "Roschlaub, Robert; Glock, Clemens; Zerndl, Manfred; Maier, Andreas; Möst, Karin; Hirt, Philipp-Roman; Greza, Michael",
+        "venue": "zfv – Zeitschrift für Geodäsie, Geoinformation und Landmanagement 148 (2/2023), 2023, 66-93",
+        "year": 2023,
+        "url": "https://dx.doi.org/10.12902/zfv-0424-2023"
+      },
+      {
+        "title": "Simulation of Earth Observation Data Utilizing a Virtual Satellite Camera",
+        "authors": "Lenz, Nino; Greza, Michael",
+        "venue": ", 43. Wissenschaftlich-Technische Jahrestagung der DGPF e.V. München. Publikationen der Deutschen Gesellschaft für Photogrammetrie, Fernerkundung und Geoinformation (DGPF) e.V. , 2023",
+        "year": 2023,
+        "url": "https://dx.doi.org/10.24407/kxp:184104914x"
+      }
+    ]
   },
   {
     "id": "liming-kuang",
@@ -66,12 +134,50 @@
     "title": "M.Sc.",
     "email": "weihang.li@tum.de",
     "room": "STC",
+    "officeHours": "By appointment (via email)",
+    "photo": "weihang-li.jpg",
+    "longBio": "Hi, I'm a PhD student with TUM & MCML supervised by Prof. Benjamin Busam and Prof. Nassir Navab. During my Master's study at TUM Robotics Cognition, Intelligence, I conducted research at CAMP, fortiss, Photogrammetry and Remote Sensing with Prof. Olaf Wysocki, HKUST-GZ with Prof. Haoang Li and CVG with Prof. Daniel Cremers.",
     "researchInterests": [
       "World Model",
       "Embodied AI / Robotics",
       "3D / 4D Vision (Object / Scene-level Pose, Depth)"
     ],
-    "links": [{ "label": "Personal Website", "url": "https://colin-de.github.io/" }]
+    "publications": [
+      {
+        "title": "Texture2LoD3: Enabling LoD3 Building Reconstruction With Panoramic Images",
+        "authors": "Tang, Wenzhao; Li, Weihang; Liang, Xiucheng; Wysocki, Olaf; Biljecki, Filip; Holst, Christoph; Jutzi, Boris",
+        "venue": "https://arxiv.org/abs/2504.05249, 2025",
+        "year": 2025,
+        "url": "https://dx.doi.org/10.48550/arxiv.2504.05249"
+      },
+      {
+        "title": "A Lightweight and Detector-Free 3D Single Object Tracker on Point Clouds",
+        "authors": "Xia, Yan; Wu, Qiangqiang; Li, Wei; Chan, Antoni B.; Stilla, Uwe",
+        "venue": "IEEE Transactions on Intelligent Transportation Systems 24 (5), 2023, 5543-5554",
+        "year": 2023,
+        "url": "https://dx.doi.org/10.1109/tits.2023.3243470"
+      },
+      {
+        "title": "ASFM-Net: asymmetrical siamese feature matching network for point completion",
+        "authors": "Xia, Yaqi; Xia, Yan; Li, Wei; Song, Rui; Cao, Kailang; Stilla, Uwe",
+        "venue": "Proceedings of the 29th ACM International Conference on Multimedia, Association for Computing Machinery, 2021",
+        "year": 2021,
+        "url": "https://dx.doi.org/10.1145/3474085.3475348"
+      },
+      {
+        "title": "Foreword to the special issue on advances in pattern recognition in remote sensing",
+        "authors": "Michaelsen, E.; Shan, J.; Stilla, U.; Li, W.",
+        "venue": "IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing 11 (11), 2018, 3927--3930",
+        "year": 2018,
+        "url": "https://dx.doi.org/10.1109/jstars.2018.2878111"
+      }
+    ],
+    "links": [
+      {
+        "label": "Personal Website",
+        "url": "https://colin-de.github.io/"
+      }
+    ]
   },
   {
     "id": "yordanka-velikova",
@@ -79,7 +185,23 @@
     "lastName": "Velikova",
     "category": "Research Associates",
     "title": "M.Sc.",
-    "email": "dani.velikova@tum.de"
+    "email": "dani.velikova@tum.de",
+    "phone": "+49 89 289 17082",
+    "photo": "yordanka-velikova.jpg",
+    "researchInterests": [
+      "Representation Learning",
+      "Implicit Neural Representations",
+      "Unsupervised Segmentation and Tracking",
+      "Diffusion Models for Image Generation",
+      "Robotic Ultrasound",
+      "Ultrasound Simulation"
+    ],
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://www.cs.cit.tum.de/camp/members/yordanka-velikova/"
+      }
+    ]
   },
   {
     "id": "junwen-huang",
@@ -87,7 +209,22 @@
     "lastName": "Huang",
     "category": "Research Associates",
     "email": "junwen.huang@tum.de",
-    "room": "STC"
+    "room": "STC",
+    "photo": "junwen-huang.jpg",
+    "longBio": "I am a postdoctoral researcher at the Technical University of Munich in the PRS Lab, led by Prof. Benjamin Busam. I am also a visiting researcher at the University of Cambridge with the CV4DT Lab, led by Prof. Olaf Wysocki. I received my Ph.D. from TUM, where I also worked closely with Prof. Nassir Navab, PD Dr. Slobodan Ilic, and Dr. Peter KT Yu. I study how models can generalize to novel scenes through multi-modal training, test-time adaptation, and efficient training and fine-tuning of foundation models, with applications in AR/VR and robotic autimation.",
+    "researchInterests": [
+      "3D Scene Understanding & Reconstruction",
+      "Vision for Robotic Manipulation",
+      "Multi-modal Representation Learning",
+      "Open-Vocabulary Vision",
+      "Automation Systems"
+    ],
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://demianhj.github.io/"
+      }
+    ]
   },
   {
     "id": "manoj-biswanath",
@@ -96,7 +233,68 @@
     "category": "Guests (Externals, Scholarships)",
     "title": "M.Sc.",
     "email": "manoj.biswanath@tum.de",
-    "room": "1776"
+    "phone": "+49 89 289 22638",
+    "room": "1776",
+    "officeHours": "09:00 – 18:00",
+    "photo": "manoj-biswanath.jpg",
+    "publications": [
+      {
+        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
+        "authors": "Wysocki, O.; Schwab, B.; Biswanath, M. K.; Greza, M.; Zhang, Q.; Zhu, J.; Froech, T.; Heeramaglore, M.; Hijazi, I.; Kanna, K.; Pechinger, M.; Chen, Z.; Sun, Y.; Rueda Segura, A.; Xu, Z.; AbdelGafar, O.; Mehranfar, M.; Yeshwanth, C.; Liu, Y.-C.; Yazdi, H.; Wang, J.; Auer, S.; Anders, K.; Bogenberger, K.; Borrmann, A.; Dai, A.; Hoegner, L.; Holst, C.; Kolbe, T. H.; Ludwig, F.; Nießner, M.; Petzold, F.; Zhu, X. X.; Jutzi, B.",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
+        "year": 2026,
+        "url": "https://mediatum.ub.tum.de/node?id=1840528&change_language=en"
+      },
+      {
+        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
+        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; ...; Xu, Ziyang; AbdelGafar, Omar; ...; Holst, Christoph; ...; Jutzi, Boris",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
+        "year": 2026,
+        "url": "https://mediatum.ub.tum.de/node?id=1840389&change_language=en"
+      },
+      {
+        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
+        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, Alejandro Rueda; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, Yueh-Cheng; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, Thomas H.; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, Xiao Xiang; Jutzi, Boris",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
+        "year": 2026,
+        "url": "https://mediatum.ub.tum.de/node?id=1842371&change_language=en"
+      },
+      {
+        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
+        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, Alejandro Rueda; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, Yueh-Cheng; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, Thomas H.; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, Xiao Xiang; Jutzi, Boris",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
+        "year": 2026,
+        "url": "https://mediatum.ub.tum.de/node?id=1840426&change_language=en"
+      },
+      {
+        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
+        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, \\Manoj Kumar\\; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, \\Alejandro Rueda\\; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, \\Yueh Cheng\\; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, \\Thomas H.\\; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, \\Xiao Xiang\\; Jutzi, Boris",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810--830",
+        "year": 2026,
+        "url": "https://mediatum.ub.tum.de/node?id=1843562&change_language=en"
+      },
+      {
+        "title": "Artificial Intelligence for the Automated Creation of Multi-scale Digital Twins of the Built World—AI4TWINNING",
+        "authors": "Borrmann, A.; Biswanath, M.; Braun, A.; Zhaiyu, C.; Cremers, D.; Heeramaglore, M.; Hoegner, L.; Mehranfar, M.; Kolbe, T.; Petzold, F.; Rueda, A.; Solonets, S.; Zhu, Z.",
+        "venue": "In: Lecture Notes in Geoinformation and Cartography. Springer Nature Switzerland, 2024, 233--247",
+        "year": 2024,
+        "url": "https://mediatum.ub.tum.de/node?id=1788403&change_language=en"
+      },
+      {
+        "title": "Thermal Mapping from Point Clouds to 3D Building Model Facades",
+        "authors": "Biswanath, Manoj Kumar; Hoegner, Ludwig; Stilla, Uwe",
+        "venue": "Remote Sensing 15 (19), 2023",
+        "year": 2023,
+        "url": "https://mediatum.ub.tum.de/node?id=1726956&change_language=en"
+      },
+      {
+        "title": "Artificial Intelligence for the automated creation of multi-scale digital twins of the built world – AI4TWINNING",
+        "authors": "Borrmann, A.; Biswanath, M.; Braun, A.; Zhaiyu, C.; Cremers, D.; Heeramaglore, M.; Hoegner, L.; Mehranfar, M.; Kolbe, T.; Petzold, F.; Rueda, A.; Solonets, S.; Zhu, Z.",
+        "venue": "Proc. of the 18th 3D GeoInfo Conference, 2023",
+        "year": 2023,
+        "url": "https://mediatum.ub.tum.de/node?id=1721447&change_language=en"
+      }
+    ]
   },
   {
     "id": "abdelrahman-elskhawy",
@@ -111,14 +309,65 @@
     "lastName": "Kıray",
     "category": "Guests (Externals, Scholarships)",
     "title": "M.Sc.",
-    "email": "mert.kiray@tum.de"
+    "email": "mert.kiray@tum.de",
+    "photo": "mert-kiray.jpg",
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://www.cs.cit.tum.de/camp/members/mert-kiray/"
+      }
+    ]
   },
   {
     "id": "michael-spiegel",
     "firstName": "Michael",
     "lastName": "Spiegel",
     "category": "Guests (Externals, Scholarships)",
-    "email": "spiegel@tum.de"
+    "email": "spiegel@tum.de",
+    "publications": [
+      {
+        "title": "Improving the exterior orientation of Mars Express regarding different imaging cases",
+        "authors": "Spiegel, M.; Stilla, U.; Neukum, G.",
+        "venue": "International Archives of Photogrammetry and Remote Sensing and Spatial Information Sciences, 2006",
+        "year": 2006,
+        "url": "https://mediatum.ub.tum.de/node?id=1594695&change_language=en"
+      },
+      {
+        "title": "Bündelausgleichung von HRSC-Bilddaten mit Mars Observer Laser Altimeter-Daten als Passinformation",
+        "authors": "Spiegel, M.; Stilla, U.; Giese, B.; Neukum, G.",
+        "venue": "PFG Photogrammetrie Fernerkundung Geoinformation 5 , 2005, 381--386",
+        "year": 2005,
+        "url": "https://mediatum.ub.tum.de/node?id=1594694&change_language=en"
+      },
+      {
+        "title": "HRSC auf Mars Express - Photogrammetrische und kartographische Auswertungen",
+        "authors": "Heipke, C.; Albertz, J.; Attwenger, M.; Buchroithner, M.; Dorninger, P.; Dorrer, E.; Gehrke, S.; Gwinner, K.; Lehmann, H.; Mayer, H.; Ostrovskiy, A.; Pacher, G.; Rentsch, M.; Schmidt, R.; Scholten, F.; Spiegel, M.; Stilla, U.; Neukum, G.",
+        "venue": "Zeitschrift für Vermessung 130 , 2005, 379--386",
+        "year": 2005,
+        "url": "https://mediatum.ub.tum.de/node?id=1594537&change_language=en"
+      },
+      {
+        "title": "HRSC on Mars Express - Photogrammetric and Cartographic Research",
+        "authors": "Albertz, J.; Attwenger, M.; Barrett, J.; Casley, S.; Dorninger, P.; Dorrer, E.; Ebner, H.; Gehrke, S.; Giese, B.; Gwinner, K.; Heipke, C.; Howington-Kraus, E.; Kirk, R. L.; Lehmann, H.; Mayer, H.; Muller, J.-P.; Oberst, J.; Ostrovskiy, A.; Rentner, J.; Reznik, S.; Schmidt, R.; Scholten, F.; Spiegel, M.; Stilla, U.; Waehlisch, M.; Neukum, G.",
+        "venue": "Photogrammetric Engineering & Remote Sensing 71 , 2005, 1153--1166",
+        "year": 2005,
+        "url": "https://dx.doi.org/10.14358/pers.71.10.1153"
+      },
+      {
+        "title": "Improving the exterior orientation of Mars Exoress orbiter using MOLA data in bundle adjustment",
+        "authors": "Spiegel, M.; Schmidt, R.; Stilla, U.; Baumgartner, A.; Neukum, G.",
+        "venue": "AOGS 2nd Annual Meeting, 2005",
+        "year": 2005,
+        "url": "https://mediatum.ub.tum.de/node?id=1594692&change_language=en"
+      },
+      {
+        "title": "Registering HRSC imagery of the MarsExpressMission to Mars observer laser",
+        "authors": "Spiegel, M.; Schmidt, R.; Stilla, U.; Baumgartner, A.; Neukum, G.",
+        "venue": "36th Lunar and planetary science conference, 2005",
+        "year": 2005,
+        "url": "https://mediatum.ub.tum.de/node?id=1594693&change_language=en"
+      }
+    ]
   },
   {
     "id": "sigrid-strand",
@@ -134,7 +383,14 @@
     "category": "Guests (Externals, Scholarships)",
     "title": "M.Sc.",
     "email": "tianyi.you@tum.de",
-    "room": "1776"
+    "room": "1776",
+    "researchInterests": [
+      "Hyper- and Multispectral Satellite Imagery",
+      "Self-supervised Learning in Earth Observation",
+      "2D/3D Computer Vision and Remote Sensing",
+      "Multimodality and Foundation Models",
+      "Model Explainability and Trustworthy Systems"
+    ]
   },
   {
     "id": "qilin-zhang",
@@ -143,43 +399,115 @@
     "category": "Guests (Externals, Scholarships)",
     "title": "M.Sc.",
     "email": "qilin.zhang@tum.de",
-    "room": "1776"
+    "phone": "+49 89 289 22630",
+    "room": "1776",
+    "photo": "qilin-zhang.jpg"
   },
   {
     "id": "christian-albrecht",
     "firstName": "Christian",
     "lastName": "Albrecht",
     "category": "Guests (Externals, Scholarships)",
-    "email": "christian.albrecht@cariad.technology"
+    "email": "christian.albrecht@cariad.technology",
+    "publications": [
+      {
+        "title": "Investigation on robustness of vehicle localization using cameras and lidar",
+        "authors": "Albrecht, Christian Rudolf; Behre, Jenny; Herrmann, Eva; Jürgens, Stefan; Stilla, Uwe",
+        "venue": "Vehicles 4 (2), 2022, 445--463",
+        "year": 2022,
+        "url": "https://dx.doi.org/10.3390/vehicles4020027"
+      },
+      {
+        "title": "Investigation on misclassification of pedestrians as poles by simulation",
+        "authors": "Albrecht, Christian Rudolf; Névir, Daniel; Hildebrandt, Arne-Christoph; Kraus, Sven; Stilla, Uwe",
+        "venue": "2021 IEEE Intelligent Vehicles Symposium (IV), Institute of Electrical and Electronics Engineers (IEEE), 2021",
+        "year": 2021,
+        "url": "https://dx.doi.org/10.1109/iv48863.2021.9575583"
+      },
+      {
+        "title": "Concept on landmark detection in road scene images taken from a top-view camera system",
+        "authors": "Albrecht, C.; Kraus, S.; Stilla, U.",
+        "venue": "ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences XLIII-B1-2020 , 2020, 205--209",
+        "year": 2020,
+        "url": "https://dx.doi.org/10.5194/isprs-archives-xliii-b1-2020-205-2020"
+      },
+      {
+        "title": "A concept for an automated approach of public transport vehi cles to a bus stop",
+        "authors": "Albrecht, C.; Kraus, S.; Zimmermann, A.; Stilla, U.",
+        "venue": "ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences XLII-2/W16 , 2019, 13--20",
+        "year": 2019,
+        "url": "https://dx.doi.org/10.5194/isprs-archives-xlii-2-w16-13-2019"
+      }
+    ],
+    "links": [
+      {
+        "label": "LinkedIn",
+        "url": "https://www.linkedin.com/in/bobblemind/"
+      }
+    ]
   },
   {
     "id": "enea-dragoni",
     "firstName": "Enea",
     "lastName": "Dragoni",
-    "category": "Guests (Externals, Scholarships)",
-    "email": "e.dragoni@studenti.unipi.it",
-    "room": "1774"
+    "category": "Research Associates",
+    "title": "Dott. Mag.",
+    "email": "enea.dragoni@tum.de",
+    "photo": "enea-dragoni.jpg",
+    "researchInterests": [
+      "Autonomous Mobile Robotics",
+      "Cross-view Visual Localisation",
+      "Multimodal Sensor Fusion",
+      "Language-Guided Robotics"
+    ],
+    "links": [
+      {
+        "label": "LinkedIn",
+        "url": "https://www.linkedin.com/in/enea-dragoni-270ve701a"
+      }
+    ]
   },
   {
     "id": "mert-karaoglu",
     "firstName": "Mert",
     "lastName": "Karaoglu",
     "category": "Guests (Externals, Scholarships)",
-    "email": "mert.karaoglu@tum.de"
+    "email": "mert.karaoglu@tum.de",
+    "links": [
+      {
+        "label": "LinkedIn",
+        "url": "https://www.linkedin.com/in/mertkaraoglu/"
+      }
+    ]
   },
   {
     "id": "hyeongkyun-kim",
     "firstName": "Hyeongkyun",
     "lastName": "Kim",
     "category": "Guests (Externals, Scholarships)",
-    "email": "hyeongkyun.kim@dlr.de"
+    "email": "hyeongkyun.kim@dlr.de",
+    "photo": "hyeongkyun-kim.jpg",
+    "shortBio": "PhD candidate at the team of Efficiency AI, EOC, German Aerospace Center (DLR).",
+    "links": [
+      {
+        "label": "GitHub",
+        "url": "https://github.com/khyeongkyun"
+      }
+    ]
   },
   {
     "id": "alberto-rota",
     "firstName": "Alberto",
     "lastName": "Rota",
     "category": "Guests (Externals, Scholarships)",
-    "email": "alberto1.rota@polimi.it"
+    "email": "alberto1.rota@polimi.it",
+    "photo": "alberto-rota.jpg",
+    "links": [
+      {
+        "label": "GitHub",
+        "url": "https://github.com/alberto-rota"
+      }
+    ]
   },
   {
     "id": "yiru-li",
@@ -195,6 +523,12 @@
     "lastName": "Strunz",
     "category": "Associate Lecturers",
     "title": "Prof. Dr.-Ing.",
-    "email": "guenter.strunz@tum.de"
+    "email": "guenter.strunz@tum.de",
+    "links": [
+      {
+        "label": "Homepage",
+        "url": "https://www.professoren.tum.de/honorarprofessoren/s/strunz-guenter/"
+      }
+    ]
   }
 ]

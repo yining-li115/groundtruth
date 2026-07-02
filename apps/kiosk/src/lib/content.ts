@@ -32,6 +32,23 @@ export const publications = publicationsRaw as unknown as Paper[];
 export const openTopics = openTopicsRaw as unknown as OpenTopic[];
 export const showreel = showreelRaw as unknown as SpotlightItem[];
 
+/**
+ * Person portraits committed under content/media/people/ (canonical content location).
+ * Vite bundles them at build time and hands back hashed URLs; a bare `photo` filename in
+ * people.json is resolved to its served URL here. (http/https or app-served "/..." paths
+ * are returned as-is.) Falls back to undefined so the caller can show a placeholder.
+ */
+const peopleMedia = import.meta.glob<string>(
+  "../../../../content/media/people/*.{jpg,jpeg,png,webp}",
+  { eager: true, import: "default" },
+);
+export function personPhotoUrl(photo?: string): string | undefined {
+  if (!photo) return undefined;
+  if (/^https?:\/\//i.test(photo) || photo.startsWith("/")) return photo;
+  const entry = Object.entries(peopleMedia).find(([path]) => path.endsWith(`/${photo}`));
+  return entry?.[1];
+}
+
 const personById = new Map(people.map((p) => [p.id, p]));
 const topicById = new Map(topics.map((t) => [t.id, t]));
 const projectById = new Map(projects.map((p) => [p.id, p]));

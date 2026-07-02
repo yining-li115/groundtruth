@@ -26,6 +26,8 @@ export interface PersonRow {
   title: string;
   email: string;
   room?: string;
+  /** Sprechstunde, e.g. "By appointment". */
+  officeHours?: string;
   profile?: PersonProfile;
 }
 
@@ -45,6 +47,7 @@ export const weihang: PersonRow = {
   title: "M.Sc.",
   email: "weihang.li@tum.de",
   room: "STC",
+  officeHours: "By appointment (via email)",
   profile: {
     website: "colin-de.github.io",
     researchInterests: [
