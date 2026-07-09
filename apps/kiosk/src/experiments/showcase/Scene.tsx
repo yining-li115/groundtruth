@@ -14,7 +14,14 @@ const MAX_H = 3.4;
 const HOME_OFFSET_X = 2.6;
 
 type ProgressRef = { current: number };
-type Mode = "home" | "inspect";
+// "cv" = the vision-control experiment: centred like "inspect" but with orbit-follow
+// enabled (so head-tracking can drive the same heroOrbit the home cursor uses).
+type Mode = "home" | "inspect" | "cv";
+// How the cloud disperses: "right" blows everything toward the lower-right (home hero, so
+// the dispersed dust clears the motto on the left); "radial" explodes outward in every
+// direction from the model centre (the touchless open-palm interaction).
+type Disperse = "right" | "radial";
+const EXPLODE = new THREE.Vector3(0, 1.6, 0); // radial-explosion origin (~model centre)
 
 /* ---- cheap 3D value noise (jitter) ---- */
 const hash = (x: number, y: number, z: number) => {
@@ -140,10 +147,12 @@ function PointCity({
   progressRef,
   offsetX,
   idleSpin,
+  disperse,
 }: {
   progressRef: ProgressRef;
   offsetX: number;
   idleSpin: boolean;
+  disperse: Disperse;
 }) {
   const matRef = useRef<THREE.ShaderMaterial>(null);
   const groupRef = useRef<THREE.Group>(null);
@@ -206,10 +215,29 @@ function PointCity({
       const tx = target[i * 3]!;
       const ty = target[i * 3 + 1]!;
       const tz = target[i * 3 + 2]!;
-      const blow = 2 + Math.random() * 8; // dispersed = blown to the RIGHT
-      scatter[i * 3] = tx + blow;
-      scatter[i * 3 + 1] = ty + (Math.random() - 0.5) * blow * 0.55;
-      scatter[i * 3 + 2] = tz + (Math.random() - 0.5) * blow * 0.45;
+      if (disperse === "radial") {
+        // Explode outward from the model centre, every direction (3D burst).
+        let dx = tx - EXPLODE.x;
+        let dy = ty - EXPLODE.y;
+        let dz = tz - EXPLODE.z;
+        let len = Math.hypot(dx, dy, dz);
+        if (len < 1e-3) {
+          // point sits on the centre → pick a random direction so it still flies out
+          dx = Math.random() - 0.5;
+          dy = Math.random() - 0.5;
+          dz = Math.random() - 0.5;
+          len = Math.hypot(dx, dy, dz) || 1;
+        }
+        const blow = 3 + Math.random() * 8;
+        scatter[i * 3] = tx + (dx / len) * blow + THREE.MathUtils.randFloatSpread(1.5);
+        scatter[i * 3 + 1] = ty + (dy / len) * blow + THREE.MathUtils.randFloatSpread(1.5);
+        scatter[i * 3 + 2] = tz + (dz / len) * blow + THREE.MathUtils.randFloatSpread(1.5);
+      } else {
+        const blow = 2 + Math.random() * 8; // dispersed = blown to the RIGHT
+        scatter[i * 3] = tx + blow;
+        scatter[i * 3 + 1] = ty + (Math.random() - 0.5) * blow * 0.55;
+        scatter[i * 3 + 2] = tz + (Math.random() - 0.5) * blow * 0.45;
+      }
       colors[i * 3] = A.point.r;
       colors[i * 3 + 1] = A.point.g;
       colors[i * 3 + 2] = A.point.b;
@@ -223,7 +251,7 @@ function PointCity({
     g.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
     g.setAttribute("aRand", new THREE.BufferAttribute(rand, 1));
     return g;
-  }, []);
+  }, [disperse]);
 
   const uniforms = useMemo(
     () => ({ uProgress: { value: 1 }, uSize: { value: 0.18 }, uMap: { value: sprite } }),
@@ -264,6 +292,9 @@ function PointCity({
 
 export function Scene({ progressRef, mode = "inspect" }: { progressRef: ProgressRef; mode?: Mode }) {
   const home = mode === "home";
+  // Orbit-follow (ease toward heroOrbit) is on for the home hero and the CV experiment;
+  // "inspect" stays a plain drag-only preview.
+  const orbit = mode === "home" || mode === "cv";
   return (
     <Canvas
       camera={{ position: home ? [8.59, 2.15, 4.63] : [0, 3, 9], fov: 45 }}
@@ -275,7 +306,12 @@ export function Scene({ progressRef, mode = "inspect" }: { progressRef: Progress
       style={{ position: "absolute", inset: 0 }}
     >
       <color attach="background" args={[light.bg]} />
-      <PointCity progressRef={progressRef} offsetX={home ? HOME_OFFSET_X : 0} idleSpin={home} />
+      <PointCity
+        progressRef={progressRef}
+        offsetX={home ? HOME_OFFSET_X : 0}
+        idleSpin={orbit}
+        disperse={mode === "cv" ? "radial" : "right"}
+      />
       {/* drag to rotate (both modes); wheel disabled so the page still scrolls. The home
           default is the hand-picked angle that reads the whole layout at a glance. */}
       <OrbitControls

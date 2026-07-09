@@ -13,3 +13,12 @@ run_all.txt
 # Hero showcase 3D models — heavy GLB binaries kept out of git history for now.
 # The manifest (which files to place here + sources) lives in the committed README.
 apps/kiosk/public/models/*.glb
+
+# Point-cloud / Gaussian-splat assets — heavy, regenerated from the SOG scene by
+# scripts/build-*.py (manifest: apps/kiosk/public/splat/README.md). Out of git history.
+apps/kiosk/public/splat/*.ply
+apps/kiosk/public/splat/*.bin
+apps/kiosk/public/roofmap.png
+
+# Local report/backup exports (large ply/png), not part of the app
+report/

@@ -33,6 +33,19 @@ const PersonDetailExperiment = lazy(() =>
 const LegoExperiment = lazy(() =>
   import("./experiments/lego/LegoExperiment").then((m) => ({ default: m.LegoExperiment })),
 );
+const CvExperiment = lazy(() =>
+  import("./experiments/cv/CvExperiment").then((m) => ({ default: m.CvExperiment })),
+);
+const SplatViewerExperiment = lazy(() =>
+  import("./experiments/splat/SplatViewerExperiment").then((m) => ({
+    default: m.SplatViewerExperiment,
+  })),
+);
+const SplatNativeExperiment = lazy(() =>
+  import("./experiments/splat/SplatNativeExperiment").then((m) => ({
+    default: m.SplatNativeExperiment,
+  })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -54,6 +67,12 @@ const experiment =
     <PersonDetailExperiment />
   ) : exp === "lego" ? (
     <LegoExperiment />
+  ) : exp === "cv" ? (
+    <CvExperiment />
+  ) : exp === "splat" ? (
+    <SplatViewerExperiment />
+  ) : exp === "splat3d" ? (
+    <SplatNativeExperiment />
   ) : null;
 
 createRoot(root).render(

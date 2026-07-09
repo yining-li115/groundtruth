@@ -7,6 +7,7 @@ import { Cursor } from "./components/Cursor";
 import { KioskQR } from "./components/KioskQR";
 import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
+import { Showreel } from "./scenes/Showreel";
 import { PeopleSection } from "./scenes/PeopleSection";
 import { ResearchSection } from "./scenes/ResearchSection";
 import { ProjectsSection } from "./scenes/ProjectsSection";
@@ -16,6 +17,8 @@ import { TeachingSection } from "./scenes/TeachingSection";
 function CurrentView() {
   const view = useKioskStore((s) => s.view);
   switch (view) {
+    case "showreel":
+      return <Showreel />;
     case "people":
       return <PeopleSection />;
     case "research":

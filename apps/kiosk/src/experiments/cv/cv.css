@@ -1,0 +1,75 @@
+/* CV interaction experiment — full-bleed point cloud with a corner camera/debug HUD.
+   Light scene to match the home; HUD chrome uses tokens (no hardcoded colors per rule 1). */
+
+.cv-root {
+  position: fixed;
+  inset: 0;
+  background: var(--gt-bg);
+  overflow: hidden;
+}
+
+.cv-hud {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--gt-surface) 82%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.cv-hud__video {
+  width: 220px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.35rem;
+  transform: scaleX(-1); /* selfie mirror — matches the head-control MIRROR_X mapping */
+  background: var(--gt-border);
+}
+
+.cv-hud__readout {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--gt-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-hud__status {
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+
+.cv-hud__copy {
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.7rem;
+  color: #fff;
+  background: var(--gt-accent);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cv-hud__status--running {
+  color: var(--gt-accent);
+}
+.cv-hud__status--error {
+  color: var(--gt-accent);
+}
+
+.cv-help {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--gt-text-secondary);
+  pointer-events: none;
+}

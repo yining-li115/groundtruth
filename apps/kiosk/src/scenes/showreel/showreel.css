@@ -1,0 +1,137 @@
+/* Idle showreel — split layout: larger news column (left) + semi-transparent, hand-
+   controllable point-cloud backdrop (right). Dark ground; all colours via tokens. */
+
+.sr-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* hidden webcam feed (drives hand tracking) */
+.sr-cam {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* left-weighted scrim: solid on the left (news reads), fading right so the cloud shows */
+.sr-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--gt-bg) 0%,
+    color-mix(in srgb, var(--gt-bg) 80%, transparent) 40%,
+    color-mix(in srgb, var(--gt-bg) 25%, transparent) 60%,
+    transparent 80%
+  );
+}
+
+/* left news column — the bigger half */
+.sr-news {
+  position: absolute;
+  z-index: 2;
+  left: clamp(3rem, 7vw, 7rem);
+  top: 0;
+  bottom: 0;
+  width: min(52vw, 780px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.6rem;
+}
+
+.sr-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.3rem;
+}
+
+.sr-item__media {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--gt-brand-white) 12%, transparent);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--gt-brand-black) 55%, transparent);
+}
+.sr-item__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sr-item__kind {
+  font-size: 0.9rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--gt-accent);
+}
+
+.sr-item__title {
+  font-size: clamp(2.4rem, 3.8vw, 4rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+}
+
+.sr-item__blurb {
+  max-width: 40rem;
+  font-size: clamp(1.15rem, 1.5vw, 1.55rem);
+  line-height: 1.5;
+  color: var(--gt-text-secondary);
+}
+
+.sr-item__cta {
+  margin-top: 0.3rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--gt-accent);
+}
+
+/* progress dots */
+.sr-dots {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+.sr-dot {
+  width: 1.8rem;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--gt-text-secondary) 40%, transparent);
+  transition: background 0.4s ease;
+}
+.sr-dot.is-on {
+  background: var(--gt-accent);
+}
+
+.sr-hint {
+  position: absolute;
+  z-index: 2;
+  right: 2rem;
+  top: 1.6rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--gt-text-secondary);
+}
+
+.sr-brand {
+  position: absolute;
+  z-index: 2;
+  bottom: 1.5rem;
+  left: clamp(3rem, 7vw, 7rem);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gt-text-secondary);
+}
