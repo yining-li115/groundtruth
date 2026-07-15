@@ -12,10 +12,19 @@ TUM Main Campus (Hauptgebäude) 3D Gaussian-splat scan, published on SuperSplat:
 
 ## Files
 
-| File | What | Used by |
-|------|------|---------|
-| `tum-campus.ply` | ~1.9M Gaussians, cropped to the Hauptgebäude, rotated upright | `/?exp=splat3d` (native splat) |
-| `tum-campus.bin` | ~500k decimated points (pos + rgba + size) | `/?exp=cv` and the idle showreel |
+| File | What | Used by | In git? |
+|------|------|---------|---------|
+| `tum-campus.ply` | ~1.9M Gaussians, cropped to the Hauptgebäude, rotated upright | source for the web build | no (git-ignored) |
+| `tum-campus-web.ply` | **400k** decimated, **no SH** (~21MB) — the shipped campus | showreel landing (`SplatStage`), `/?exp=splatnav`, `/?exp=splat3d` | **yes (committed)** |
+| `tum-campus.bin` | ~500k decimated points (pos + rgba + size) | `/?exp=cv` and the old point-cloud showreel | no (git-ignored) |
+
+`tum-campus-web.ply` is committed (via a `!` exception in `.gitignore`) so the deployed
+landing page has its Gaussian campus without hosting the full 97MB scan. Rebuild it from
+the full `.ply`:
+
+```
+npx @playcanvas/splat-transform tum-campus.ply -H 0 -d 400000 tum-campus-web.ply -w
+```
 
 ## Regenerate
 

@@ -21,7 +21,7 @@ import { patchDisperse, type DisperseHandle } from "./disperse";
  * The scan crop is UNCHANGED — the same cropped `tum-campus.ply` used at /?exp=splat3d.
  * Preview at /?exp=splatnav.
  */
-const PLY_URL = "/splat/tum-campus.ply";
+const PLY_URL = "/splat/tum-campus-web.ply"; // decimated 400k/no-SH, committed for deploy
 
 const DISPERSE_AMP = 60; // default scatter box half-size in scan world-units (tune with [ / ])
 const DISPERSE_EASE = 0.16; // how fast the scatter chases its 0/1 target (higher = snappier)

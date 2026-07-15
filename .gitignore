@@ -18,6 +18,9 @@ apps/kiosk/public/models/*.glb
 # scripts/build-*.py (manifest: apps/kiosk/public/splat/README.md). Out of git history.
 apps/kiosk/public/splat/*.ply
 apps/kiosk/public/splat/*.bin
+# EXCEPTION: the decimated web splat (~21MB, 400k gaussians, no SH) IS committed so the
+# deployed showreel landing has its campus. Regenerate via the README.
+!apps/kiosk/public/splat/tum-campus-web.ply
 apps/kiosk/public/roofmap.png
 
 # Local report/backup exports (large ply/png), not part of the app

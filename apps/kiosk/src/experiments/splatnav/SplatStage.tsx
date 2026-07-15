@@ -15,7 +15,7 @@ import { patchDisperse, type DisperseHandle } from "./disperse";
  * view ([96, -51.7, -51.3] → [-1.5, -1, -4.5], up -Y). Hand steers the azimuth (no up/down — the
  * old "navigation" tilt is dropped); auto-orbit advances it only while no hand is present.
  */
-const PLY_URL = "/splat/tum-campus.ply";
+const PLY_URL = "/splat/tum-campus-web.ply"; // decimated 400k/no-SH, committed for deploy
 const CAMERA_UP: [number, number, number] = [0, -1, 0];
 const TARGET = { x: -1.5, y: -1, z: -4.5 };
 const R_H = 108; // horizontal orbit radius (XZ plane)
