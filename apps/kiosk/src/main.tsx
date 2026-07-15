@@ -46,6 +46,21 @@ const SplatNativeExperiment = lazy(() =>
     default: m.SplatNativeExperiment,
   })),
 );
+const SplatNavExperiment = lazy(() =>
+  import("./experiments/splatnav/SplatNavExperiment").then((m) => ({
+    default: m.SplatNavExperiment,
+  })),
+);
+const PuzzleAccordionExperiment = lazy(() =>
+  import("./experiments/puzzle/PuzzleAccordion").then((m) => ({
+    default: m.PuzzleAccordion,
+  })),
+);
+const ShowreelSplitExperiment = lazy(() =>
+  import("./experiments/showreel2/ShowreelSplit").then((m) => ({
+    default: m.ShowreelSplit,
+  })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -73,6 +88,12 @@ const experiment =
     <SplatViewerExperiment />
   ) : exp === "splat3d" ? (
     <SplatNativeExperiment />
+  ) : exp === "splatnav" ? (
+    <SplatNavExperiment />
+  ) : exp === "puzzle" ? (
+    <PuzzleAccordionExperiment />
+  ) : exp === "showreel2" ? (
+    <ShowreelSplitExperiment />
   ) : null;
 
 createRoot(root).render(
