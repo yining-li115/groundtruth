@@ -9,7 +9,94 @@
     "phone": "+49 89 289 19412",
     "room": "1781",
     "photo": "benjamin-busam.jpg",
-    "longBio": "Benjamin Busam is a Professor and Director of Photogrammetry and Remote Sensing with the Technical University of Munich. Formerly Head of Research at FRAMOS Imaging Systems, he led the 3D Computer Vision Team at Huawei Research, London from 2018 to 2020 and has been coordinating the Computer Vision activities at the Chair for Computer Aided Medical Procedures until 2025. Benjamin studied Mathematics at TUM. In his subsequent postgraduate programme, he continued in Mathematics and Physics at ParisTech, France and at the University of Melbourne, Australia, before he graduated with distinction at TU Munich in 2014. In continuation to a mathematical focus on projective geometry and 3D point cloud matching, he now works on photogrammetry, 3D computer vision, and embodied AI. For his work on adaptable high-resolution real-time stereo tracking he received the EMVA Young Professional Award 2015 from the European Machine Vision Association and was awarded Innovation Pioneer of the Year 2019 by Noah's Ark Laboratory, London. He regularly serves in the programme committees for the main computer vision conferences such as CVPR, ICCV, ECCV and was given multiple Outstanding Reviewer / Area Chair Awards at 3DV 2020, 3DV 2021, ECCV 2022, CVPR 2024, NeurIPS 2025, CVPR 2026."
+    "longBio": "Benjamin Busam is a Professor and Director of Photogrammetry and Remote Sensing with the Technical University of Munich. Formerly Head of Research at FRAMOS Imaging Systems, he led the 3D Computer Vision Team at Huawei Research, London from 2018 to 2020 and has been coordinating the Computer Vision activities at the Chair for Computer Aided Medical Procedures until 2025. Benjamin studied Mathematics at TUM. In his subsequent postgraduate programme, he continued in Mathematics and Physics at ParisTech, France and at the University of Melbourne, Australia, before he graduated with distinction at TU Munich in 2014. In continuation to a mathematical focus on projective geometry and 3D point cloud matching, he now works on photogrammetry, 3D computer vision, and embodied AI. For his work on adaptable high-resolution real-time stereo tracking he received the EMVA Young Professional Award 2015 from the European Machine Vision Association and was awarded Innovation Pioneer of the Year 2019 by Noah's Ark Laboratory, London. He regularly serves in the programme committees for the main computer vision conferences such as CVPR, ICCV, ECCV and was given multiple Outstanding Reviewer / Area Chair Awards at 3DV 2020, 3DV 2021, ECCV 2022, CVPR 2024, NeurIPS 2025, CVPR 2026.",
+    "researchInterests": [
+      "Photorealistic Photogrammetry",
+      "3D Computer Vision (Depth, Pose, SLAM, Reconstruction, Registration, etc.)",
+      "Embodied AI & Collaborative Robotics",
+      "Multi-Modal Sensor Fusion Concepts and their Medical Applications",
+      "Remote Sensing & Earth Observation",
+      "Projective & Differential Geometry",
+      "Machine Learning, Neural Models & Neural Fields"
+    ],
+    "projects": [
+      {
+        "title": "Flexible 3D Matching using Graphs",
+        "description": "Mahdi Saleh"
+      },
+      {
+        "title": "Collaborative Robotic Grasping",
+        "description": "Guangyao Zhai"
+      },
+      {
+        "title": "Bio-Medical 3D Robotic Applications",
+        "description": "Shervin Dehghani"
+      },
+      {
+        "title": "Robust 3D Detection through Adversarial Learning",
+        "description": "Alexander Lehner"
+      },
+      {
+        "title": "Scene Tracking in Surgical Environments",
+        "description": "Mert Karaoglu"
+      },
+      {
+        "title": "Holistic 4D Scene Understanding in the OR",
+        "description": "Ege Özsoy"
+      },
+      {
+        "title": "Surgical Data Science in Workflow Scenarios",
+        "description": "Felix Holm"
+      },
+      {
+        "title": "Semantic Multimodal Medical Image Understanding",
+        "description": "Kristina Mach"
+      },
+      {
+        "title": "6D Pose Estimation for Unknown Objects",
+        "description": "Junwen Huang"
+      },
+      {
+        "title": "Egocentric 3D Perception in Challenging Medical Environments",
+        "description": "Felix Tristram"
+      },
+      {
+        "title": "Reinforcement Learning for Intrinsic Exploration",
+        "description": "Boody Elskhawy"
+      },
+      {
+        "title": "Intrinsic Exploration with Graph Neural Networks",
+        "description": "Mengze Li"
+      },
+      {
+        "title": "Explainable Medical Image Understanding with Multi-Modal Data",
+        "description": "Chantal Pellegrini"
+      },
+      {
+        "title": "Learning from Limited Data for Simulations in Structural Mechanical Design",
+        "description": "Dekai Zhu"
+      },
+      {
+        "title": "3D Robotics in Ophthalmology",
+        "description": "Alireza Alikhani"
+      },
+      {
+        "title": "3D Indoor Room Reconstruction",
+        "description": "Yiming Zhou"
+      },
+      {
+        "title": "Medical 3D Scene Perception",
+        "description": "Hannah Schieber"
+      },
+      {
+        "title": "Interactive Visual Scene Representations",
+        "description": "Mert Kiray"
+      },
+      {
+        "title": "3D Scene Understanding in the OR",
+        "description": "Shiyu Li"
+      }
+    ]
   },
   {
     "id": "susanne-oxe",
@@ -75,6 +162,16 @@
       "Photorealistic Photogrammetry",
       "Agentic Scene Interaction (3D)",
       "Vision-Language Models"
+    ],
+    "projects": [
+      {
+        "title": "AI Agents - Digital Crime Scene Investigation",
+        "description": "This research project is carried out in cooperation with the Bavarian State Criminal Police Office (BLKA) and addresses the generation of a so called “AI-Agent”. The overarching goal is the deep learning-based analysis of 3D topography in both 2D images and 3D data in the context of digital crime scene twins. This includes, in particular, the recognition of specific objects relevant to the crime scene and the data-driven investigation of their global spatial relationships in a geometrically accurate yet photorealistic, physically correct, and complete twin of the crime scene. This ultimately allows detailed forensic analyses and constructive investigations to be carried out by a visually present (avatar), responsive (text-to-scene interaction), and appropriately trained AI agent."
+      },
+      {
+        "title": "Autonomous Landing Site Detection for UAVs",
+        "description": "Research collaboration with Institute of Flight System Dynamics (TUM) - This project is situated at the intersection of Photogrammetry, Computer Vision and Robotics, and focuses on the development of a multi-modal framework for autonomous landing site detection for (large-scale) UAVs in unstructured environments. The research addresses both hardware and software aspects, including: the design and integration of a synchronized LiDAR-RGB sensor stack, software deployment within ROS2, multi-modal data processing & sensor fusion for robust aerial perception."
+      }
     ]
   },
   {
@@ -115,6 +212,12 @@
         "venue": ", 43. Wissenschaftlich-Technische Jahrestagung der DGPF e.V. München. Publikationen der Deutschen Gesellschaft für Photogrammetrie, Fernerkundung und Geoinformation (DGPF) e.V. , 2023",
         "year": 2023,
         "url": "https://dx.doi.org/10.24407/kxp:184104914x"
+      }
+    ],
+    "projects": [
+      {
+        "title": "CuBy - Satellite Network Bavaria",
+        "description": "This unique project encompasses the development of a multispectral small satellite Earth observation mission for the state of Bavaria. The payload is a line scanning camera with seven + PAN spectral channels, enabling a multitude of applications in biomonitoring, search and rescue, and research. As project lead for CuBy at PRS, I was able to accompany the mission from its early stages on. Research areas within CuBy Mission design Payload and design evaluation Payload simulation Camera calibration Image registration and georeferencing Cloud masking Super resolution Deep Learning for Earth observation Applications and satellite data products Project partners Landesamt für Digitalisierung, Breitband und Vermessung (Bavarian Surveying Administration) TUM Chair of Astronomical and Physical Geodesy Zentrum für Telematik Würzburg"
       }
     ]
   },
@@ -459,6 +562,12 @@
       "Cross-view Visual Localisation",
       "Multimodal Sensor Fusion",
       "Language-Guided Robotics"
+    ],
+    "projects": [
+      {
+        "title": "Autonomous Landing Site Detection for UAVs",
+        "description": "Research collaboration with Institute of Flight System Dynamics (TUM) - This project is situated at the intersection of Photogrammetry, Computer Vision and Robotics, and focuses on the development of a multi-modal framework for autonomous landing site detection for (large-scale) UAVs in unstructured environments. The research addresses both hardware and software aspects, including: the design and integration of a synchronized LiDAR-RGB sensor stack, software deployment within ROS2, multi-modal data processing & sensor fusion for robust aerial perception."
+      }
     ],
     "links": [
       {

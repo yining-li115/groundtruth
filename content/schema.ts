@@ -50,6 +50,11 @@ export const publicationSchema = z.object({
   url: z.string().url().optional(),
 });
 
+export const projectItemSchema = z.object({
+  title: nonEmpty, // project / thesis topic (copied verbatim from the person's page)
+  description: z.string().optional(), // e.g. the student, or a short blurb
+});
+
 export const personSchema = z.object({
   id,
   firstName: nonEmpty,
@@ -66,6 +71,7 @@ export const personSchema = z.object({
   researchInterests: z.array(nonEmpty).optional(),
   photos: z.array(personPhotoSchema).optional(), // detail-page gallery
   publications: z.array(publicationSchema).optional(), // scraped verbatim from mediaTUM / Scholar
+  projects: z.array(projectItemSchema).optional(), // supervised / involved projects (verbatim)
   links: z.array(linkSchema).optional(),
   relatedTopicIds: z.array(id).optional(), // → ResearchTopic.id
   relatedProjectIds: z.array(id).optional(), // → StudentProject.id
@@ -175,6 +181,7 @@ export type MediaItem = z.infer<typeof mediaItemSchema>;
 export type Person = z.infer<typeof personSchema>;
 export type ResearchTopic = z.infer<typeof researchTopicSchema>;
 export type Publication = z.infer<typeof publicationSchema>;
+export type ProjectItem = z.infer<typeof projectItemSchema>;
 export type StudentProject = z.infer<typeof studentProjectSchema>;
 export type Course = z.infer<typeof courseSchema>;
 export type Paper = z.infer<typeof paperSchema>;

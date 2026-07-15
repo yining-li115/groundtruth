@@ -51,7 +51,10 @@ export function PersonDetail({ person, onBack }: { person: Person; onBack: () =>
   const role = person.title || person.category;
   const bio = person.longBio || person.shortBio;
   const interests = person.researchInterests ?? [];
+  const projects = person.projects ?? [];
+  const pubs = person.publications ?? [];
   const links = person.links ?? [];
+  const empty = interests.length === 0 && !bio && projects.length === 0 && pubs.length === 0;
 
   return (
     <div className="ppl-detail" data-theme="dark">
@@ -77,7 +80,45 @@ export function PersonDetail({ person, onBack }: { person: Person; onBack: () =>
             <dd>{bio}</dd>
           </>
         )}
-        {interests.length === 0 && !bio && (
+        {projects.length > 0 && (
+          <>
+            <dt>Projects</dt>
+            <dd>
+              {projects.map((pr, i) => (
+                <div key={i}>
+                  {pr.title}
+                  {pr.description ? ` — ${pr.description}` : ""}
+                </div>
+              ))}
+            </dd>
+          </>
+        )}
+        {pubs.length > 0 && (
+          <>
+            <dt>Publications</dt>
+            <dd>
+              {pubs.map((pub, i) => (
+                <div key={i}>
+                  {pub.url ? (
+                    <a
+                      className="ppl-detail__link"
+                      data-hover
+                      href={pub.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {pub.title}
+                    </a>
+                  ) : (
+                    pub.title
+                  )}
+                  . {pub.venue}
+                </div>
+              ))}
+            </dd>
+          </>
+        )}
+        {empty && (
           <dd className="ppl-detail__empty">
             Nothing to declare here — yet. This one lets the work do the talking. The
             essentials — who, where, how to reach them — are in the file on the right. →
