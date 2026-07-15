@@ -1,4 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { Logo } from "@groundtruth/ui";
+import { KioskQR } from "../../components/KioskQR";
 import { SplatStage } from "../splatnav/SplatStage";
 import { useHandNav } from "../splatnav/useHandNav";
 import { splatNav } from "../splatnav/navState";
@@ -43,7 +45,14 @@ function Bouncy({ text, style }: { text: string; style?: CSSProperties }) {
   );
 }
 
-export function ShowreelSplit() {
+export function ShowreelSplit({
+  showQR = true,
+  onEnter,
+}: {
+  showQR?: boolean;
+  /** when provided, renders an "Enter site" button that clicks straight into the website */
+  onEnter?: () => void;
+} = {}) {
   const { videoRef, hud } = useHandNav();
   const [auto, setAuto] = useState(true); // true = LIVE (presence), false = MANUAL (you drive)
   const [interacting, setInteracting] = useState(false);
@@ -91,12 +100,22 @@ export function ShowreelSplit() {
         }}
       />
 
-      {/* brand */}
+      {/* brand — same block/typography as the section pages (SectionLayout), white logo for dark */}
       <div
-        className="absolute left-[clamp(2rem,5vw,5rem)] top-[1.6rem] text-sm uppercase tracking-[0.14em]"
-        style={{ color: "var(--gt-text-secondary)", opacity: focused ? 0 : 1, transition: `opacity 500ms ${EASE}` }}
+        className="absolute left-[clamp(2rem,5vw,5rem)] top-[1.6rem] flex items-start gap-4 text-left"
+        style={{ opacity: focused ? 0 : 1, transition: `opacity 500ms ${EASE}` }}
       >
-        Photogrammetry &amp; Remote Sensing · TUM
+        <span
+          className="flex flex-col"
+          style={{ fontSize: "0.72rem", lineHeight: 1.35, color: "var(--gt-text-secondary)" }}
+        >
+          <span className="font-bold" style={{ color: "var(--gt-text-primary)" }}>
+            Professorship of Photogrammetry and Remote Sensing
+          </span>
+          <span>TUM School of Engineering and Design</span>
+          <span>Technical University of Munich</span>
+        </span>
+        <Logo variant="white" width={64} height={33} />
       </div>
 
       {/* puzzle news — left; slides away to the left when focusing on the visitor */}
@@ -175,7 +194,23 @@ export function ShowreelSplit() {
             ? "Live — raise a hand to interact"
             : "Manual — click a card · 🖐 scatter · ✊ gather · move to turn"}
         </span>
+
+        {/* direct-enter (skip the QR) — debug only, sits with the Live switch */}
+        {onEnter && (
+          <button
+            type="button"
+            onClick={onEnter}
+            className="ml-3 rounded-full px-4 py-1.5 text-sm font-semibold"
+            style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}
+          >
+            Enter site →
+          </button>
+        )}
       </div>
+
+      {/* the static QR — scan it to take control (enter the site on your phone). In the real app
+          it comes from the global <KioskQR> in App, so this is only for the standalone preview. */}
+      {showQR && <KioskQR />}
     </div>
   );
 }

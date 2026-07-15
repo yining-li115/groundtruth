@@ -8,6 +8,7 @@ import { KioskQR } from "./components/KioskQR";
 import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
 import { Showreel } from "./scenes/Showreel";
+import { ShowreelSplit } from "./experiments/showreel2/ShowreelSplit";
 import { PeopleSection } from "./scenes/PeopleSection";
 import { ResearchSection } from "./scenes/ResearchSection";
 import { ProjectsSection } from "./scenes/ProjectsSection";
@@ -37,6 +38,8 @@ function CurrentView() {
 export default function App() {
   const connected = useKioskStore((s) => s.connected);
   const hasDriver = useKioskStore((s) => s.hasDriver);
+  const entered = useKioskStore((s) => s.entered);
+  const interactive = hasDriver || entered; // a real driver OR a manual "enter" click
 
   // Start the smooth-scroll + ScrollTrigger loop once for the tab's lifetime.
   useEffect(() => {
@@ -72,7 +75,13 @@ export default function App() {
 
   return (
     <main className="relative" style={{ background: "var(--gt-bg)" }}>
-      <CurrentView />
+      {/* Idle landing = the touchless showreel (splat + puzzle). The moment a phone takes the
+          token (hasDriver) — or someone clicks "Enter" — we hand over to the website shell. */}
+      {interactive ? (
+        <CurrentView />
+      ) : (
+        <ShowreelSplit showQR={false} onEnter={() => useKioskStore.getState().setEntered(true)} />
+      )}
 
       {/* Static QR — always visible so a visitor can take control (architecture §2). */}
       <KioskQR />

@@ -17,6 +17,9 @@ interface KioskState {
   connected: boolean;
   /** A controller holds the token → interactive mode (architecture §6). */
   hasDriver: boolean;
+  /** Manually entered the site from the showreel (a click, no phone) — e.g. for a demo. Lets the
+   *  interactive shell show without a real driver; the phone cursor still only appears with one. */
+  entered: boolean;
   /** Current screen in the interactive shell. */
   view: View;
   /** Home hero is pinned → a one-finger drag orbits the particles (and the cursor is
@@ -24,6 +27,7 @@ interface KioskState {
   heroOrbitActive: boolean;
   setConnected: (v: boolean) => void;
   setHasDriver: (v: boolean) => void;
+  setEntered: (v: boolean) => void;
   setView: (v: View) => void;
   setHeroOrbitActive: (v: boolean) => void;
 }
@@ -47,10 +51,12 @@ const initialView = ((): View => {
 export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
+  entered: false,
   view: initialView,
   heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
+  setEntered: (entered) => set({ entered }),
   setView: (view) => set({ view }),
   setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),
 }));
