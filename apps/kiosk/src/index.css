@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "@groundtruth/tokens/tokens.css";
 
+/* Staggered per-letter bounce for the showreel "raise your hand" prompt (so it isn't stiff). */
+@keyframes gt-letter-bounce {
+  0%, 55%, 100% { transform: translateY(0); }
+  28% { transform: translateY(-0.28em); }
+}
+
 /* Lenis smooth scroll (lib/scroll.ts). Required plumbing so Lenis can own the scroll
    without breaking document height or native position:sticky (the home hero stage). */
 html.lenis,

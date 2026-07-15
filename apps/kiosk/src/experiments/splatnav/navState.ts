@@ -42,6 +42,9 @@ export const splatNav = {
   radius: 104,
   /** disperse intent [0..1]: open palm → 1 (scatter the gaussians), fist → 0 (reassemble). Sticky. */
   disperseTarget: 0,
+  /** when true, the palm/fist gesture drives disperseTarget (manual mode). When false, the host
+   *  drives it (auto/presence mode) so a greeting-palm doesn't accidentally scatter. */
+  gestureControls: true,
   /** true on any frame a hand is tracked — the loop uses it to decide idle auto-orbit. */
   handPresent: false,
   /** the look-at point (pannable) */

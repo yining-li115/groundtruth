@@ -68,6 +68,11 @@ export class VisionEngine {
         baseOptions: { modelAssetPath: ASSET.gestureModel, delegate: "GPU" },
         runningMode: "VIDEO",
         numHands: 1,
+        // raise the bars so background / faces don't register as a phantom hand (which would
+        // wrongly flip the showreel into "someone is here" and assemble the splat)
+        minHandDetectionConfidence: 0.7,
+        minHandPresenceConfidence: 0.7,
+        minTrackingConfidence: 0.6,
       }),
       FaceDetector.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: ASSET.faceModel, delegate: "GPU" },

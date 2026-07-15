@@ -2,20 +2,18 @@ import { useEffect, useRef } from "react";
 // @ts-expect-error — @mkkellogg/gaussian-splats-3d ships no type declarations
 import * as GaussianSplats3D from "@mkkellogg/gaussian-splats-3d";
 import { dark } from "@groundtruth/tokens";
-import { useHandNav } from "./useHandNav";
 import { splatNav } from "./navState";
 import { patchDisperse, type DisperseHandle } from "./disperse";
 
 /**
- * Embeddable Gaussian-splat stage — fills its (positioned) parent, no tuning chrome. Renders the
- * real TUM campus gaussians, slowly auto-orbits when idle, and disperses on the open-palm gesture
- * (✊ reassembles). This is the SplatNavExperiment's engine minus the framing HUD, for the
- * combined showreel backdrop. Preview via /?exp=showreel2.
+ * Embeddable Gaussian-splat stage — fills its (positioned) parent, no chrome. Renders the real
+ * TUM campus gaussians, auto-orbits, and lets a hand SPIN it (via splatNav.yaw, written by the
+ * host's useHandNav). The `dispersed` prop drives the scatter: the host keeps it scattered while
+ * idle and snaps it back together while someone is interacting.
  *
- * We drive the camera ourselves (built-in controls off) as a horizontal orbit around the campus
- * at a fixed elevation. The orbit params are the user-tuned view ([96, -51.7, -51.3] looking at
- * [-1.5, -1, -4.5], up -Y) decomposed into radius / height / azimuth so the auto-spin passes
- * through exactly that framing.
+ * Camera: a horizontal orbit at fixed elevation around the campus, decomposed from the user-tuned
+ * view ([96, -51.7, -51.3] → [-1.5, -1, -4.5], up -Y). Hand steers the azimuth (no up/down — the
+ * old "navigation" tilt is dropped); auto-orbit advances it only while no hand is present.
  */
 const PLY_URL = "/splat/tum-campus.ply";
 const CAMERA_UP: [number, number, number] = [0, -1, 0];
@@ -24,8 +22,11 @@ const R_H = 108; // horizontal orbit radius (XZ plane)
 const H_UP = 50.7; // camera height above the target along -Y
 const THETA0 = -0.446; // initial azimuth — reproduces the baked framing
 const SPIN = 0.1; // rad/sec idle auto-orbit (pauses while a hand is steering)
-const ELEV_GAIN = 55; // world-units of camera height per unit of hand-driven pitch
-const DISPERSE_EASE = 0.16;
+const ELEV_GAIN = 55; // world-units of camera height per unit of hand-driven pitch (up/down)
+const ORBIT_EASE = 0.12; // low-pass the camera angle toward the (noisy) hand target → no jitter
+const AIM_EASE = 0.08; // glide the campus between off-centre-right (idle) and centre (interacting)
+const EASE_GATHER = 0.28; // snappy reassemble when someone greets the wall
+const EASE_SCATTER = 0.1; // gentler drift back apart when they leave
 const CLAMP = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
 
 const posAt = (theta: number): [number, number, number] => [
@@ -46,7 +47,9 @@ export function SplatStage({
   aimShift?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const { videoRef } = useHandNav();
+  // read the latest aimShift from the loop without re-creating the viewer
+  const aimRef = useRef(aimShift);
+  aimRef.current = aimShift;
 
   useEffect(() => {
     const el = ref.current;
@@ -54,15 +57,19 @@ export function SplatStage({
     let disposed = false;
     let raf = 0;
     let last = performance.now();
-    // the hand-orbit shares splatNav (useHandNav writes yaw/pitch); seed it to the baked framing
+    // hand-orbit shares splatNav (host's useHandNav writes yaw/pitch); seed the baked framing
     splatNav.yaw = THETA0;
     splatNav.pitch = 0;
+    // smoothed (rendered) angles — eased toward splatNav each frame to kill hand-tracking jitter
+    let smYaw = THETA0;
+    let smPitch = 0;
+    let smAim = aimShift; // smoothed camera-aim pan (right → centre glide)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const viewer: any = new GaussianSplats3D.Viewer({
       rootElement: el,
       sharedMemoryForWorkers: false,
-      useBuiltInControls: false, // we drive the camera (auto-orbit + gesture disperse)
+      useBuiltInControls: false, // we drive the camera (auto-orbit + hand spin)
       cameraUp: CAMERA_UP,
       initialCameraPosition: posAt(THETA0),
       initialCameraLookAt: [TARGET.x, TARGET.y, TARGET.z],
@@ -77,7 +84,7 @@ export function SplatStage({
         try {
           disperse = patchDisperse(viewer.getSplatMesh?.(), amp);
         } catch {
-          /* nav still fine without disperse */
+          /* stage still fine without disperse */
         }
 
         const tick = () => {
@@ -91,37 +98,34 @@ export function SplatStage({
 
           if (!disperse) disperse = patchDisperse(viewer.getSplatMesh?.(), amp);
           if (disperse) {
-            disperse.uniform.value +=
-              (splatNav.disperseTarget - disperse.uniform.value) * DISPERSE_EASE;
+            const target = splatNav.disperseTarget; // host (auto) or gesture (manual) sets this
+            const ease = target < disperse.uniform.value ? EASE_GATHER : EASE_SCATTER;
+            disperse.uniform.value += (target - disperse.uniform.value) * ease;
           }
 
-          // hand steers the orbit (useHandNav → splatNav.yaw/pitch); auto-orbit advances the
-          // azimuth only while no hand is present, so the two hand off seamlessly.
+          // hand orbits the campus (useHandNav → splatNav.yaw left/right, splatNav.pitch up/down);
+          // auto-orbit advances the azimuth only while no hand is present, so they hand off cleanly.
           if (autoRotate && !splatNav.handPresent) splatNav.yaw += SPIN * dt;
-          const theta = splatNav.yaw;
-          const px = TARGET.x + R_H * Math.cos(theta);
-          const py = TARGET.y - (H_UP + splatNav.pitch * ELEV_GAIN);
-          const pz = TARGET.z + R_H * Math.sin(theta);
-          cam.position.set(px, py, pz);
+          // ease the rendered angle toward the (jittery) hand target — this low-pass is what
+          // removes the shake; the raw splatNav.yaw/pitch can be noisy frame to frame.
+          smYaw += (splatNav.yaw - smYaw) * ORBIT_EASE;
+          smPitch += (splatNav.pitch - smPitch) * ORBIT_EASE;
+          const px = TARGET.x + R_H * Math.cos(smYaw);
+          const pz = TARGET.z + R_H * Math.sin(smYaw);
+          cam.position.set(px, TARGET.y - (H_UP + smPitch * ELEV_GAIN), pz);
           cam.up.set(CAMERA_UP[0], CAMERA_UP[1], CAMERA_UP[2]);
 
-          // pan the aim horizontally so the campus sits off-centre-right on a full-screen canvas.
-          // right vector (up = -Y) = (fwd.z, 0, -fwd.x); aiming LEFT of the target shifts it right.
-          let ax = TARGET.x;
-          let az = TARGET.z;
-          if (aimShift) {
-            const fx = TARGET.x - px;
-            const fz = TARGET.z - pz;
-            const rl = Math.hypot(fz, fx) || 1;
-            ax = TARGET.x - (fz / rl) * aimShift;
-            az = TARGET.z - (-fx / rl) * aimShift;
-          }
+          // pan the aim horizontally so the campus sits off-centre-right (idle) or centre
+          // (interacting); glide between them. right vector (up = -Y) = (fwd.z, 0, -fwd.x).
+          smAim += (aimRef.current - smAim) * AIM_EASE;
+          const fx = TARGET.x - px;
+          const fz = TARGET.z - pz;
+          const rl = Math.hypot(fz, fx) || 1;
+          const ax = TARGET.x - (fz / rl) * smAim;
+          const az = TARGET.z - (-fx / rl) * smAim;
           cam.lookAt(ax, TARGET.y, az);
 
-          // camera moves every frame while spinning; force a render so the sort keeps up
-          if (autoRotate || (disperse && disperse.uniform.value > 0.002)) {
-            viewer.forceRenderNextFrame?.();
-          }
+          viewer.forceRenderNextFrame?.(); // camera and/or splats move nearly every frame
         };
         raf = requestAnimationFrame(tick);
       })
@@ -141,8 +145,6 @@ export function SplatStage({
   return (
     <div className="absolute inset-0" style={{ background: dark.bg }}>
       <div ref={ref} className="absolute inset-0" />
-      {/* hidden webcam feed that drives the disperse gesture */}
-      <video ref={videoRef} style={{ display: "none" }} playsInline muted />
     </div>
   );
 }

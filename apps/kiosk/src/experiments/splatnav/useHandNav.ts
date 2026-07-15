@@ -21,9 +21,10 @@ export type NavStatus = "idle" | "loading" | "running" | "error";
 
 // ---- tuning knobs ----
 const GESTURE_MIN_SCORE = 0.5;
-const MIRROR_X = true; // hand right → view turns right (front-facing camera is mirrored)
-const MIRROR_Y = true; // hand up → view tilts up
+const MIRROR_X = false; // hand right → view turns right (flip if it feels reversed)
+const MIRROR_Y = true; // hand up → view tilts up (flip if it feels reversed)
 const DRAG_GAIN = 4.0; // radians of orbit per 1.0 of fingertip travel across the frame
+const FINGER_SMOOTH = 0.5; // EMA on the fingertip position — tames MediaPipe's per-frame noise
 const MOVE_DEADZONE = 0.004; // ignore sub-pixel jitter per frame
 const JUMP_REJECT = 0.15; // ignore huge single-frame jumps (pose change / tracking glitch)
 
@@ -51,8 +52,10 @@ export function useHandNav(enabled = true) {
     const video = videoRef.current;
     if (!video) return;
 
-    let prevX = NaN; // last fingertip position (mirrored [0,1]); NaN = no hand last frame
+    let prevX = NaN; // last SMOOTHED fingertip position (mirrored [0,1]); NaN = no hand last frame
     let prevY = NaN;
+    let emaX = NaN; // EMA-smoothed fingertip, to pre-filter tracking noise before differencing
+    let emaY = NaN;
     let lastTs = 0;
     let lastFrame = performance.now();
     let ema = 0; // smoothed fps
@@ -87,12 +90,14 @@ export function useHandNav(enabled = true) {
           const dtSec = clamp((now - lastFrame) / 1000, 0.001, 0.05); // clamp tab-blur spikes
           lastFrame = now;
 
-          // --- gesture → disperse intent (STICKY: holds last until the other gesture) ---
+          // --- gesture → disperse intent (only in manual mode; STICKY until the other gesture) ---
           let gesture = "None";
           if (res.hand && res.hand.score >= GESTURE_MIN_SCORE) {
             gesture = res.hand.label;
-            if (res.hand.label === "Open_Palm") splatNav.disperseTarget = 1; // scatter
-            else if (res.hand.label === "Closed_Fist") splatNav.disperseTarget = 0; // reassemble
+            if (splatNav.gestureControls) {
+              if (res.hand.label === "Open_Palm") splatNav.disperseTarget = 1; // scatter
+              else if (res.hand.label === "Closed_Fist") splatNav.disperseTarget = 0; // reassemble
+            }
           } else if (res.hand) {
             gesture = res.hand.label; // hand tracked but no confident gesture
           }
@@ -100,8 +105,13 @@ export function useHandNav(enabled = true) {
 
           // --- fingertip movement → orbit drag (relative; stop moving = stop turning) ---
           if (res.hand) {
-            const hx = MIRROR_X ? 1 - res.hand.cx : res.hand.cx;
-            const hy = MIRROR_Y ? 1 - res.hand.cy : res.hand.cy;
+            const rawX = MIRROR_X ? 1 - res.hand.cx : res.hand.cx;
+            const rawY = MIRROR_Y ? 1 - res.hand.cy : res.hand.cy;
+            // pre-smooth the fingertip (EMA) before differencing, so noise doesn't become shake
+            emaX = Number.isNaN(emaX) ? rawX : emaX + (rawX - emaX) * FINGER_SMOOTH;
+            emaY = Number.isNaN(emaY) ? rawY : emaY + (rawY - emaY) * FINGER_SMOOTH;
+            const hx = emaX;
+            const hy = emaY;
             if (!Number.isNaN(prevX)) {
               const dx = hx - prevX;
               const dy = hy - prevY;
@@ -119,6 +129,7 @@ export function useHandNav(enabled = true) {
             prevY = hy;
           } else {
             prevX = prevY = NaN; // hand gone → next re-entry won't jump
+            emaX = emaY = NaN;
             splatNav.handPresent = false;
           }
 
