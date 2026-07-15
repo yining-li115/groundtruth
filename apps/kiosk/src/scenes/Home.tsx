@@ -3,7 +3,6 @@ import { Logo, BlurScrollText, HeroScrollHint } from "@groundtruth/ui";
 import { KioskMenu } from "../components/KioskMenu";
 import { SpotlightGallery } from "../components/SpotlightGallery";
 import { NewsGrid } from "../components/NewsGrid";
-import { OpenTopicsDepth } from "../components/OpenTopicsDepth";
 import { useKioskStore } from "../state/store";
 
 import { activePointer } from "../lib/cursorPosition";
@@ -48,7 +47,7 @@ export function Home() {
 
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
-      {/* Global cursor-fluid — a fixed layer behind ALL content (hero → Open Topics) that trails
+      {/* Global cursor-fluid — a fixed layer behind ALL content (hero → News) that trails
           the cursor across the whole page. Reduced-motion: skipped. */}
       {!reduced && (
         <div className="home-fluid">
@@ -120,8 +119,22 @@ export function Home() {
       {/* News — 3D staggered scroll grid (Lusion "Featured Work" layout). */}
       <NewsGrid />
 
-      {/* Open Topics — full-bleed depth gallery, browsed by continuing to scroll down (pinned). */}
-      <OpenTopicsDepth />
+      {/* Open Topics (full-bleed depth gallery) removed from the home for now — the component
+          and its effect are kept in components/OpenTopicsDepth.tsx (preview /?exp=depth). */}
+
+      {/* debug: jump straight back to the idle showreel (bypasses the relay token) */}
+      <button
+        type="button"
+        onClick={() => {
+          const s = useKioskStore.getState();
+          s.setEntered(false);
+          s.setHasDriver(false);
+        }}
+        className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm font-semibold"
+        style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}
+      >
+        → Showreel (debug)
+      </button>
     </div>
   );
 }

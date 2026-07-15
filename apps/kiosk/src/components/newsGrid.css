@@ -4,7 +4,9 @@
    restrained 3D tilt as they scroll. The transform is driven by NewsGrid.tsx. */
 
 .news-section {
-  padding: 6vh 0 12vh;
+  /* generous bottom space so the LAST row can scroll far enough to reach the settled
+     (straight) mid-point of its scrub — it's the last section on the home now. */
+  padding: 6vh 0 60vh;
   overflow-x: hidden;
 }
 .news-section__head {
