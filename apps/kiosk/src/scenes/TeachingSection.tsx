@@ -1,9 +1,8 @@
-import { useRef } from "react";
 import type { Course } from "../../../../content/schema";
 import { courses } from "../lib/content";
 import { SectionLayout } from "../components/SectionLayout";
-import { GlitchText, useGlitchOnHover } from "../components/GlitchText";
 import "./teaching.css";
+// Glitch-on-hover decode effect removed for now — kept in components/GlitchText.tsx for reuse.
 
 /** Course-type legend (matches the PRS course table). */
 const TYPE_LEGEND = "VO Lecture · VI Lecture + Exercises · UE Exercise · SE Seminar · PR Practical";
@@ -22,16 +21,14 @@ function byTerm(items: Course[]): { semester: string; items: Course[] }[] {
   return order.map((semester) => ({ semester, items: map.get(semester)! }));
 }
 
-/** One course row — decodes (glitch) when the cursor hovers it. */
+/** One course row. */
 function CourseRow({ c }: { c: Course }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useGlitchOnHover(ref);
   return (
-    <div ref={ref} data-hover className="tch-row">
-      <GlitchText className="tch-no" text={c.courseNo ?? "—"} />
-      <GlitchText className="tch-title" text={c.title} />
-      <GlitchText className="tch-hours" text={c.hoursPerWeek != null ? String(c.hoursPerWeek) : "—"} />
-      <GlitchText className="tch-type" text={c.courseType ?? "—"} />
+    <div data-hover className="tch-row">
+      <span className="tch-no">{c.courseNo ?? "—"}</span>
+      <span className="tch-title">{c.title}</span>
+      <span className="tch-hours">{c.hoursPerWeek != null ? String(c.hoursPerWeek) : "—"}</span>
+      <span className="tch-type">{c.courseType ?? "—"}</span>
     </div>
   );
 }
