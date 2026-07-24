@@ -8,9 +8,11 @@ import { useKioskStore } from "../state/store";
 import { activePointer } from "../lib/cursorPosition";
 import { liquidColors } from "../experiments/liquid/assetColors";
 
-// Lazy — the WebGL scene (three.js) is heavy; code-split it out of the main bundle.
+// Lazy — the WebGL scene (three.js + gaussian splats) is heavy; code-split it out of the
+// main bundle. The hero is now the real TUM-campus gaussians (same scroll-disperse/orbit
+// behaviour as the old procedural point cloud, which stays previewable at /?exp=showcase).
 const HeroScene = lazy(() =>
-  import("../experiments/showcase/Scene").then((m) => ({ default: m.Scene })),
+  import("../experiments/showcase/HeroSplat").then((m) => ({ default: m.HeroSplat })),
 );
 // Cursor-fluid garnish over the hero; also three.js-heavy, so lazy too.
 const HeroFluid = lazy(() =>
@@ -73,7 +75,7 @@ export function Home() {
           <div className="hero-canvas">
             {!reduced && (
               <Suspense fallback={null}>
-                <HeroScene progressRef={progress} mode="home" />
+                <HeroScene progressRef={progress} />
               </Suspense>
             )}
           </div>
@@ -122,19 +124,37 @@ export function Home() {
       {/* Open Topics (full-bleed depth gallery) removed from the home for now — the component
           and its effect are kept in components/OpenTopicsDepth.tsx (preview /?exp=depth). */}
 
-      {/* debug: jump straight back to the idle showreel (bypasses the relay token) */}
-      <button
-        type="button"
-        onClick={() => {
-          const s = useKioskStore.getState();
-          s.setEntered(false);
-          s.setHasDriver(false);
-        }}
-        className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm font-semibold"
-        style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}
-      >
-        → Showreel (debug)
-      </button>
+      {/* debug: showreel jump + the home A/B tab (until the supervisor picks a design) */}
+      <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            const s = useKioskStore.getState();
+            s.setEntered(false);
+            s.setHasDriver(false);
+          }}
+          className="rounded-full px-4 py-1.5 text-sm font-semibold"
+          style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}
+        >
+          → Showreel (debug)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            window.scrollTo(0, 0);
+            useKioskStore.getState().setHomeVariant("fly");
+          }}
+          className="rounded-full px-4 py-1.5 text-sm font-semibold"
+          style={{
+            background: "var(--gt-surface)",
+            color: "var(--gt-text-primary)",
+            border: "1px solid var(--gt-border)",
+            cursor: "pointer",
+          }}
+        >
+          ⇄ Home B (fly)
+        </button>
+      </div>
     </div>
   );
 }

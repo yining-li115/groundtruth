@@ -7,6 +7,7 @@ import { Cursor } from "./components/Cursor";
 import { KioskQR } from "./components/KioskQR";
 import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
+import { HomeFly } from "./scenes/HomeFly";
 import { Showreel } from "./scenes/Showreel";
 import { ShowreelSplit } from "./experiments/showreel2/ShowreelSplit";
 import { PeopleSection } from "./scenes/PeopleSection";
@@ -17,6 +18,7 @@ import { TeachingSection } from "./scenes/TeachingSection";
 
 function CurrentView() {
   const view = useKioskStore((s) => s.view);
+  const homeVariant = useKioskStore((s) => s.homeVariant);
   switch (view) {
     case "showreel":
       return <Showreel />;
@@ -31,7 +33,8 @@ function CurrentView() {
     case "teaching":
       return <TeachingSection />;
     default:
-      return <Home />;
+      // two competing home designs, live-switchable until the supervisor picks one
+      return homeVariant === "fly" ? <HomeFly /> : <Home />;
   }
 }
 

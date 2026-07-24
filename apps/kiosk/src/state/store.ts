@@ -12,6 +12,11 @@ export type View =
   | "publications"
   | "teaching";
 
+/** Two competing home-page designs, switchable live (a debug tab on each) until the
+ *  supervisor picks one: "classic" = point-cloud hero + Spotlight/News feed;
+ *  "fly" = the campus-splat fly-through story. */
+export type HomeVariant = "classic" | "fly";
+
 interface KioskState {
   /** Socket connected to the relay. */
   connected: boolean;
@@ -22,6 +27,8 @@ interface KioskState {
   entered: boolean;
   /** Current screen in the interactive shell. */
   view: View;
+  /** Which home design the "home" view renders. */
+  homeVariant: HomeVariant;
   /** Home hero is pinned → a one-finger drag orbits the particles (and the cursor is
    *  hidden) instead of moving the cursor. Off once you scroll past the hero. */
   heroOrbitActive: boolean;
@@ -29,6 +36,7 @@ interface KioskState {
   setHasDriver: (v: boolean) => void;
   setEntered: (v: boolean) => void;
   setView: (v: View) => void;
+  setHomeVariant: (v: HomeVariant) => void;
   setHeroOrbitActive: (v: boolean) => void;
 }
 
@@ -48,15 +56,24 @@ const initialView = ((): View => {
   return valid.includes(v as View) ? (v as View) : "home";
 })();
 
+/** Optional deep-link: `?home=fly` starts on the fly-through home design. */
+const initialHomeVariant: HomeVariant =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("home") === "fly"
+    ? "fly"
+    : "classic";
+
 export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
   entered: false,
   view: initialView,
+  homeVariant: initialHomeVariant,
   heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
   setEntered: (entered) => set({ entered }),
   setView: (view) => set({ view }),
+  setHomeVariant: (homeVariant) => set({ homeVariant }),
   setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),
 }));
