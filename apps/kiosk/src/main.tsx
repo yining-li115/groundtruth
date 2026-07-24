@@ -61,6 +61,26 @@ const ShowreelSplitExperiment = lazy(() =>
     default: m.ShowreelSplit,
   })),
 );
+const MorphExperiment = lazy(() =>
+  import("./experiments/morph/MorphExperiment").then((m) => ({
+    default: m.MorphExperiment,
+  })),
+);
+const FlyExperiment = lazy(() =>
+  import("./experiments/fly/FlyExperiment").then((m) => ({
+    default: m.FlyExperiment,
+  })),
+);
+const FlySplatExperiment = lazy(() =>
+  import("./experiments/fly/FlySplatExperiment").then((m) => ({
+    default: m.FlySplatExperiment,
+  })),
+);
+const CursorGridExperiment = lazy(() =>
+  import("./experiments/cursorgrid/CursorGridExperiment").then((m) => ({
+    default: m.CursorGridExperiment,
+  })),
+);
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Root element #root not found");
@@ -94,6 +114,14 @@ const experiment =
     <PuzzleAccordionExperiment />
   ) : exp === "showreel2" ? (
     <ShowreelSplitExperiment />
+  ) : exp === "morph" ? (
+    <MorphExperiment />
+  ) : exp === "fly" ? (
+    <FlyExperiment />
+  ) : exp === "flysplat" ? (
+    <FlySplatExperiment />
+  ) : exp === "cursorgrid" ? (
+    <CursorGridExperiment />
   ) : null;
 
 createRoot(root).render(
