@@ -63,6 +63,15 @@ export function useHandNav(enabled = true) {
     (async () => {
       try {
         setStatus("loading");
+        // navigator.mediaDevices only exists in SECURE contexts (https or localhost).
+        // Opening the kiosk via a LAN IP (http://192.168.x.x:5173) hides the camera API
+        // entirely — surface that as a readable error instead of a TypeError.
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error(
+            "camera API unavailable — open via http://localhost:5173 (or HTTPS); " +
+              "insecure http://<LAN-IP> origins block the webcam",
+          );
+        }
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: 640, height: 480, facingMode: "user" },
           audio: false,

@@ -53,7 +53,7 @@ export function ShowreelSplit({
   /** when provided, renders an "Enter site" button that clicks straight into the website */
   onEnter?: () => void;
 } = {}) {
-  const { videoRef, hud } = useHandNav();
+  const { videoRef, hud, status, error } = useHandNav();
   const [auto, setAuto] = useState(true); // true = LIVE (presence), false = MANUAL (you drive)
   const [interacting, setInteracting] = useState(false);
 
@@ -194,6 +194,19 @@ export function ShowreelSplit({
             ? "Live — raise a hand to interact"
             : "Manual — click a card · 🖐 scatter · ✊ gather · move to turn"}
         </span>
+
+        {/* hand-tracking health — the camera/model pipeline used to fail SILENTLY; now the
+            reason (camera denied/busy, CDN model unreachable, …) is on screen */}
+        {status !== "running" && (
+          <span
+            className="text-sm font-semibold"
+            style={{ color: status === "error" ? "var(--gt-accent-orange)" : "var(--gt-text-secondary)" }}
+          >
+            {status === "error"
+              ? `⚠ hand-tracking failed: ${error ?? "unknown"}`
+              : "⏳ hand-tracking loading…"}
+          </span>
+        )}
 
         {/* direct-enter (skip the QR) — debug only, sits with the Live switch */}
         {onEnter && (
