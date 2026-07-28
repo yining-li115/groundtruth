@@ -18,6 +18,9 @@ apps/kiosk/public/models/*.glb
 # scripts/build-*.py (manifest: apps/kiosk/public/splat/README.md). Out of git history.
 apps/kiosk/public/splat/*.ply
 apps/kiosk/public/splat/*.bin
+# .sog is the Spark-readable WebP bundle: 21MB for the 1.8M tier, 147MB for the full 12.4M
+# one the showreel flies through. Neither belongs in git history — see the README to rebuild.
+apps/kiosk/public/splat/*.sog
 # EXCEPTION: the decimated web splat (~21MB, 400k gaussians, no SH) IS committed so the
 # deployed showreel landing has its campus. Regenerate via the README.
 !apps/kiosk/public/splat/tum-campus-web.ply

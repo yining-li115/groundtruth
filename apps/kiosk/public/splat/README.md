@@ -14,9 +14,15 @@ TUM Main Campus (Hauptgebäude) 3D Gaussian-splat scan, published on SuperSplat:
 
 | File | What | Used by | In git? |
 |------|------|---------|---------|
-| `tum-campus.ply` | ~1.9M Gaussians, cropped to the Hauptgebäude, rotated upright | source for the web build | no (git-ignored) |
-| `tum-campus-web.ply` | **400k** decimated, **no SH** (~21MB) — the shipped campus | showreel landing (`SplatStage`), `/?exp=splatnav`, `/?exp=splat3d` | **yes (committed)** |
+| `tum-campus.ply` | ~1.8M Gaussians, cropped to the Hauptgebäude, rotated upright | source for the web build | no (git-ignored) |
+| `tum-campus-web.ply` | **400k** decimated, **no SH** (~21MB) — the mkkellogg-era campus | showreel landing (`SplatStage`), `/?exp=splatnav`, `/?exp=splat3d` | **yes (committed)** |
+| `tum-campus.sog` | **1.8M**, same crop, ~21MB — same download as the 400k PLY, 4.5x the splats | `/?exp=spark` (default) | no (git-ignored) |
+| `tum-campus-full.sog` | **12.4M**, full source density, ~147MB | `/?exp=spark&asset=max` | no (git-ignored) |
 | `tum-campus.bin` | ~500k decimated points (pos + rgba + size) | `/?exp=cv` and the old point-cloud showreel | no (git-ignored) |
+
+The `.sog` tiers are read by **Spark** (`@sparkjsdev/spark`), which mkkellogg's renderer
+cannot open. SOG is a WebP bundle, so the full 1.8M crop costs the same download as the
+400k PLY it replaces.
 
 `tum-campus-web.ply` is committed (via a `!` exception in `.gitignore`) so the deployed
 landing page has its Gaussian campus without hosting the full 97MB scan. Rebuild it from
@@ -31,14 +37,31 @@ npx @playcanvas/splat-transform tum-campus.ply -H 0 -d 400000 tum-campus-web.ply
 Needs the SOG WebP files above in a local `sog/` dir, `@playcanvas/splat-transform`
 (via `npx`), and Python (`numpy`, `Pillow`).
 
-1. **Splat `.ply`** — decode SOG → decimate → crop (real metres) → rotate upright:
+1. **Campus crop** — decode the source SOG, rotate upright, cut to the school block. One
+   command, no helper script:
    ```
-   npx @playcanvas/splat-transform sog/meta.json -N -H 0 -F 3000000 full.ply -w
-   # crop to the school block + rotate +16.9° upright (see git history for the exact box);
-   # scripts/crop helper produces tum-campus.ply
+   # full density (12.4M) — what /?exp=spark&asset=max loads
+   npx @playcanvas/splat-transform sog/meta.json -N -r 0,20.9,0 \
+     -B -26,-50,-35,23,50,26 tum-campus-full.sog -w
+
+   # 1.8M tier — same crop, decimated (decimate must be last and output .ply, so 2 passes)
+   npx @playcanvas/splat-transform sog/meta.json -N -r 0,20.9,0 \
+     -B -26,-50,-35,23,50,26 -d 1800000 tum-campus.ply -w
+   npx @playcanvas/splat-transform tum-campus.ply tum-campus.sog -w
    ```
+
+   Two things this file used to get wrong, both of which silently produce a broken model:
+
+   - **The upright yaw is 20.9°, not 16.9°.** At 16.9° the crop box sits 4° off the
+     buildings and shears a diagonal corner off the campus. 20.9° was recovered by
+     correlating top-down height maps of the source against the tuned crop — a sharp peak
+     (corr 0.998 at 20.9°, 0.96 at ±1°, 0.70 at ±5°).
+   - **Do not clamp Y in the crop box.** The old box `-26,-8,-35,23,7,26` cut the top 2.77
+     units off the site — the clock tower's spire flattens into a dark stump. Use ±50 (i.e.
+     no vertical limit); it costs ~1M extra splats.
+
    (Reference: `scripts/build-splat-ply.py` decodes SOG directly; splat-transform is the
-   authoritative decoder used for the shipped asset.)
+   authoritative decoder used for the shipped assets.)
 
 2. **Point-cloud `.bin`** from the cropped `.ply`:
    ```
