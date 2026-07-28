@@ -8,6 +8,27 @@
     "cta": "Scan to explore"
   },
   {
+    "id": "spotlight-sensing",
+    "kind": "spotlight",
+    "title": "Sensing the city, one pass at a time",
+    "blurb": "Airborne and terrestrial capture campaigns that turn a campus block into billions of measured points.",
+    "cta": "Placeholder copy"
+  },
+  {
+    "id": "spotlight-semantics",
+    "kind": "spotlight",
+    "title": "From points to meaning",
+    "blurb": "Learned segmentation lifts raw geometry into roofs, façades, vegetation and streets that a machine can reason about.",
+    "cta": "Placeholder copy"
+  },
+  {
+    "id": "spotlight-change",
+    "kind": "spotlight",
+    "title": "Watching the world change",
+    "blurb": "Repeat surveys make deformation, construction and vegetation growth measurable over time, not just visible.",
+    "cta": "Placeholder copy"
+  },
+  {
     "id": "news-isprs-award",
     "kind": "news",
     "title": "Best Paper Award at ISPRS 2026",

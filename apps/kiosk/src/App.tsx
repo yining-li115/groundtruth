@@ -9,7 +9,7 @@ import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
 import { HomeFly } from "./scenes/HomeFly";
 import { Showreel } from "./scenes/Showreel";
-import { ShowreelSplit } from "./experiments/showreel2/ShowreelSplit";
+import { ShowreelFlight } from "./scenes/ShowreelFlight";
 import { PeopleSection } from "./scenes/PeopleSection";
 import { ResearchSection } from "./scenes/ResearchSection";
 import { ProjectsSection } from "./scenes/ProjectsSection";
@@ -78,12 +78,13 @@ export default function App() {
 
   return (
     <main className="relative" style={{ background: "var(--gt-bg)" }}>
-      {/* Idle landing = the touchless showreel (splat + puzzle). The moment a phone takes the
-          token (hasDriver) — or someone clicks "Enter" — we hand over to the website shell. */}
+      {/* Idle landing = the campus flight showreel. The moment a phone takes the token
+          (hasDriver) — or someone clicks "Enter" — we hand over to the website shell.
+          The previous split/puzzle idle screen is still reachable at /?exp=showreel2. */}
       {interactive ? (
         <CurrentView />
       ) : (
-        <ShowreelSplit showQR={false} onEnter={() => useKioskStore.getState().setEntered(true)} />
+        <ShowreelFlight onEnter={() => useKioskStore.getState().setEntered(true)} />
       )}
 
       {/* Static QR — always visible so a visitor can take control (architecture §2). */}
