@@ -90,6 +90,11 @@ const FlySplatExperiment = lazy(() =>
     default: m.FlySplatExperiment,
   })),
 );
+const SparkCampusExperiment = lazy(() =>
+  import("./experiments/spark/SparkCampusExperiment").then((m) => ({
+    default: m.SparkCampusExperiment,
+  })),
+);
 const CursorGridExperiment = lazy(() =>
   import("./experiments/cursorgrid/CursorGridExperiment").then((m) => ({
     default: m.CursorGridExperiment,
@@ -134,6 +139,8 @@ const experiment =
     <FlyExperiment />
   ) : exp === "flysplat" ? (
     <FlySplatExperiment />
+  ) : exp === "spark" ? (
+    <SparkCampusExperiment />
   ) : exp === "cursorgrid" ? (
     <CursorGridExperiment />
   ) : null;
