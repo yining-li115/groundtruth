@@ -49,6 +49,7 @@ export function useHandHeadControl(
   const [error, setError] = useState<string | null>(null);
   const [hud, setHud] = useState<HudState>({
     hand: null,
+    hands: [],
     face: null,
     progressTarget: progressRef.current,
     fps: 0,
@@ -142,7 +143,7 @@ export function useHandHeadControl(
 
           // fps (smoothed) for the HUD
           ema = ema ? ema * 0.9 + (1 / dtSec) * 0.1 : 1 / dtSec;
-          setHud({ hand: res.hand, face: res.face, progressTarget: target, fps: ema });
+          setHud({ hand: res.hand, hands: res.hands, face: res.face, progressTarget: target, fps: ema });
         };
         raf = requestAnimationFrame(tick);
       } catch (e) {

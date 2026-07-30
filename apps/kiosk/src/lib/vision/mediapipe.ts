@@ -33,12 +33,80 @@ const ASSET = {
     "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
 };
 
-/** Top hand this frame: canned gesture label + INDEX-FINGERTIP position ([0,1], raw/un-mirrored). */
+/** One hand landmark, normalised to [0,1] of the video frame (raw, un-mirrored). `z` is
+ *  MediaPipe's relative depth: roughly 0 at the wrist, negative toward the camera. */
+export interface Landmark {
+  x: number;
+  y: number;
+  z: number;
+}
+
+/** Indices into the 21-point hand skeleton, for the joints the interaction actually reads. */
+export const JOINT = {
+  wrist: 0,
+  thumbTip: 4,
+  indexMcp: 5,
+  indexTip: 8,
+  middleTip: 12,
+  ringTip: 16,
+  pinkyMcp: 17,
+  pinkyTip: 20,
+} as const;
+
+/** The 21-point skeleton as bones, for drawing. */
+export const HAND_BONES: ReadonlyArray<readonly [number, number]> = [
+  [0, 1], [1, 2], [2, 3], [3, 4], // thumb
+  [0, 5], [5, 6], [6, 7], [7, 8], // index
+  [5, 9], [9, 10], [10, 11], [11, 12], // middle
+  [9, 13], [13, 14], [14, 15], [15, 16], // ring
+  [13, 17], [17, 18], [18, 19], [19, 20], // pinky
+  [0, 17], // palm base
+];
+
+/**
+ * Top hand this frame: canned gesture label, index-fingertip position, and the FULL 21-point
+ * skeleton. The landmarks were always in the model output — only the fingertip used to be
+ * kept, which is not enough to read a pinch or draw a hand.
+ */
 export interface HandResult {
   label: string;
   score: number;
   cx: number; // index fingertip x in [0,1]
   cy: number; // index fingertip y in [0,1]
+  /** 21 points normalised to the frame — use for drawing and for where the hand IS */
+  landmarks: Landmark[];
+  /**
+   * The same 21 points in METRES, origin at the hand's centre. Distances here are
+   * independent of how far the hand is from the lens, which normalised coordinates are not:
+   * measure a pinch in frame units and simply stepping back reads as a tighter pinch.
+   */
+  world: Landmark[];
+  /** "Left" | "Right" as seen by the model (the raw, un-mirrored camera view) */
+  handedness: string;
+}
+
+/** Which fingers are held out, in thumb→pinky order. */
+export type Fingers = [boolean, boolean, boolean, boolean, boolean];
+
+const FINGER_JOINTS: ReadonlyArray<readonly [number, number]> = [
+  [4, 2], // thumb: tip vs its MCP
+  [8, 6], // index: tip vs PIP
+  [12, 10],
+  [16, 14],
+  [20, 18],
+];
+
+/**
+ * Read which fingers are extended, by asking whether each fingertip reaches further from the
+ * wrist than the joint below it. Comparing against the wrist rather than using raw screen
+ * coordinates is what keeps this working with the hand tilted or upside down — a test like
+ * "tip is above the knuckle" only holds for a hand held straight up.
+ */
+export function extendedFingers(lm: Landmark[]): Fingers {
+  const wrist = lm[0];
+  if (!wrist || lm.length < 21) return [false, false, false, false, false];
+  const reach = (i: number) => Math.hypot(lm[i]!.x - wrist.x, lm[i]!.y - wrist.y);
+  return FINGER_JOINTS.map(([tip, joint]) => reach(tip) > reach(joint) * 1.12) as Fingers;
 }
 
 /** Largest detected face, box normalised to [0,1] of the video frame (raw, un-mirrored). */
@@ -51,7 +119,10 @@ export interface FaceResult {
 }
 
 export interface VisionResult {
+  /** highest-confidence hand — what the older single-hand interactions read */
   hand: HandResult | null;
+  /** every tracked hand this frame, up to two */
+  hands: HandResult[];
   face: FaceResult | null;
 }
 
@@ -67,7 +138,7 @@ export class VisionEngine {
       GestureRecognizer.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: ASSET.gestureModel, delegate: "GPU" },
         runningMode: "VIDEO",
-        numHands: 1,
+        numHands: 2, // two-handed control: separation drives zoom, midpoint drives pan
         // raise the bars so background / faces don't register as a phantom hand (which would
         // wrongly flip the showreel into "someone is here" and assemble the splat)
         minHandDetectionConfidence: 0.7,
@@ -83,10 +154,11 @@ export class VisionEngine {
 
   /** Run both models on one video frame. `tsMs` must strictly increase across calls. */
   process(video: HTMLVideoElement, tsMs: number): VisionResult {
-    if (!this.gesture || !this.face) return { hand: null, face: null };
+    if (!this.gesture || !this.face) return { hand: null, hands: [], face: null };
     const g: GestureRecognizerResult = this.gesture.recognizeForVideo(video, tsMs);
     const f: FaceDetectorResult = this.face.detectForVideo(video, tsMs);
-    return { hand: topHand(g), face: largestFace(f, video) };
+    const hands = allHands(g);
+    return { hand: hands[0] ?? null, hands, face: largestFace(f, video) };
   }
 
   close(): void {
@@ -96,16 +168,24 @@ export class VisionEngine {
   }
 }
 
-function topHand(r: GestureRecognizerResult): HandResult | null {
-  const lm = r.landmarks?.[0];
-  if (!lm || lm.length < 21) return null; // no hand this frame
-  // index fingertip (landmark 8) → the "pointer" that steers the orbit
-  const cx = lm[8]!.x;
-  const cy = lm[8]!.y;
-  const cat = r.gestures?.[0]?.[0];
-  // keep the hand (for orbit) even when no canned gesture matches; label may be "None"
-  const label = cat && cat.categoryName ? cat.categoryName : "None";
-  return { label, score: cat?.score ?? 0, cx, cy };
+function allHands(r: GestureRecognizerResult): HandResult[] {
+  const out: HandResult[] = [];
+  for (let i = 0; i < (r.landmarks?.length ?? 0); i += 1) {
+    const lm = r.landmarks[i];
+    if (!lm || lm.length < 21) continue;
+    const cat = r.gestures?.[i]?.[0];
+    out.push({
+      // keep the hand even when no canned gesture matches; label may be "None"
+      label: cat?.categoryName ? cat.categoryName : "None",
+      score: cat?.score ?? 0,
+      cx: lm[8]!.x, // index fingertip — the "pointer" the older interactions steer with
+      cy: lm[8]!.y,
+      landmarks: lm.map((p) => ({ x: p.x, y: p.y, z: p.z ?? 0 })),
+      world: (r.worldLandmarks?.[i] ?? []).map((p) => ({ x: p.x, y: p.y, z: p.z ?? 0 })),
+      handedness: r.handedness?.[i]?.[0]?.categoryName ?? "",
+    });
+  }
+  return out;
 }
 
 function largestFace(r: FaceDetectorResult, video: HTMLVideoElement): FaceResult | null {
