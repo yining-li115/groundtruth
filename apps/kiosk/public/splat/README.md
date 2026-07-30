@@ -16,13 +16,19 @@ TUM Main Campus (Hauptgebäude) 3D Gaussian-splat scan, published on SuperSplat:
 |------|------|---------|---------|
 | `tum-campus.ply` | ~1.8M Gaussians, cropped to the Hauptgebäude, rotated upright | source for the web build | no (git-ignored) |
 | `tum-campus-web.ply` | **400k** decimated, **no SH** (~21MB) — the mkkellogg-era campus | showreel landing (`SplatStage`), `/?exp=splatnav`, `/?exp=splat3d` | **yes (committed)** |
-| `tum-campus.sog` | **1.8M**, same crop, ~21MB — same download as the 400k PLY, 4.5x the splats | `/?exp=spark` (default) | no (git-ignored) |
+| `tum-campus.sog` | **1.8M**, same crop, ~21MB — same download as the 400k PLY, 4.5x the splats | the showreel flight, `/?exp=spark` | **yes (committed)** |
 | `tum-campus-full.sog` | **12.4M**, full source density, ~147MB | `/?exp=spark&asset=max` | no (git-ignored) |
 | `tum-campus.bin` | ~500k decimated points (pos + rgba + size) | `/?exp=cv` and the old point-cloud showreel | no (git-ignored) |
 
 The `.sog` tiers are read by **Spark** (`@sparkjsdev/spark`), which mkkellogg's renderer
 cannot open. SOG is a WebP bundle, so the full 1.8M crop costs the same download as the
-400k PLY it replaces.
+400k PLY it replaces — which is why that tier is committed and the deployed showreel flies
+through it.
+
+The 12.4M tier is the one that actually holds up a couple of metres from a façade, but 147MB
+cannot go in git history and would be re-fetched on every cold load. Putting it on object
+storage (R2/B2) and pointing `URLS.max` at an absolute URL is the way to ship it; until then
+the deployed site runs the 1.8M tier.
 
 `tum-campus-web.ply` is committed (via a `!` exception in `.gitignore`) so the deployed
 landing page has its Gaussian campus without hosting the full 97MB scan. Rebuild it from

@@ -23,7 +23,7 @@ export function ShowreelFlight({ onEnter }: { onEnter?: () => void }) {
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: dark.bg }}>
       <Suspense fallback={null}>
-        <CampusFlight tools={false} autoPlay asset="max" handControl />
+        <CampusFlight tools={false} autoPlay asset="mid" handControl />
       </Suspense>
 
       {/* Brand, over the flight. White logo on the dark idle backdrop — the one allowed
