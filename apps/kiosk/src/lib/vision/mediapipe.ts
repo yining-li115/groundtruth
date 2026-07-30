@@ -15,22 +15,20 @@ import {
  * framework-agnostic on purpose (no React) so it can move from the /?exp=cv playground
  * into the real showreel unchanged.
  *
- * ASSET HOSTING — EXPERIMENT STAGE: the WASM runtime + the two model files are pulled
- * from public CDNs (jsDelivr + Google model storage) so we can iterate fast. Before this
- * ships into the idle showreel it MUST be self-hosted under apps/kiosk/public/ so the
- * kiosk works offline (docs/architecture.md §8). Only ASSET_BASE below changes then.
+ * ASSET HOSTING: the WASM runtime and both models are served from the kiosk's OWN origin,
+ * placed there by `scripts/fetch-mediapipe.mjs` (which dev and build run for you). They used
+ * to come from public CDNs, which is the wrong dependency for a screen behind glass on a
+ * university network: a blocked or throttled CDN doesn't fail loudly, it just means no hand
+ * is ever tracked and the wall looks broken for no visible reason (architecture §8).
+ *
+ * The WASM is copied out of node_modules, so it always matches the pinned tasks-vision
+ * version — a runtime/API mismatch throws at load.
  */
 
-// tasks-vision is pinned in package.json — keep this version in lockstep with it so the
-// WASM runtime matches the JS API (a mismatch throws at load).
-const TASKS_VISION_VERSION = "0.10.35";
-
 const ASSET = {
-  wasm: `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_VISION_VERSION}/wasm`,
-  gestureModel:
-    "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
-  faceModel:
-    "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+  wasm: "/mediapipe/wasm",
+  gestureModel: "/mediapipe/models/gesture_recognizer.task",
+  faceModel: "/mediapipe/models/blaze_face_short_range.tflite",
 };
 
 /** One hand landmark, normalised to [0,1] of the video frame (raw, un-mirrored). `z` is

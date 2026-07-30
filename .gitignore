@@ -30,5 +30,10 @@ apps/kiosk/public/splat/*.sog
 !apps/kiosk/public/splat/tum-campus-web.ply
 apps/kiosk/public/roofmap.png
 
+# MediaPipe runtime + models (~28MB), placed by scripts/fetch-mediapipe.mjs. Derived: the
+# WASM is a copy of the pinned node_modules build and the .task files are re-fetchable, so
+# committing them would only pin a stale copy in history. dev/build regenerate them.
+apps/kiosk/public/mediapipe/
+
 # Local report/backup exports (large ply/png), not part of the app
 report/

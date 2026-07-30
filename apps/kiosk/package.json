@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "predev": "node ../../scripts/fetch-mediapipe.mjs",
+    "prebuild": "node ../../scripts/fetch-mediapipe.mjs"
   },
   "dependencies": {
     "@groundtruth/protocol": "*",

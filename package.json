@@ -20,7 +20,8 @@
     "dev:relay": "npm run dev -w @groundtruth/relay",
     "dev:all": "node scripts/dev-all.mjs",
     "check:content": "tsx scripts/check-content.ts",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "fetch:mediapipe": "node scripts/fetch-mediapipe.mjs"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^10.4.2",
