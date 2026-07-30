@@ -3,7 +3,10 @@ import * as THREE from "three";
 import { SparkRenderer, SplatMesh, SparkControls } from "@sparkjsdev/spark";
 import { dark } from "@groundtruth/tokens";
 import { showreel } from "../../lib/content";
+import { useHandFlight } from "../../lib/vision/useHandFlight";
+import { HandSkeleton } from "../../components/HandSkeleton";
 import autoTour from "./tour.json";
+import roamVolume from "./roam.json";
 
 /**
  * Spark renderer trial (/?exp=spark) — step 1 of moving the campus gaussians off
@@ -98,6 +101,25 @@ const DPR_CAP = num("dpr", 1.5);
 /** `?hud=1` shows the perf readout even on the unattended screen */
 const SHOW_HUD = PARAMS?.get("hud") === "1";
 /**
+ * Hand-driven camera speed, in world units/sec. One unit is roughly 3 m, which is what made
+ * the first numbers wrong by an order of magnitude: 5 u/s of panning is 15 m/s, a car going
+ * past a façade, not someone reading it. These are a brisk walk and a jog respectively.
+ */
+const HAND_DOLLY_SPEED = num("handdolly", 1.0);
+const HAND_STRAFE_SPEED = num("handstrafe", 0.8);
+/** Seconds to reach full pan speed, and to coast back to a stop. Instant velocity changes
+ *  read as a twitch; a short ramp is what makes a held key feel like gliding. */
+const HAND_ACCEL = num("handaccel", 0.35);
+const HAND_LIFT_SPEED = num("handlift", 0.8);
+/** Turn/tilt rate in rad/sec. Tilt is bounded because looking far enough up finds sky, which
+ *  is the one thing every stop was verified to keep off the screen. */
+const HAND_YAW_RATE = num("handyaw", 0.5);
+/** How far from the tour's pose a visitor may get, in world units. One radius rather than
+ *  per-axis limits: once the view can turn, "forward" is no longer a fixed direction, so
+ *  budgeting forward separately from sideways stops meaning anything. */
+const HAND_RANGE = num("handrange", 12);
+const HAND_RELEASE = 1.2; // per-second decay back to the tour's framing once the hand leaves
+/**
  * Adaptive LoD. Spark's contract is "never draw more than N splats a frame, so the frame
  * rate stays flat" — which only works if N suits the machine. Guessing one number for
  * unknown kiosk hardware gets it wrong in both directions, so steer N by measured frame
@@ -136,6 +158,38 @@ interface Waypoint {
    *  frame is corrected by tilting and/or reaching for a longer lens — never by moving the
    *  camera, since the position is the part a person actually chose. */
   fov?: number;
+}
+
+/** what the current gesture is doing — shown under the skeleton so the vocabulary is
+ *  discoverable without a sign on the wall */
+const HAND_HINT: Record<string, string> = {
+  slide: "☝︎ Move your hand to slide across and up",
+  look: "✌︎ Move your hand to turn · up to fly in, down to pull back",
+  idle: "☝︎ one finger to slide · ✌︎ two to turn and fly · 🖐 palm to stop",
+  none: "☝︎ one finger to slide · ✌︎ two to turn and fly · 🖐 palm to stop",
+};
+
+/**
+ * Where a visitor is allowed to fly, as a coarse occupancy grid built by
+ * scripts/build-roam-volume.py: the open air connected to the tour's stops, under the
+ * roofline, and a clearance above the local ground. Clamping to a box alone can't express
+ * this — a box that contains the courtyard also contains the buildings around it, so pushing
+ * down or sideways would bury the camera in a wall. Testing the actual cell is what makes
+ * "no clipping through the model" a rule rather than a hope.
+ */
+const ROAM = {
+  cell: roamVolume.cell,
+  min: roamVolume.min as [number, number, number],
+  dims: roamVolume.dims as [number, number, number],
+  free: roamVolume.free,
+};
+function isRoamable(x: number, y: number, z: number) {
+  const ix = Math.floor((x - ROAM.min[0]) / ROAM.cell);
+  const iy = Math.floor((y - ROAM.min[1]) / ROAM.cell);
+  const iz = Math.floor((z - ROAM.min[2]) / ROAM.cell);
+  const [nx, ny, nz] = ROAM.dims;
+  if (ix < 0 || iy < 0 || iz < 0 || ix >= nx || iy >= ny || iz >= nz) return false;
+  return ROAM.free[(ix * ny + iy) * nz + iz] === "1";
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -271,6 +325,7 @@ export function CampusFlight({
   tools = true,
   autoPlay = false,
   asset = "mid",
+  handControl = false,
 }: {
   /** HUD, free-fly controls and the waypoint-pinning keys. Off for the unattended screen. */
   tools?: boolean;
@@ -278,8 +333,23 @@ export function CampusFlight({
   autoPlay?: boolean;
   /** density tier. `?asset=` overrides it, so the tool page can compare tiers on demand. */
   asset?: AssetKey;
+  /** webcam hand tracking: a visitor takes the camera off the tour and steers it themselves */
+  handControl?: boolean;
 } = {}) {
   const ASSET: AssetKey = ASSET_PARAM ?? asset;
+  const { videoRef, flight: hand, present: handPresent, status: handStatus, error: handError } =
+    useHandFlight(handControl);
+  // the mode changes rarely, so mirroring it into state costs nothing and lets the hint react
+  const [handMode, setHandMode] = useState<string>("idle");
+  /** true from the moment a hand takes over until the camera has drifted back to the tour —
+   *  the spotlight card belongs to the tour's composed shot, not to whatever the visitor is
+   *  pointing at, so it steps aside for the whole interaction */
+  const [interacting, setInteracting] = useState(false);
+  useEffect(() => {
+    if (!handControl) return;
+    const id = setInterval(() => setHandMode(hand.current.mode), 120);
+    return () => clearInterval(id);
+  }, [handControl, hand]);
   const hostRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState("loading…");
   const [fps, setFps] = useState(0);
@@ -415,6 +485,27 @@ export function CampusFlight({
     let recordAcc = 0;
     const lastRecorded = new THREE.Vector3(Infinity, Infinity, Infinity);
     const tmpQ = new THREE.Quaternion();
+    /**
+     * How far the visitor has pushed the camera off the tour's pose, as two scalars along the
+     * pose's own axes rather than a free vector. Keeping them separate is what allows "you may
+     * push in a long way but only back off a little" — a single radius cannot express that.
+     */
+    const manual = { active: false, offset: new THREE.Vector3(), yaw: 0 };
+    /** ramped rates, so a held hand accelerates into motion instead of snapping to speed */
+    const vel = { strafe: 0, lift: 0, dolly: 0, yaw: 0 };
+    const AXES = ["x", "y", "z"] as const;
+    /** the pose the tour was frozen at — every frame re-derives from THIS, never from the
+     *  previous frame's result, or the offset compounds and the camera runs away */
+    const basePos = new THREE.Vector3();
+    const baseQuat = new THREE.Quaternion();
+    const qYaw = new THREE.Quaternion();
+    const curFwd = new THREE.Vector3();
+    const curRight = new THREE.Vector3();
+    const step = new THREE.Vector3();
+    const tmpV = new THREE.Vector3();
+    const UP = new THREE.Vector3(0, 1, 0);
+    // No separate model-bounds clamp: the roam volume is strictly inside the model, so a
+    // clamp could only run AFTER the cell test and shove the camera back into a solid cell.
 
     const tick = () => {
       if (disposed) return;
@@ -423,8 +514,35 @@ export function CampusFlight({
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
+      // A visitor's hand outranks the tour: freeze the flight where it is and hand the camera
+      // over. Their movement accumulates as an OFFSET from that frozen pose, so letting go
+      // returns to a composed shot instead of wherever they happened to leave the camera.
+      const h = hand.current;
+      const driving = handControl && h.present;
+      if (driving && !manual.active) {
+        manual.active = true;
+        setInteracting(true);
+        manual.offset.set(0, 0, 0);
+        manual.yaw = 0;
+        vel.strafe = vel.lift = vel.dolly = vel.yaw = 0;
+        // Freeze the pose the tour was paused at. Position and heading are the ORIGIN the
+        // visitor's movement is measured from, and what letting go returns to; the travel
+        // axes themselves are re-derived each frame from where they are currently looking.
+        basePos.copy(camera.position);
+        baseQuat.copy(camera.quaternion);
+      } else if (
+        !driving &&
+        manual.active &&
+        manual.offset.lengthSq() < 4e-4 && Math.abs(manual.yaw) < 0.01
+      ) {
+        manual.active = false;
+        manual.offset.set(0, 0, 0);
+        manual.yaw = 0;
+        setInteracting(false); // back on the tour's own pose — the card can return
+      }
+
       const play = playRef.current;
-      if (play) {
+      if (play && !driving && !manual.active) {
         // preview flight — drive the camera along the spline; manual controls stay off so
         // they can't fight it. Loops forever; Esc drops back to free-fly.
         const segs = play.flight.segments;
@@ -476,6 +594,8 @@ export function CampusFlight({
             );
           }
         }
+      } else if (play && (driving || manual.active)) {
+        // hold the flight's pose; only the offset moves
       } else if (tools) {
         controls.fpsMovement.moveSpeed = speedRef.current;
         controls.update(camera);
@@ -503,6 +623,50 @@ export function CampusFlight({
             ]);
           }
         }
+      }
+
+      if (manual.active) {
+        const ramp = (v: number, want: number) => v + (want - v) * Math.min(1, dt / HAND_ACCEL);
+        if (driving) {
+          vel.strafe = ramp(vel.strafe, h.strafe * HAND_STRAFE_SPEED);
+          vel.lift = ramp(vel.lift, h.lift * HAND_LIFT_SPEED);
+          vel.dolly = ramp(vel.dolly, h.dolly * HAND_DOLLY_SPEED);
+          vel.yaw = ramp(vel.yaw, h.yaw * HAND_YAW_RATE);
+          manual.yaw -= vel.yaw * dt; // yaw is anticlockwise about +Y
+        } else {
+          const decay = 1 - Math.min(1, HAND_RELEASE * dt);
+          manual.offset.multiplyScalar(decay);
+          manual.yaw *= decay;
+          vel.strafe = vel.lift = vel.dolly = vel.yaw = 0;
+        }
+
+        // Aim first, then move — travel follows where the visitor is NOW looking. Freezing the
+        // axes at takeover would mean that after turning 90°, "forward" still ran off in the
+        // direction they started in.
+        qYaw.setFromAxisAngle(UP, manual.yaw);
+        camera.quaternion.copy(qYaw).multiply(baseQuat);
+
+        if (driving) {
+          camera.getWorldDirection(curFwd);
+          curRight.crossVectors(curFwd, UP).normalize();
+          step
+            .copy(curFwd)
+            .multiplyScalar(vel.dolly * dt)
+            .addScaledVector(curRight, vel.strafe * dt);
+          step.y += vel.lift * dt;
+
+          // Take the step one world axis at a time, so a visitor pushing into a wall SLIDES
+          // along it. Refusing the whole step reads as the controls having died.
+          for (const axis of AXES) {
+            const was = manual.offset[axis];
+            manual.offset[axis] = was + step[axis];
+            const p = tmpV.copy(basePos).add(manual.offset);
+            if (manual.offset.length() > HAND_RANGE || !isRoamable(p.x, p.y, p.z)) {
+              manual.offset[axis] = was;
+            }
+          }
+        }
+        camera.position.copy(basePos).add(manual.offset);
       }
 
       renderer.render(scene, camera);
@@ -642,7 +806,8 @@ export function CampusFlight({
             background:
               "linear-gradient(to left, rgb(0 0 0 / 0.86) 0%, rgb(0 0 0 / 0.74) 30%," +
               " rgb(0 0 0 / 0.45) 62%, rgb(0 0 0 / 0.16) 84%, transparent 100%)",
-            opacity: card.t,
+            opacity: interacting ? 0 : card.t,
+            transition: "opacity 450ms ease",
           }}
         >
           <div
@@ -671,6 +836,49 @@ export function CampusFlight({
               {SPOTLIGHTS[card.stop % SPOTLIGHTS.length]!.blurb}
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Webcam feed for the tracker. Never shown — putting a mirror of the room on the wall
+          is both a distraction and a privacy problem; the skeleton is the feedback. */}
+      {handControl && (
+        <video ref={videoRef} playsInline muted className="hidden" aria-hidden />
+      )}
+
+      {/* Hand feedback, bottom-right. Present only while someone is actually being tracked, so
+          the idle wall stays a clean picture. */}
+      {/* Bottom-LEFT: the QR owns the bottom-right corner, and the spotlight card owns the
+          right half. This is the corner nothing else competes for. */}
+      {handControl && handPresent && (
+        <div className="pointer-events-none absolute bottom-14 left-8 flex flex-col items-start gap-2">
+          <HandSkeleton
+            flight={hand}
+            style={{
+              width: 260,
+              height: 195,
+              borderRadius: 12,
+              background: "rgb(0 0 0 / 0.45)",
+              border: `1px solid ${dark.border}`,
+              backdropFilter: "blur(6px)",
+            }}
+          />
+          <div
+            className="rounded-full px-4 py-1.5 text-xs font-semibold"
+            style={{ background: "rgb(0 0 0 / 0.55)", color: dark.text.primary }}
+          >
+            {HAND_HINT[handMode] ?? HAND_HINT.idle}
+          </div>
+        </div>
+      )}
+
+      {/* Tracking that failed silently is the worst case: the wall just stops responding and
+          nobody knows why. Say it out loud instead. */}
+      {handControl && handStatus === "error" && (
+        <div
+          className="absolute bottom-14 left-8 max-w-md rounded-lg px-4 py-3 text-xs"
+          style={{ background: "rgb(0 0 0 / 0.6)", color: dark.text.secondary }}
+        >
+          hand tracking unavailable — {handError}
         </div>
       )}
 
