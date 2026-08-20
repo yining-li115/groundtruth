@@ -1,0 +1,158 @@
+/* The hand cursor and its hover treatment. Colors from tokens (CLAUDE.md rule 1). */
+
+/* The camera element has to be in the document for the stream to run, but it is never seen.
+   Not display:none — a hidden video element is not decoded by some browsers, which stops
+   frames arriving at all. One transparent pixel keeps it alive without showing anything. */
+.gt-hand-cam {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.gt-hand {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.25s linear;
+}
+
+.gt-hand__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/*
+ * White, outlined in black — the same reason every operating system draws its cursor that
+ * way. It was taking its colour from the text token, which is black, and the one screen in
+ * this app with a dark background is the showreel: the first thing a visitor ever sees, at
+ * the exact moment they are asking "can it see me?", with an invisible cursor. A pointer
+ * cannot depend on the page it is floating over.
+ */
+.gt-hand__dot {
+  fill: var(--gt-brand-white);
+  stroke: var(--gt-brand-black);
+  stroke-width: 1.5;
+  paint-order: stroke;
+  transition:
+    r 0.12s ease-out,
+    fill 0.12s ease-out;
+}
+.gt-hand__ring {
+  fill: none;
+  stroke: var(--gt-brand-white);
+  stroke-width: 2;
+  opacity: 0.85;
+  filter: drop-shadow(0 0 1.5px rgb(0 0 0 / 0.9));
+}
+/* Dwell progress sweeps the ring, starting at twelve o'clock. */
+/* `stroke-linecap: round` paints a visible cap even at zero length, so an empty progress ring
+   left a stray coloured dot riding 21px off the cursor — and on the dark showreel it was the
+   only mark anyone could see. Hidden outright until there is progress to show. */
+.gt-hand__dwell {
+  fill: none;
+  stroke: var(--gt-accent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  visibility: hidden;
+  transform: rotate(-90deg);
+  transform-origin: 24px 24px;
+}
+
+.gt-hand[data-dwelling="true"] .gt-hand__dwell {
+  visibility: visible;
+}
+
+.gt-hand[data-pinched="true"] .gt-hand__dot {
+  fill: var(--gt-accent);
+  r: 9;
+}
+.gt-hand[data-pinched="true"] .gt-hand__ring {
+  stroke: var(--gt-accent);
+  opacity: 1;
+}
+/* While dragging the page, the cursor stops looking like a pointer and starts looking like
+   a grip — the same cue a grabbing hand gives on any other surface. */
+.gt-hand[data-dragging="true"] .gt-hand__ring {
+  stroke-dasharray: 4 6;
+}
+
+.gt-hand--tap .gt-hand__ring {
+  animation: gt-hand-tap 0.4s ease-out;
+}
+
+@keyframes gt-hand-tap {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/*
+ * Hover, applied to anything interactive.
+ *
+ * visionOS makes this non-negotiable: every element that can be selected highlights the
+ * moment it is targeted, because without it a visitor cannot tell what the system thinks
+ * they mean. A kiosk gets no :hover of its own, so the pointer sets this class instead.
+ * Deliberately subtle and drawn outside the element, so it works on top of any content —
+ * a photo, a video, a dark panel — without altering it.
+ */
+.gt-hover {
+  outline: 2px solid var(--gt-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+  transition:
+    outline-color 0.15s ease-out,
+    outline-offset 0.15s ease-out;
+}
+
+/* Above the gesture legend and the showreel's invitation, both of which live along the
+   bottom centre — three things stacked in one place is how a screenshot ends up unreadable. */
+/* Dev diagnostic strip: the whole input chain in one line. Never built into production. */
+.gt-hand-diag {
+  position: fixed;
+  left: 50%;
+  top: 0.5rem;
+  transform: translateX(-50%);
+  z-index: 9997;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.gt-hand-error {
+  position: fixed;
+  left: 50%;
+  top: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 9998;
+  max-width: 40rem;
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+}

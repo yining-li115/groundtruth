@@ -20,6 +20,8 @@
     "dev:relay": "npm run dev -w @groundtruth/relay",
     "dev:all": "node scripts/dev-all.mjs",
     "check:content": "tsx scripts/check-content.ts",
+    "check:pointer": "tsx scripts/check-pointer.ts",
+    "check:kiosk": "node scripts/check-kiosk.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "fetch:mediapipe": "node scripts/fetch-mediapipe.mjs"
   },

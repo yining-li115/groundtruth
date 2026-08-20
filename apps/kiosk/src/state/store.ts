@@ -12,10 +12,13 @@ export type View =
   | "publications"
   | "teaching";
 
-/** Two competing home-page designs, switchable live (a debug tab on each) until the
- *  supervisor picks one: "classic" = point-cloud hero + Spotlight/News feed;
- *  "fly" = the campus-splat fly-through story. */
-export type HomeVariant = "classic" | "fly";
+/** Home-page designs, switchable live (a debug tab on each).
+ *  "menu"    = the sections themselves as full-height colour columns beside the slogan.
+ *              THE DEFAULT, and the one built for hand control: no scroll to reach a
+ *              destination, no drawer to open first, and targets a hand cannot miss.
+ *  "classic" = the old point-cloud hero + Spotlight/News scroll feed.
+ *  "fly"     = the campus-splat fly-through story. */
+export type HomeVariant = "menu" | "classic" | "fly";
 
 interface KioskState {
   /** Socket connected to the relay. */
@@ -29,12 +32,20 @@ interface KioskState {
   view: View;
   /** Which home design the "home" view renders. */
   homeVariant: HomeVariant;
+  /** A tracked hand is steering the screen. This is what "someone is here" means now that
+   *  the phone is gone — the camera, not a token from the relay. */
+  handPresent: boolean;
+  /** How the one input the kiosk has is doing. With no phone left as a second way in, a dead
+   *  camera is a dead screen, so this is not a detail to keep inside a component. */
+  handStatus: "idle" | "loading" | "running" | "error";
   /** Home hero is pinned → a one-finger drag orbits the particles (and the cursor is
    *  hidden) instead of moving the cursor. Off once you scroll past the hero. */
   heroOrbitActive: boolean;
   setConnected: (v: boolean) => void;
   setHasDriver: (v: boolean) => void;
   setEntered: (v: boolean) => void;
+  setHandPresent: (v: boolean) => void;
+  setHandStatus: (v: KioskState["handStatus"]) => void;
   setView: (v: View) => void;
   setHomeVariant: (v: HomeVariant) => void;
   setHeroOrbitActive: (v: boolean) => void;
@@ -56,23 +67,36 @@ const initialView = ((): View => {
   return valid.includes(v as View) ? (v as View) : "home";
 })();
 
-/** Optional deep-link: `?home=fly` starts on the fly-through home design. */
-const initialHomeVariant: HomeVariant =
-  typeof window !== "undefined" &&
-  new URLSearchParams(window.location.search).get("home") === "fly"
-    ? "fly"
-    : "classic";
+/** Optional deep-link: `?home=classic` / `?home=fly` open the older home designs. */
+const initialHomeVariant: HomeVariant = ((): HomeVariant => {
+  if (typeof window === "undefined") return "menu";
+  const v = new URLSearchParams(window.location.search).get("home");
+  return v === "classic" || v === "fly" ? v : "menu";
+})();
+
+/**
+ * Optional deep-link: `?enter=1` skips the showreel and opens the site shell directly.
+ *
+ * The way in is a gesture now, which is exactly what a screenshot tool, an automated check or
+ * a demo on a laptop with no camera cannot perform. This is the door for those.
+ */
+const initialEntered =
+  typeof window !== "undefined" && new URLSearchParams(window.location.search).get("enter") === "1";
 
 export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
-  entered: false,
+  entered: initialEntered,
   view: initialView,
   homeVariant: initialHomeVariant,
+  handPresent: false,
+  handStatus: "idle",
   heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
   setEntered: (entered) => set({ entered }),
+  setHandPresent: (handPresent) => set({ handPresent }),
+  setHandStatus: (handStatus) => set({ handStatus }),
   setView: (view) => set({ view }),
   setHomeVariant: (homeVariant) => set({ homeVariant }),
   setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),

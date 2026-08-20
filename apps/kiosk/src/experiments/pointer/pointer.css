@@ -1,0 +1,416 @@
+/* Hand pointing playground. Dark ground so the cursor and targets carry the screen;
+   all colors from tokens via the [data-theme="dark"] variable set (CLAUDE.md rule 1). */
+
+.pt-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  cursor: none; /* the hand is the pointer here */
+}
+
+.pt-cam {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: 220px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 0.4rem;
+  border: 1px solid var(--gt-border);
+  transform: scaleX(-1);
+  z-index: 5;
+}
+.pt-cam--off {
+  /* Kept in the layout but invisible: the stream must stay attached to a live element. */
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- target --- */
+
+.pt-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--gt-accent);
+  display: grid;
+  place-items: center;
+  color: var(--gt-surface);
+  box-shadow: 0 0 0 1px var(--gt-border);
+}
+.pt-target__tag {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--gt-text-secondary);
+  white-space: nowrap;
+}
+
+/* --- instructions --- */
+
+.pt-legend {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: right;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--gt-text-secondary);
+}
+.pt-legend b {
+  font-size: 0.9rem;
+  color: var(--gt-text-primary);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.15rem;
+}
+
+.pt-guide {
+  position: fixed;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-surface) 90%, transparent);
+  backdrop-filter: blur(8px);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gt-text-primary);
+  white-space: nowrap;
+}
+.pt-guide__hand {
+  font-size: 1.4rem;
+}
+
+.pt-legend__or {
+  margin-top: 0.4rem;
+  color: var(--gt-text-primary);
+  font-weight: 700;
+}
+.pt-legend__note {
+  margin-top: 0.35rem;
+  font-size: 0.68rem;
+  opacity: 0.7;
+}
+
+/* --- which method fired --- */
+
+.pt-flash {
+  position: fixed;
+  z-index: 9;
+  transform: translate(-50%, -220%);
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  color: var(--gt-surface);
+  background: var(--gt-text-primary);
+}
+.pt-flash[data-via="pinch"] {
+  background: var(--gt-accent);
+  color: var(--gt-surface);
+}
+
+@keyframes pt-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -180%);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -220%);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -280%);
+  }
+}
+
+/* --- method selector --- */
+
+.pt-modes {
+  display: flex;
+  gap: 0.3rem;
+}
+.pt-mode {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  font-family: inherit;
+  font-size: 0.68rem;
+  color: var(--gt-text-secondary);
+  background: transparent;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.pt-mode.is-on {
+  color: var(--gt-surface);
+  background: var(--gt-accent);
+  border-color: var(--gt-accent);
+  font-weight: 700;
+}
+
+.pt-tally {
+  font-size: 0.68rem;
+  color: var(--gt-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pt-pop {
+  from {
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* --- cursor --- */
+
+.pt-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  pointer-events: none;
+  z-index: 10;
+  transition: opacity 0.2s linear;
+}
+/* No !important here. The loop writes opacity inline every frame, and an !important rule beat
+   it — so a cursor with no hand behind it stayed faintly on screen, which is the one thing a
+   presence indicator must never do. */
+.pt-cursor[data-present="false"] {
+  opacity: 0.12;
+}
+
+.pt-cursor__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pt-cursor__dot {
+  fill: var(--gt-text-primary);
+}
+.pt-cursor__ring {
+  fill: none;
+  stroke: var(--gt-text-primary);
+  stroke-width: 1.5;
+  opacity: 0.45;
+}
+/* Dwell progress sweeps the ring; starts at 12 o'clock like every progress ring people know. */
+.pt-cursor__dwell {
+  fill: none;
+  stroke: var(--gt-accent);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 24px 24px;
+}
+
+.pt-cursor[data-pinched="true"] .pt-cursor__dot {
+  fill: var(--gt-accent);
+  r: 9;
+}
+.pt-cursor[data-pinched="true"] .pt-cursor__ring {
+  stroke: var(--gt-accent);
+  opacity: 1;
+}
+
+/* --- stats --- */
+
+.pt-stats {
+  position: fixed;
+  top: 1.25rem;
+  left: 1.5rem;
+  z-index: 6;
+}
+.pt-stats__big {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pt-stats__of {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
+}
+.pt-stats__k {
+  font-size: 0.78rem;
+  color: var(--gt-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.pt-reset {
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: var(--gt-text-secondary);
+  background: transparent;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+/* --- round summary --- */
+
+.pt-done {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+  width: min(30rem, 82vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--gt-surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+.pt-done b {
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+}
+.pt-done__grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem 1rem;
+  align-items: baseline;
+  font-size: 0.82rem;
+  color: var(--gt-text-secondary);
+}
+.pt-done__grid strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gt-text-primary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.pt-done__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--gt-text-secondary);
+}
+.pt-done__row {
+  display: flex;
+  gap: 0.5rem;
+}
+.pt-btn {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gt-surface);
+  background: var(--gt-accent);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.pt-btn--ghost {
+  color: var(--gt-text-secondary);
+  background: transparent;
+  border: 1px solid var(--gt-border);
+  font-weight: 400;
+}
+
+/* --- tuning panel --- */
+
+.pt-panel {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.25rem;
+  z-index: 6;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--gt-surface) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.pt-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
+}
+.pt-status--running {
+  color: var(--gt-accent);
+}
+.pt-status--error {
+  color: var(--gt-accent);
+}
+
+.pt-hud {
+  font-size: 0.68rem;
+  color: var(--gt-text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-height: 1em;
+}
+
+.pt-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.7rem;
+  color: var(--gt-text-secondary);
+}
+.pt-slider__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.pt-slider__row b {
+  color: var(--gt-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.pt-slider input {
+  width: 100%;
+  accent-color: var(--gt-accent);
+}
+.pt-slider__hint {
+  font-size: 0.62rem;
+  opacity: 0.75;
+  line-height: 1.35;
+}
+
+.pt-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--gt-text-secondary);
+  cursor: pointer;
+}

@@ -90,6 +90,9 @@ const FlySplatExperiment = lazy(() =>
     default: m.FlySplatExperiment,
   })),
 );
+const StoryExperiment = lazy(() =>
+  import("./experiments/story/StoryExperiment").then((m) => ({ default: m.StoryExperiment })),
+);
 const SparkCampusExperiment = lazy(() =>
   import("./experiments/spark/SparkCampusExperiment").then((m) => ({
     default: m.SparkCampusExperiment,
@@ -98,6 +101,16 @@ const SparkCampusExperiment = lazy(() =>
 const CursorGridExperiment = lazy(() =>
   import("./experiments/cursorgrid/CursorGridExperiment").then((m) => ({
     default: m.CursorGridExperiment,
+  })),
+);
+const HandLabExperiment = lazy(() =>
+  import("./experiments/handlab/HandLabExperiment").then((m) => ({
+    default: m.HandLabExperiment,
+  })),
+);
+const PointerExperiment = lazy(() =>
+  import("./experiments/pointer/PointerExperiment").then((m) => ({
+    default: m.PointerExperiment,
   })),
 );
 
@@ -139,10 +152,16 @@ const experiment =
     <FlyExperiment />
   ) : exp === "flysplat" ? (
     <FlySplatExperiment />
+  ) : exp === "story" ? (
+    <StoryExperiment />
   ) : exp === "spark" ? (
     <SparkCampusExperiment />
   ) : exp === "cursorgrid" ? (
     <CursorGridExperiment />
+  ) : exp === "handlab" ? (
+    <HandLabExperiment />
+  ) : exp === "pointer" ? (
+    <PointerExperiment />
   ) : null;
 
 createRoot(root).render(

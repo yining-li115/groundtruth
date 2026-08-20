@@ -1,5 +1,18 @@
 # Architecture
 
+> **STATUS — SUPERSEDED (Aug 2026).** This document describes the phone-as-trackpad design:
+> a QR code on the kiosk, a controller web app, and a relay server handing a driver token
+> between queued phones. **The kiosk no longer works this way.** Input is a webcam and a
+> hand; there is no relay, no token, no queue, and the kiosk is a static site with no server
+> behind it. `apps/controller`, `apps/relay` and `packages/protocol` are still in the tree
+> but are not part of the running product.
+>
+> Kept because the message protocol, the queue state machine and the reconnection rules are
+> a complete design worth having if a second input is ever wanted. For how the kiosk is
+> actually driven today, read `apps/kiosk/src/components/HandControl.tsx` and
+> `apps/kiosk/src/lib/vision/` — `handPointer.ts` (the state machine), `calibration.ts` (the
+> automatic, setup-free mapping) and `oneEuro.ts` (the smoothing).
+
 The system is three parts that all connect to one cloud relay server over WebSocket.
 This doc is the contract for the relay server and both clients. The message protocol
 here is normative — implement it exactly, and put the TypeScript types in a single

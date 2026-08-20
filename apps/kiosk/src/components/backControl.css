@@ -1,0 +1,58 @@
+/* The global back control. Tokens only (CLAUDE.md rule 1). */
+
+/*
+ * Sized for a hand, not a mouse. The pointer this has to be hit with is a palm tracked from
+ * a couple of metres away — Apple's minimum target for eye-driven UI is 60pt with generous
+ * spacing and a rounded shape for the same reason: a soft aim slides off sharp corners and
+ * small boxes. This is comfortably past that, and it says what it does.
+ */
+.bc-back {
+  /* Top RIGHT, in the corner every section used to put its MENU toggle. The menu is gone
+     from the sections — the home page is the menu now — so this inherits the one place a
+     visitor already looks for navigation, and stops colliding with the filter tabs that sit
+     across the top centre of several pages. */
+  position: fixed;
+  right: 1.5rem;
+  top: 1.5rem;
+  z-index: 9980;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  /* vmin, not rem: rem is a fixed pixel size, so on the 4K wall this ends up about a third
+     of the relative size it has on a laptop — the aim is no more precise there, and this is
+     the one control every page depends on. */
+  padding: clamp(0.85rem, 1.1vmin, 1.6rem) clamp(1.8rem, 2.4vmin, 3.4rem);
+  /* Present but recessive until a hand is actually there — a permanent floating button on an
+     unattended screen is chrome nobody asked for. */
+  opacity: 0.35;
+  transition: opacity 0.3s ease-out;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  font-size: clamp(1.05rem, 1.5vmin, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background 0.15s ease-out,
+    color 0.15s ease-out;
+}
+
+.bc-back.is-on {
+  opacity: 1;
+}
+
+.bc-back:hover,
+.bc-back.gt-hover {
+  background: var(--gt-accent);
+  color: var(--gt-surface);
+  border-color: var(--gt-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bc-back {
+    transition: none;
+  }
+}

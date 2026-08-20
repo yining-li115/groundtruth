@@ -4,6 +4,7 @@ import { SparkRenderer, SplatMesh, SparkControls } from "@sparkjsdev/spark";
 import { dark } from "@groundtruth/tokens";
 import { showreel } from "../../lib/content";
 import { useHandFlight } from "../../lib/vision/useHandFlight";
+import { flightInput } from "../../lib/vision/flightInput";
 import { HandSkeleton } from "../../components/HandSkeleton";
 import autoTour from "./tour.json";
 import roamVolume from "./roam.json";
@@ -79,13 +80,24 @@ const BLUR_AMOUNT = num("blur", 0.0);
 const PRE_BLUR_AMOUNT = num("preblur", 0.0);
 const MAX_STD_DEV = num("stddev", Math.sqrt(8));
 /**
+ * How large a single gaussian may be drawn, in pixels.
+ *
+ * Capping this was tried as a fix for the long streaks across a façade and made things worse:
+ * at 64 the streaks remained and holes opened where the big splats had been doing the
+ * covering. The strokes are not oversized splats — they are genuinely elongated ellipsoids,
+ * flat and oriented for a view from above, seen edge-on from a few metres away. Clamping the
+ * radius removes their coverage without touching their shape. Left at Spark's default.
+ */
+const MAX_PIXEL_RADIUS = num("maxr", 512);
+const MIN_PIXEL_RADIUS = num("minr", 0);
+/**
  * LoD budget in splats per FRAME — the real sharpness control, and the thing that decides
  * whether a denser asset buys anything at all. Loading 12.4M splats while capping this at 2M
  * renders about as much as the 1.8M tier does, so the big asset looks no better than the
  * small one. Default high enough that `asset=max` is actually worth loading; drop it with
  * ?budget= if the frame rate needs it. (Spark's own desktop default is 2.5M.)
  */
-const LOD_SPLAT_COUNT = num("budget", 6_000_000);
+const LOD_SPLAT_COUNT = num("budget", 8_000_000);
 /** Cone foveation — full detail within cone0, easing down to cone. Spark's defaults are
  *  90°/120°; tightening them buys frame rate but visibly softens everything off-centre,
  *  which is the wrong trade while judging quality. */
@@ -120,16 +132,20 @@ const HAND_YAW_RATE = num("handyaw", 0.5);
 const HAND_RANGE = num("handrange", 12);
 const HAND_RELEASE = 1.2; // per-second decay back to the tour's framing once the hand leaves
 /**
- * Adaptive LoD. Spark's contract is "never draw more than N splats a frame, so the frame
- * rate stays flat" — which only works if N suits the machine. Guessing one number for
- * unknown kiosk hardware gets it wrong in both directions, so steer N by measured frame
- * rate instead: give back detail while there is headroom, take it away when there isn't.
- * `?adapt=0` pins the budget for A/B comparisons.
+ * Adaptive quality, in the order a viewer minds least.
+ *
+ * The first version steered the SPLAT BUDGET by frame rate, which is the worst lever to pull
+ * on a dense cloud: drawing fewer splats doesn't soften the picture, it punches holes in it,
+ * and the façade turns to speckle. Resolution goes first now — a slightly softer image reads
+ * as normal, a perforated one reads as broken — and the budget only afterwards, with a floor
+ * high enough that it can never perforate the way it did.
+ *
+ * `?adapt=0` pins both for A/B comparisons.
  */
 const ADAPT = PARAMS?.get("adapt") !== "0";
 const TARGET_FPS = num("fps", 55);
-const SCALE_MIN = 0.15;
-const SCALE_MAX = 1.6;
+const SCALE_MIN = 0.6; // never subsample below this — below it, holes appear
+const DPR_MIN = 1.0; // and never render softer than this before touching the splat count
 
 /**
  * Per-asset extents, measured off the files themselves (`splat-transform --stats`); the scan
@@ -326,6 +342,7 @@ export function CampusFlight({
   autoPlay = false,
   asset = "mid",
   handControl = false,
+  handSource = "own",
 }: {
   /** HUD, free-fly controls and the waypoint-pinning keys. Off for the unattended screen. */
   tools?: boolean;
@@ -335,19 +352,37 @@ export function CampusFlight({
   asset?: AssetKey;
   /** webcam hand tracking: a visitor takes the camera off the tour and steers it themselves */
   handControl?: boolean;
+  /**
+   * Where the steering comes from.
+   *
+   * "own" opens a camera and runs the models here — right for the standalone tool page at
+   * /?exp=spark, which is the only thing running. Inside the kiosk that would be a second
+   * camera pipeline alongside the global hand pointer, so there it reads the intent the
+   * pointer already publishes instead.
+   */
+  handSource?: "own" | "global";
 } = {}) {
   const ASSET: AssetKey = ASSET_PARAM ?? asset;
-  const { videoRef, flight: hand, present: handPresent, status: handStatus, error: handError } =
-    useHandFlight(handControl);
+  const own = useHandFlight(handControl && handSource === "own");
+  const globalFlight = useRef(flightInput);
+  const hand = handSource === "global" ? globalFlight : own.flight;
+  const videoRef = own.videoRef;
+  const handStatus = handSource === "global" ? "running" : own.status;
+  const handError = handSource === "global" ? null : own.error;
   // the mode changes rarely, so mirroring it into state costs nothing and lets the hint react
   const [handMode, setHandMode] = useState<string>("idle");
+  const [globalPresent, setGlobalPresent] = useState(false);
+  const handPresent = handSource === "global" ? globalPresent : own.present;
   /** true from the moment a hand takes over until the camera has drifted back to the tour —
    *  the spotlight card belongs to the tour's composed shot, not to whatever the visitor is
    *  pointing at, so it steps aside for the whole interaction */
   const [interacting, setInteracting] = useState(false);
   useEffect(() => {
     if (!handControl) return;
-    const id = setInterval(() => setHandMode(hand.current.mode), 120);
+    const id = setInterval(() => {
+      setHandMode(hand.current.mode);
+      setGlobalPresent(hand.current.present);
+    }, 120);
     return () => clearInterval(id);
   }, [handControl, hand]);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -363,6 +398,7 @@ export function CampusFlight({
   const [playInfo, setPlayInfo] = useState("");
   const [active, setActive] = useState(0);
   const [scale, setScale] = useState(1);
+  const [dpr, setDpr] = useState(DPR_CAP);
   /** which spotlight card is on screen, and how far it has risen (0..1) */
   const [card, setCard] = useState<{ stop: number; t: number } | null>(null);
 
@@ -401,7 +437,8 @@ export function CampusFlight({
     let raf = 0;
 
     const renderer = new THREE.WebGLRenderer({ antialias: false }); // Spark: AA off on purpose
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+    let curDpr = Math.min(window.devicePixelRatio, DPR_CAP);
+    renderer.setPixelRatio(curDpr);
     renderer.setSize(host.clientWidth, host.clientHeight);
     host.appendChild(renderer.domElement);
 
@@ -420,6 +457,8 @@ export function CampusFlight({
       blurAmount: BLUR_AMOUNT,
       preBlurAmount: PRE_BLUR_AMOUNT,
       maxStdDev: MAX_STD_DEV,
+      maxPixelRadius: MAX_PIXEL_RADIUS,
+      minPixelRadius: MIN_PIXEL_RADIUS,
       lodSplatCount: LOD_SPLAT_COUNT,
       coneFov0: CONE_FOV0,
       coneFov: CONE_FOV,
@@ -466,7 +505,8 @@ export function CampusFlight({
         homeRef.current = { pos: camera.position.clone(), quat: camera.quaternion.clone() };
         setStatus(
           `${asset.label} · LoD ${LOD_PARAM ?? "on"} · ${((performance.now() - t0) / 1000).toFixed(1)}s · ` +
-            `focal ${FOCAL_ADJUSTMENT} · dpr ${DPR_CAP} · ` +
+            `focal ${FOCAL_ADJUSTMENT} · dpr ${DPR_CAP} · maxr ${MAX_PIXEL_RADIUS} · ` +
+            `stddev ${MAX_STD_DEV.toFixed(2)} · ` +
             `budget ${(LOD_SPLAT_COUNT / 1e6).toFixed(1)}M`,
         );
         if (autoPlay && AUTO_TOUR.length >= 2) {
@@ -677,16 +717,23 @@ export function CampusFlight({
         setFps(measured);
         if (ADAPT) {
           // Nudge, don't jump: a big correction overshoots and the detail visibly pumps.
-          // Shedding is quicker than recovering so a dip is caught before it reads as a stall.
+          const slow = measured < TARGET_FPS - 5;
+          const spare = measured > TARGET_FPS + 8;
           const s0 = spark.lodSplatScale ?? 1;
-          const next =
-            measured < TARGET_FPS - 5
-              ? s0 * 0.85
-              : measured > TARGET_FPS + 8
-                ? s0 * 1.06
-                : s0;
-          spark.lodSplatScale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, next));
-          setScale(spark.lodSplatScale);
+          if (slow) {
+            // resolution first, splat count only once there is no resolution left to give
+            if (curDpr > DPR_MIN) curDpr = Math.max(DPR_MIN, curDpr - 0.15);
+            else spark.lodSplatScale = Math.max(SCALE_MIN, s0 * 0.9);
+          } else if (spare) {
+            if (s0 < 1) spark.lodSplatScale = Math.min(1, s0 * 1.05);
+            else if (curDpr < DPR_CAP) curDpr = Math.min(DPR_CAP, curDpr + 0.1);
+          }
+          if (Math.abs(renderer.getPixelRatio() - curDpr) > 0.01) {
+            renderer.setPixelRatio(curDpr);
+            renderer.setSize(host.clientWidth, host.clientHeight);
+          }
+          setScale(spark.lodSplatScale ?? 1);
+          setDpr(curDpr);
         }
         frames = 0;
         fpsAt = now;
@@ -895,7 +942,7 @@ export function CampusFlight({
             {"  ·  drawing "}
             <span style={{ color: dark.accent }}>{(active / 1e6).toFixed(2)}M</span>
             {" splats/frame"}
-            {ADAPT ? ` · lod ×${scale.toFixed(2)}` : " · lod fixed"}
+            {ADAPT ? ` · lod ×${scale.toFixed(2)} · dpr ${dpr.toFixed(2)}` : " · quality pinned"}
           </div>
           <div style={{ color: dark.text.secondary }}>{status}</div>
         </div>

@@ -1,0 +1,53 @@
+/* The gesture legend. Tokens only (CLAUDE.md rule 1). */
+
+.gh-bar {
+  position: fixed;
+  left: 50%;
+  /* Above the bottom-centre control cluster, which owns the edge itself. */
+  bottom: 6.5rem;
+  transform: translateX(-50%) translateY(0.75rem);
+  z-index: 9990;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.6rem 1.35rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--gt-text-secondary);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none; /* never in the way of the thing it is explaining */
+  transition:
+    opacity 0.35s ease-out,
+    transform 0.35s ease-out;
+}
+
+.gh-bar.is-on {
+  /* Present for as long as someone is here, but out of the way once it has been read. */
+  opacity: 0.4;
+  transform: translateX(-50%) translateY(0);
+}
+.gh-bar.is-on.is-bright {
+  opacity: 1;
+}
+
+.gh-bar b {
+  color: var(--gt-text-primary);
+  font-weight: 700;
+}
+
+.gh-sep {
+  width: 1px;
+  height: 0.9rem;
+  background: var(--gt-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-bar {
+    transition: none;
+  }
+}
