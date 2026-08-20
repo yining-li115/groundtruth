@@ -74,6 +74,14 @@
   visibility: visible;
 }
 
+/* A press being confirmed is a promise; fingers merely closing is not one yet, so the arming
+   ring is drawn back — present enough to answer "does it see me?", faint enough that it can
+   never be mistaken for a click that already happened. */
+.gt-hand[data-arming="true"] .gt-hand__dwell {
+  opacity: 0.4;
+  stroke-width: 2.5;
+}
+
 .gt-hand[data-pinched="true"] .gt-hand__dot {
   fill: var(--gt-accent);
   r: 9;

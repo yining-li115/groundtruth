@@ -23,6 +23,7 @@ const BRIGHT_MS = 9000;
 export function GestureHint() {
   const entered = useKioskStore((s) => s.entered);
   const handPresent = useKioskStore((s) => s.handPresent);
+  const pinchTrouble = useKioskStore((s) => s.pinchTrouble);
   const [bright, setBright] = useState(false);
 
   useEffect(() => {
@@ -33,6 +34,18 @@ export function GestureHint() {
   }, [entered, handPresent]);
 
   if (!entered) return null;
+
+  // The pinch has been tried and is not being read. Saying the same thing again, in the same
+  // faint grey, would be the screen repeating itself at someone it has already failed.
+  if (pinchTrouble) {
+    return (
+      <div className="gh-bar is-on is-bright is-trouble" role="status" aria-live="polite">
+        <span>
+          Not reading that pinch — <b>close your whole hand into a fist</b> instead
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div

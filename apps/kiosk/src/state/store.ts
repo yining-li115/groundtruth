@@ -37,6 +37,16 @@ interface KioskState {
   /** A tracked hand is steering the screen. This is what "someone is here" means now that
    *  the phone is gone — the camera, not a token from the relay. */
   handPresent: boolean;
+  /**
+   * The visitor keeps closing their fingers and the pinch keeps not registering.
+   *
+   * This is the wall's most common failure and it is invisible from the inside: at two metres
+   * a webcam can barely resolve two fingertips, so a deliberate pinch reads as an open hand.
+   * Measured with a simulated hand on a far camera, 2 to 5 pinches in 12 produce a click,
+   * while the same hand's FIST produces 12 in 12. When the pointer sees fingers closing and
+   * nothing latching, twice, the screen should stop waiting to be understood and say so.
+   */
+  pinchTrouble: boolean;
   /** How the one input the kiosk has is doing. With no phone left as a second way in, a dead
    *  camera is a dead screen, so this is not a detail to keep inside a component. */
   handStatus: "idle" | "loading" | "running" | "error";
@@ -48,6 +58,7 @@ interface KioskState {
   setEntered: (v: boolean) => void;
   setHandPresent: (v: boolean) => void;
   setHandStatus: (v: KioskState["handStatus"]) => void;
+  setPinchTrouble: (v: boolean) => void;
   setView: (v: View) => void;
   setHomeVariant: (v: HomeVariant) => void;
   setHeroOrbitActive: (v: boolean) => void;
@@ -93,12 +104,14 @@ export const useKioskStore = create<KioskState>((set) => ({
   homeVariant: initialHomeVariant,
   handPresent: false,
   handStatus: "idle",
+  pinchTrouble: false,
   heroOrbitActive: false,
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
   setEntered: (entered) => set({ entered }),
   setHandPresent: (handPresent) => set({ handPresent }),
   setHandStatus: (handStatus) => set({ handStatus }),
+  setPinchTrouble: (pinchTrouble) => set({ pinchTrouble }),
   setView: (view) => set({ view }),
   setHomeVariant: (homeVariant) => set({ homeVariant }),
   setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),

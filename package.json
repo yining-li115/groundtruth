@@ -22,6 +22,8 @@
     "check:content": "tsx scripts/check-content.ts",
     "check:pointer": "tsx scripts/check-pointer.ts",
     "check:kiosk": "node scripts/check-kiosk.mjs",
+    "usertest:home": "node scripts/usertest/home-board.mjs",
+    "usertest:sweep": "node scripts/usertest/sweep.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "fetch:mediapipe": "node scripts/fetch-mediapipe.mjs"
   },

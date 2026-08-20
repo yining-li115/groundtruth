@@ -47,6 +47,11 @@ import "./handControl.css";
  * so the gesture stops counting as a tap well before it starts counting as a scroll.
  */
 const DRAG_START = 0.025;
+/** How far the fingers must close, on the 0..1 scale toward the threshold, to count as a real
+ *  attempt rather than a hand relaxing. */
+const NEAR_MISS_DEPTH = 0.55;
+/** Two near-misses inside this window mean the pinch is not going to work for this visitor. */
+const NEAR_MISS_WINDOW_MS = 30_000;
 /** No hand for this long returns the kiosk to its idle showreel. */
 const IDLE_RETURN_MS = 45_000;
 /** Elements a hover effect should be applied to, whether or not they opted in. */
@@ -73,6 +78,10 @@ export function HandControl() {
   const { videoRef, status, error, pointer } = useHandPointer(true);
   const cursorRef = useRef<HTMLDivElement>(null);
   const dwellRef = useRef<SVGCircleElement>(null);
+  /** Smoothed "how closed are the fingers" — see the ring in the loop. */
+  const closing = useRef(0);
+  /** Near-misses: fingers closed a long way, nothing latched. See NEAR_MISS below. */
+  const nearMiss = useRef<{ armed: boolean; at: number[] }>({ armed: false, at: [] });
   const hovered = useRef<Element | null>(null);
   const diagRef = useRef<HTMLDivElement>(null);
 
@@ -153,13 +162,64 @@ export function HandControl() {
         const C = 2 * Math.PI * 21;
         const target = document.elementFromPoint(px, py);
         const onHot = !!target?.closest(HOVERABLE);
-        // The ring shows whichever of the two is happening: a press filling toward the moment
-        // it counts, or (when enabled) a dwell filling toward the same thing. The press one
-        // matters most — it is the only feedback that a gesture is being received at all, and
-        // without it a hold that was a shade too short is indistinguishable from a dead camera.
-        const progress = s.pressProgress > 0 ? s.pressProgress : onHot ? s.dwell : 0;
+
+        /**
+         * The ring shows three different things, in order of how much they matter.
+         *
+         * ARMING is the new one and the reason the other two were not enough. Below the pinch
+         * threshold the screen said NOTHING: a visitor closing their fingers at two metres,
+         * where a webcam can barely resolve two fingertips, got no acknowledgement whatsoever
+         * — and a pinch that read 0.9 instead of 0.7 is, from the outside, indistinguishable
+         * from a dead camera. Measured with a simulated hand on a far camera: five pinches in
+         * twelve produced a click, and the other seven produced no pixel of feedback. So the
+         * ring now starts filling as the fingers CLOSE, in proportion to how near the
+         * threshold they are, before anything has been decided. It does not make the gesture
+         * work; it makes the failure legible, which is what tells someone to close harder or
+         * make a fist instead.
+         *
+         * Smoothed and dead-zoned, because the raw strength is a noisy sensor reading and a
+         * ring that shimmers on an open hand is worse than no ring.
+         */
+        const raw = pointer.current.pinchStrength();
+        closing.current += ((raw < 0.12 ? 0 : raw) - closing.current) * 0.25;
+        const arming = s.pressProgress === 0 && !s.pinched ? closing.current : 0;
+        // PRESS: the posture is being held toward the moment it counts. Without it a hold that
+        // was a shade too short is indistinguishable from a dead camera.
+        // DWELL: the same, for the resting fallback, when it is enabled at all.
+        const progress =
+          s.pressProgress > 0 ? s.pressProgress : Math.max(onHot ? s.dwell : 0, arming);
+
+        /**
+         * NEAR_MISS: fingers that closed most of the way and never crossed the threshold.
+         *
+         * Two of those inside half a minute is not bad luck, it is this camera at this
+         * distance failing to read this visitor's pinch — and the only useful thing the screen
+         * can do about it is stop asking for a pinch. The fist is read from the whole hand's
+         * shape rather than from two fingertips, and it survives the same conditions
+         * (12/12 against 2/12 in the harness), so that is what the hint switches to.
+         */
+        const m = nearMiss.current;
+        if (closing.current > NEAR_MISS_DEPTH && !s.pinched) m.armed = true;
+        else if (m.armed && closing.current < 0.12) {
+          m.armed = false;
+          m.at.push(nowMs);
+          m.at = m.at.filter((t) => nowMs - t < NEAR_MISS_WINDOW_MS);
+          const store2 = useKioskStore.getState();
+          if (m.at.length >= 2 && !store2.pinchTrouble) store2.setPinchTrouble(true);
+        }
+        if (s.pinched) {
+          // It read. Whatever it was doing wrong, it is not doing it now.
+          m.armed = false;
+          m.at.length = 0;
+          if (useKioskStore.getState().pinchTrouble) {
+            useKioskStore.getState().setPinchTrouble(false);
+          }
+        }
         dwellRef.current.style.strokeDasharray = `${progress * C} ${C}`;
-        if (node) node.dataset.dwelling = String(progress > 0.001);
+        if (node) {
+          node.dataset.dwelling = String(progress > 0.001);
+          node.dataset.arming = String(arming > 0.001);
+        }
       }
       setCursorPosition(px, py);
 
@@ -178,14 +238,23 @@ export function HandControl() {
       if (s.present) {
         const under = document.elementFromPoint(px, py);
         const hot = under?.closest(HOVERABLE) ?? null;
+        const mark = (el: Element) => {
+          el.classList.add("gt-hover");
+          // Sections that styled their own hover state keep using it.
+          if (el.hasAttribute("data-hover")) el.classList.add("is-hover");
+        };
         if (hot !== hovered.current) {
           hovered.current?.classList.remove("is-hover", "gt-hover");
-          if (hot) {
-            hot.classList.add("gt-hover");
-            // Sections that styled their own hover state keep using it.
-            if (hot.hasAttribute("data-hover")) hot.classList.add("is-hover");
-          }
+          if (hot) mark(hot);
           hovered.current = hot;
+        } else if (hot && !hot.classList.contains("gt-hover")) {
+          // RE-ASSERT, every frame, if the class went missing. React owns `className` on the
+          // elements it renders and rewrites it wholesale on any re-render — so a button that
+          // re-rendered while the hand was resting on it silently lost its hover marking and
+          // never got it back, because from here nothing had changed. Measured on the home
+          // board: sixty of seventy-five probed points showed no hover at all, purely because
+          // pointing at a row re-rendered that row.
+          mark(hot);
         }
       } else if (hovered.current) {
         hovered.current.classList.remove("is-hover", "gt-hover");

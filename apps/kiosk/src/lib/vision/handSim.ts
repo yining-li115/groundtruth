@@ -24,6 +24,17 @@ export interface HandSim {
   aim: { u: number; v: number };
   /** whether the fingers are closed this frame */
   pinching: boolean;
+  /**
+   * Aperture this frame, as the raw ratio the detector thresholds against — overrides
+   * `pinching` when set.
+   *
+   * A boolean pinch is not what a hand does. Fingers take a moment to close, they often stop
+   * short of touching, and a pinch that only half closes is exactly the one the wall fails to
+   * read: the thresholds are ON below 0.74 and OFF above 0.88, so a driver that can only say
+   * "open" (1.44) or "shut" (0.35) tests neither edge. With this a test can close at a human
+   * speed, stop at any depth, and ask what the pipeline made of it.
+   */
+  aperture?: number;
   /** whether a hand is in shot at all */
   present: boolean;
   /** posture label, for the fist path ("Closed_Fist" or anything else) */
@@ -72,7 +83,7 @@ export function simFrame(sim: HandSim): VisionResult {
   lm[17] = { x: x + half, y, z: 0 }; // little-finger knuckle
   lm[8] = { x, y: y - 0.05, z: 0 }; // index tip
 
-  const ratio = sim.pinching ? SIM_CLOSED : SIM_OPEN;
+  const ratio = sim.aperture ?? (sim.pinching ? SIM_CLOSED : SIM_OPEN);
   const world: Landmark[] = Array.from({ length: 21 }, () => ({ x: 0, y: 0, z: 0 }));
   world[5] = { x: -SIM_SPAN_M / 2, y: 0, z: 0 };
   world[17] = { x: SIM_SPAN_M / 2, y: 0, z: 0 };

@@ -51,3 +51,13 @@
     transition: none;
   }
 }
+
+/* The hint that only appears when the pinch has already failed twice. It is the one message
+   here that is worth interrupting for, so it carries the accent rather than the hairline. */
+.gh-bar.is-trouble {
+  border-color: var(--gt-accent);
+  color: var(--gt-text-primary);
+}
+.gh-bar.is-trouble b {
+  color: var(--gt-accent);
+}

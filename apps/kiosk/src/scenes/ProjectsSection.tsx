@@ -1,4 +1,4 @@
-import { Fragment, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
 import { GooeyNav, Logo, type GooeyNavItem } from "@groundtruth/ui";
@@ -7,11 +7,6 @@ import { openTopics, personName } from "../lib/content";
 import { navigate } from "../lib/navigate";
 import { TAG_COLOR } from "./tagColors";
 import "./projects.css";
-
-// Lazy so html2canvas + the WebGL transmission material stay out of the main bundle.
-const FluidLens = lazy(() =>
-  import("../components/FluidLens").then((m) => ({ default: m.FluidLens })),
-);
 
 /**
  * Student Projects — the open topics the group OFFERS to students. A GooeyNav filter (the
@@ -59,12 +54,6 @@ export function ProjectsSection() {
   const detailRef = useRef<HTMLDivElement>(null);
   const [activeFilter, setActiveFilter] = useState(0);
   const [selected, setSelected] = useState<OpenTopic | null>(null);
-  // The fluid-glass lens is heavy motion — skip it entirely under reduced motion.
-  const reducedMotion = useRef(
-    typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  ).current;
-
   const activeLabel = FILTER_LABELS[activeFilter] ?? ALL;
   const filtered = useMemo(() => {
     if (activeLabel === ALL) return [...openTopics].sort(byPostedDesc);
@@ -255,12 +244,18 @@ export function ProjectsSection() {
         )}
       </AnimatePresence>
 
-      {/* Fluid-glass lens — magnifies/refracts the open detail, following the cursor. */}
-      {selected && !reducedMotion && (
-        <Suspense fallback={null}>
-          <FluidLens targetRef={detailRef} contentKey={selected.id} />
-        </Suspense>
-      )}
+      {/*
+       * The fluid-glass lens is GONE from this page (`components/FluidLens` is kept, unmounted,
+       * as the experiment it was).
+       *
+       * It could not sample the DOM, so it magnified an html2canvas snapshot of the detail —
+       * and when that snapshot did not arrive it fell back to a frosted disc, which on this
+       * black page was simply a large grey ellipse parked next to the text. That is the second
+       * thing following the hand, on a screen whose whole interaction depends on the visitor
+       * trusting exactly one dot to be where they are pointing. The cursor's job here is to be
+       * unambiguous, and it was already the layer that trapped a visitor once (see
+       * `fluidLens.css` on the pointer-events bug).
+       */}
     </div>
   );
 }
