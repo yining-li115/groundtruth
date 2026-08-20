@@ -1,0 +1,182 @@
+/* The home page as the menu: slogan left, section columns right.
+   Every colour is a token (CLAUDE.md rule 1); the column fills come from `sectionColors.ts`. */
+
+.hm {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr minmax(38%, 44%);
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  overflow: hidden;
+}
+
+/* --- left: who this is, and the one sentence --- */
+
+.hm__left {
+  display: flex;
+  flex-direction: column;
+  padding: 2.5rem 3rem 3rem;
+}
+
+.hm__brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.hm__brand-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--gt-text-secondary);
+}
+.hm__brand-strong {
+  font-weight: 700;
+  color: var(--gt-text-primary);
+}
+
+.hm__slogan {
+  margin: auto 0 0;
+  font-size: clamp(3rem, 5.4vw, 6.5rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.hm__blurb {
+  margin: 1.75rem 0 0;
+  max-width: 34rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--gt-text-secondary);
+}
+
+.hm__hint {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gt-accent);
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+.hm__hint.is-on {
+  opacity: 1;
+}
+
+/* --- right: the columns --- */
+
+/* Stacked bands, not standing columns.
+   A column's label has to be turned on its side to fit, and rotated type is slower to read
+   for everyone and impossible for some — on a wall a passer-by glances at for two seconds,
+   that is the wrong thing to spend legibility on. Laid out as rows, every label sits
+   upright, and a wide short band is an easier thing to aim a hand at sideways than a narrow
+   tall one is to aim at up and down. */
+.hm__cols {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/*
+ * Each band is one target, and it spans the whole right-hand side. That is the point: this
+ * pointer is a hand tracked from metres away, so the way to make selection reliable is not a
+ * better filter but a target that cannot be missed. Growing on hover is the confirmation —
+ * the same job visionOS gives its hover effect, which every selectable thing must have.
+ */
+.hm__col {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0 2.25rem;
+  border: 0;
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    filter 0.3s ease-out,
+    box-shadow 0.3s ease-out;
+}
+
+/*
+ * The hover state deliberately does NOT change the size any more.
+ *
+ * Growing the hovered band pushed its neighbours, which moved the boundary between them while
+ * the cursor sat still — so the band you entered a seam through kept the pixel, and the SAME
+ * point opened different sections depending on which direction you arrived from. Measured: at
+ * (1200,163), approaching downward gave Research and upward gave People, with an 84px-wide
+ * band of ambiguity around every seam. A target that moves because you looked at it is the one
+ * way a confident, well-aimed visitor still ends up somewhere they did not choose.
+ *
+ * Brightness and an inset edge say the same thing and move nothing.
+ */
+.hm__col:hover,
+.hm__col.gt-hover {
+  filter: brightness(1.12);
+  box-shadow: inset 6px 0 0 0 var(--gt-brand-white);
+}
+
+.hm__num {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  opacity: 0.55;
+}
+
+.hm__label {
+  font-size: clamp(1.5rem, 2.6vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+
+.hm__sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+/* Pushed to the far end of the band, so the arrow always sits where the eye leaves. */
+.hm__arrow {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  opacity: 0.75;
+  transition:
+    transform 0.3s ease-out,
+    opacity 0.3s ease-out;
+}
+.hm__col:hover .hm__arrow,
+.hm__col.gt-hover .hm__arrow {
+  opacity: 1;
+  transform: translateX(5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm__col,
+  .hm__arrow,
+  .hm__hint {
+    transition: none;
+  }
+}
+
+/* Title and its one-word gloss, stacked, so the band reads left to right in one pass:
+   number, what it is, what is in it, and the way on. */
+.hm__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}

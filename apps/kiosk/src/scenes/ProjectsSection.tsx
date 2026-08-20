@@ -4,7 +4,6 @@ import { gsap } from "gsap";
 import { GooeyNav, Logo, type GooeyNavItem } from "@groundtruth/ui";
 import type { OpenTopic, OpenTopicType } from "../../../../content/schema";
 import { openTopics, personName } from "../lib/content";
-import { KioskMenu } from "../components/KioskMenu";
 import { navigate } from "../lib/navigate";
 import { TAG_COLOR } from "./tagColors";
 import "./projects.css";
@@ -102,7 +101,10 @@ export function ProjectsSection() {
 
   return (
     <div className="projects" data-theme="dark" ref={rootRef}>
-      <KioskMenu />
+      {/* No MENU here. Every section's top-right corner is the Home button now: the home
+          page IS the menu, so a drawer that repeats the same five destinations is a second
+          door into a room you can already see — and on the pages with a filter bar across the
+          top it was fighting for the same strip of screen. */}
 
       {/* Top-left: chair + university (white on dark), clickable → home. */}
       <div className="frame">

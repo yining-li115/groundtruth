@@ -23,8 +23,13 @@ function byTerm(items: Course[]): { semester: string; items: Course[] }[] {
 
 /** One course row. */
 function CourseRow({ c }: { c: Course }) {
+  // Deliberately not `data-hover`, and no pointer cursor in the CSS: these rows have no click
+  // handler and there is no course detail view to open. Lit up and reaching for a hand that has
+  // nothing to do with them, they were the loudest thing on the page — 32 of 48 tested screen
+  // positions dispatched a click into a row that did nothing at all. A row that cannot be
+  // selected must not claim it can.
   return (
-    <div data-hover className="tch-row">
+    <div className="tch-row">
       <span className="tch-no">{c.courseNo ?? "—"}</span>
       <span className="tch-title">{c.title}</span>
       <span className="tch-hours">{c.hoursPerWeek != null ? String(c.hoursPerWeek) : "—"}</span>

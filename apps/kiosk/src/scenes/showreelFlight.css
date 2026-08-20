@@ -1,0 +1,121 @@
+/* The idle showreel's invitation and entry. Dark-theme tokens: this is the one screen the
+   design system allows a dark ground on (design-system §5). */
+
+.sf-invite {
+  position: absolute;
+  left: 50%;
+  bottom: 3.5rem;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 1.4rem;
+  border: 1px solid var(--gt-dark-border, rgba(255, 255, 255, 0.18));
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.4s ease-out;
+  /* A slow breath, so a still screen still reads as alive and inviting rather than as a
+     frozen frame. Suppressed under reduced motion below. */
+  animation: sf-breathe 4s ease-in-out infinite;
+}
+.sf-invite.is-hidden {
+  opacity: 0;
+}
+.sf-invite__hand {
+  font-size: 1.3rem;
+}
+
+@keyframes sf-breathe {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.035);
+  }
+}
+
+.sf-enter {
+  position: absolute;
+  left: 50%;
+  bottom: 3rem;
+  transform: translateX(-50%) translateY(1.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease-out,
+    transform 0.35s ease-out;
+}
+.sf-enter.is-on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+/*
+ * Deliberately large. The pointer driving this is a hand three metres away, whose measured
+ * standing jitter is a few pixels and whose aim is nothing like a mouse — Apple's guidance for
+ * eye targeting applies for the same reason: generous size and generous spacing, round shape,
+ * no sharp corners for the aim to slip off.
+ */
+.sf-enter__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 22rem;
+  padding: 1.35rem 3.5rem;
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #000;
+  background: #fff;
+  cursor: pointer;
+}
+.sf-enter__sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+/* The same scrim the invitation gets. This is the only instruction a first-time visitor is
+   given, and it was 72%-opaque white text sitting directly on a photoreal scan that is pale
+   wherever the sky is. */
+.sf-enter__how {
+  margin: 0;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: #fff;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-invite {
+    animation: none;
+  }
+  .sf-enter,
+  .sf-invite {
+    transition: none;
+  }
+}

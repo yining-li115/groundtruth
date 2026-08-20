@@ -7,6 +7,20 @@
   z-index: 60;
   pointer-events: none;
 }
+/*
+ * The children have to opt out too, not just the wrapper.
+ *
+ * R3F sets `pointer-events` back to `auto` on the div it creates around its canvas, so
+ * `pointer-events: none` on the parent was overridden from the inside — and since this layer
+ * sits at z-index 60, above the detail view at 50, every hit test on the student-project
+ * detail returned the canvas. Back, previous and next all dispatched their click into a
+ * decorative WebGL surface: 45 of 48 tested positions were dead, and opening any of the
+ * eighteen topics trapped the visitor with no way out but leaving the section.
+ */
+.fluid-lens *,
+.fluid-lens canvas {
+  pointer-events: none !important;
+}
 .fluid-lens canvas {
   width: 100% !important;
   height: 100% !important;

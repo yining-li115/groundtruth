@@ -23,13 +23,21 @@
   padding-top: clamp(6rem, 26vh, 17rem);
 }
 
+/* Sized for a hand. It was a 62x24px word with about a centimetre of vertical tolerance —
+   the only way out of a profile, and small enough that a scripted hand aiming straight at its
+   centre missed it. A pinch is aimed from a position captured before the fingers moved, so a
+   target this pointer can hit needs area, not precision. */
 .ppl-detail__back {
   position: absolute;
   top: clamp(2rem, 7vh, 5rem);
   left: clamp(1.5rem, 6vw, 5rem);
-  padding: 0;
-  background: none;
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.8rem 1.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-surface) 12%, transparent);
+  border: 1px solid var(--gt-border);
   color: var(--gt-text-secondary);
   font: inherit;
   text-transform: lowercase;

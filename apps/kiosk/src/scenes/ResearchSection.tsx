@@ -3,8 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
 import { Logo } from "@groundtruth/ui";
 import { topics } from "../lib/content";
-import { KioskMenu } from "../components/KioskMenu";
-import { navigate } from "../lib/navigate";
 import { horizontalLoop } from "../lib/horizontalLoop";
 import "./research.css";
 
@@ -80,9 +78,16 @@ export function ResearchSection() {
 
   return (
     <div className="rsl" data-theme="dark" ref={rootRef}>
-      <KioskMenu />
+      {/* No MENU here. Every section's top-right corner is the Home button now: the home
+          page IS the menu, so a drawer that repeats the same five destinations is a second
+          door into a room you can already see — and on the pages with a filter bar across the
+          top it was fighting for the same strip of screen. */}
 
-      <button type="button" className="rsl-brand" aria-label="Back to home" onClick={() => navigate("home")}>
+      {/* Not a control any more. It navigated home when clicked, while looking like three
+          lines of address text — an unlabelled trap that ejected a visitor who happened to
+          aim at the corner, and two of eight tested positions along the top edge did exactly
+          that. The Home button in the opposite corner is the way back, and says so. */}
+      <div className="rsl-brand">
         <span className="rsl-brand-text">
           <span className="rsl-brand-strong">
             Professorship of Photogrammetry and Remote Sensing
@@ -91,7 +96,7 @@ export function ResearchSection() {
           <span>Technical University of Munich</span>
         </span>
         <Logo variant="white" width={64} height={33} />
-      </button>
+      </div>
 
       <div className="rsl-overlay">
         <div className="rsl-overlay-inner">
@@ -163,7 +168,7 @@ export function ResearchSection() {
         <div className="rsl-wrap">
           <div className="rsl-list">
             {slides.map((s) => (
-              <div className="rsl-slide" data-slider="slide" data-hover key={s.id}>
+              <div className="rsl-slide" data-slider="slide" key={s.id}>
                 <div className="rsl-inner">
                   <img src={s.image} alt="" loading="lazy" />
                 </div>

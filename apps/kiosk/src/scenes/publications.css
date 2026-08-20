@@ -217,7 +217,10 @@
   display: flex;
   flex-direction: row;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  /* `proximity`, not `mandatory`. A hand scrolls by adding a few pixels every frame, and a
+     mandatory snap pulled every one of them straight back — 40 frames of +18px left scrollLeft
+     at exactly 0, so the figures could not be reached by gesture at all. */
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
 }
 .publications .pub-detail-media::-webkit-scrollbar {
@@ -236,9 +239,13 @@
   align-items: center;
   gap: 0.55rem;
 }
+/* Was 9x9px with 6px gaps — a target this pointer misses with 6px of aim error, and the only
+   route to any figure past the first. */
 .publications .pub-dot {
-  width: 9px;
-  height: 9px;
+  width: 26px;
+  height: 26px;
+  border: 8px solid transparent;
+  background-clip: content-box;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -254,17 +261,40 @@
   background: var(--gt-accent);
   transform: scale(1.35);
 }
+/*
+ * Prev/next moved off the right edge and into a cluster at the bottom centre.
+ *
+ * The rule across the kiosk: top centre leaves the page, bottom centre moves around inside
+ * it. Corners and edges are the most expensive places on a wall for a hand to reach — the
+ * pointer is a whole arm — and these two were pinned to the far right, at the extreme of a
+ * sweep, which is also where the mapping is least accurate.
+ */
 .publications .pub-nav {
+  position: fixed;
+  bottom: 1.75rem;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
   flex: none;
-  background: none;
-  border: none;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-surface) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--gt-border);
   padding: 0;
   cursor: pointer;
   color: var(--gt-text-primary);
 }
+.publications .pub-nav--prev {
+  left: calc(50% - 5rem);
+}
+.publications .pub-nav--next {
+  left: calc(50% + 1rem);
+}
 .publications .pub-nav svg {
   display: block;
-  height: 40px;
+  height: 26px;
   width: auto;
   fill: none;
   stroke: currentColor;
@@ -293,17 +323,24 @@
   opacity: 0;
   pointer-events: none;
 }
+/* Bottom centre with the other in-page controls, and a real target rather than a line of
+   text: this is how a visitor gets out of a paper, and it was a 16px word in the corner. */
 .publications .pub-detail-back {
-  position: absolute;
-  top: 2.2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
+  bottom: 1.75rem;
+  left: calc(50% - 16rem);
+  z-index: 60;
   display: flex;
   align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
+  gap: 0.4rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gt-surface) 90%, transparent);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--gt-border);
+  font-family: var(--font-sans);
   font-size: 1rem;
+  font-weight: 700;
   color: var(--gt-text-primary);
   cursor: pointer;
   transition: color 0.2s ease;

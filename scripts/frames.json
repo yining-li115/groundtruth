@@ -1,0 +1,17 @@
+[
+ {"id":"sn1","act":"sensing","prompt":"A survey drone banking over a dense city rooftop landscape at night, seen from slightly above and behind, its sensor pod glowing. Cinematic, dense fine texture, haze and dust in the air, deep shadows, black background."},
+ {"id":"sn2","act":"sensing","from":"sn1","prompt":"The same drone, one small step further along the SAME banking turn: nose swung slightly further round, wings tilted a little more. Nothing else changes."},
+ {"id":"sn3","act":"sensing","from":"sn2","prompt":"The same drone, one small step further again along the same turn. Nothing else changes."},
+
+ {"id":"pt1","act":"points","prompt":"A laser scan line sweeping across the ornate stone facade of a historic university building at night, the scanned strip resolving into millions of glowing measured points while the rest stays in shadow. Cinematic, dense texture, black background."},
+ {"id":"pt2","act":"points","from":"pt1","prompt":"The same facade, the sweep advanced a little further across it: slightly more of the stonework has turned into glowing points. Small incremental change only."},
+ {"id":"pt3","act":"points","from":"pt2","prompt":"The same facade, the sweep advanced a little further again. Small incremental change only."},
+
+ {"id":"sm1","act":"semantics","prompt":"An aerial view of a city block at night where the surfaces are being classified: roofs, facades, roads and trees separating into distinct tones as understanding spreads across the scene. Cinematic, dense texture, black background."},
+ {"id":"sm2","act":"semantics","from":"sm1","prompt":"The same view, the classification spread a little further across the block. Small incremental change only."},
+ {"id":"sm3","act":"semantics","from":"sm2","prompt":"The same view, the classification spread further again, most of the block now separated into classes. Small incremental change only."},
+
+ {"id":"ch1","act":"change","prompt":"A construction crane standing over a half-built structure at night, jib extended to one side, the site below dense with scaffolding and material. Cinematic, dense texture, dust in the air, black background."},
+ {"id":"ch2","act":"change","from":"ch1","prompt":"The same crane, its jib swung a small step further round; the structure below has gained a little more built volume. Nothing else changes."},
+ {"id":"ch3","act":"change","from":"ch2","prompt":"The same crane, jib swung a small step further again, structure a little taller. Nothing else changes."}
+]

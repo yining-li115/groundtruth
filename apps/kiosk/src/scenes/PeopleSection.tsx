@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@groundtruth/ui";
 import type { Person } from "../../../../content/schema";
 import { people } from "../lib/content";
-import { KioskMenu } from "../components/KioskMenu";
 import { LegoAvatarLab } from "../components/lego/LegoAvatarLab";
 import { PersonDetail } from "../experiments/people/PersonDetail";
-import { navigate } from "../lib/navigate";
 import { activePointer } from "../lib/cursorPosition";
+import { scrollToTop, scrollToY } from "../lib/scroll";
 import "./people.css";
 
 /**
@@ -65,7 +64,7 @@ function groupByCategory(list: Person[]): { label: string; people: Person[] }[] 
 /** Cursor-proximity scale: each item grows by how close the kiosk cursor is (a soft lens).
  *  Driven by activePointer() in a rAF loop so it follows the phone-driven cursor on the wall
  *  and a real mouse in dev alike. Reduced motion opts out. */
-function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>) {
+function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>, key: unknown) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -75,7 +74,12 @@ function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>) {
     if (!items.length) return;
     const scales = new Array(items.length).fill(1);
     const RADIUS = 220;
-    const MAX_SCALE = 1.6;
+    // 1.6 grew a 271px card to 433px — 81px past each edge, into a 33px gutter — so cards
+    // slid under a cursor that had not moved, and a pinch opened whichever neighbour had
+    // arrived. Measured: parked at one card, pinched, opened a different person. The lens is
+    // worth having, but not at the price of the target moving out from under the aim, so it
+    // now grows only within the space between cards.
+    const MAX_SCALE = 1.12;
     const EASE = 0.18;
 
     let raf = 0;
@@ -108,32 +112,70 @@ function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>) {
         el.style.zIndex = "";
       });
     };
-  }, [rootRef]);
+    // `key` is what makes this re-run. The dependency used to be the ref alone, which never
+    // changes — so after a profile opened and the roster unmounted, the loop went on measuring
+    // and transforming the OLD, detached cards forever, and the lens was dead for the rest of
+    // the session while a rAF loop kept calling getBoundingClientRect on nothing.
+  }, [rootRef, key]);
 }
 
 export function PeopleSection() {
   const pageRef = useRef<HTMLDivElement>(null);
-  useProximityScale(pageRef);
   // TEST entry (remove once real portraits land): try the LEGO avatar effect on an uploaded photo.
   const [legoLab, setLegoLab] = useState(false);
   // Which member's detail page is open (null = roster).
   const [selected, setSelected] = useState<Person | null>(null);
+  useProximityScale(pageRef, selected);
 
   const groups = groupByCategory(people);
+
+  // A profile is a new screen even though it does not go through `navigate`, so it opens at
+  // its own top — otherwise it inherits the roster's scroll, and since it is taller than the
+  // viewport it clamps to its own bottom with Back above the top edge, reachable by nothing.
+  // Measured: eight profiles, eight failures.
+  //
+  // Coming BACK is the opposite case and wants the opposite thing: returning someone to the
+  // top of a long roster they had scrolled halfway down loses their place, so the position is
+  // put back exactly as they left it.
+  const rosterScroll = useRef(0);
+  useEffect(() => {
+    if (selected) {
+      rosterScroll.current = window.scrollY;
+      scrollToTop();
+    } else if (rosterScroll.current > 0) {
+      scrollToY(rosterScroll.current);
+    }
+  }, [selected]);
 
   if (selected) return <PersonDetail person={selected} onBack={() => setSelected(null)} />;
 
   return (
     <div className="ppl" ref={pageRef} style={{ color: "var(--gt-text-primary)" }}>
-      <KioskMenu />
+      {/* No MENU here. Every section's top-right corner is the Home button now: the home
+          page IS the menu, so a drawer that repeats the same five destinations is a second
+          door into a room you can already see — and on the pages with a filter bar across the
+          top it was fighting for the same strip of screen. */}
 
-      {/* Dev/test entry — opens the LEGO avatar lab (upload a photo, preview, save PNG). */}
-      <button type="button" className="ppl__legolab" onClick={() => setLegoLab(true)}>
-        🧱 LEGO avatar test
-      </button>
-      {legoLab && <LegoAvatarLab onClose={() => setLegoLab(false)} />}
+      {/* Dev/test entry — opens the LEGO avatar lab (upload a photo, preview, save PNG).
+          DEV ONLY, for two reasons found while making the kiosk hand-driven. It is pinned to
+          the top-right corner, which is exactly where the navigation toggle sits, so on the
+          deployed wall it covered MENU and left this page with no way to reach the other
+          sections. And it invites a file upload — fine on a laptop, not something a passer-by
+          should be able to reach on a public screen with a wave of their hand. */}
+      {import.meta.env.DEV && (
+        <>
+          <button type="button" className="ppl__legolab" onClick={() => setLegoLab(true)}>
+            🧱 LEGO avatar test
+          </button>
+          {legoLab && <LegoAvatarLab onClose={() => setLegoLab(false)} />}
+        </>
+      )}
 
-      <button type="button" className="ppl__brand" aria-label="Back to home" onClick={() => navigate("home")}>
+      {/* Not a control any more. It navigated home when clicked, while looking like three
+          lines of address text — an unlabelled trap that ejected a visitor who happened to
+          aim at the corner, and two of eight tested positions along the top edge did exactly
+          that. The Home button in the opposite corner is the way back, and says so. */}
+      <div className="ppl__brand">
         <span className="ppl__brand-text">
           <span className="ppl__brand-strong">
             Professorship of Photogrammetry and Remote Sensing
@@ -142,7 +184,7 @@ export function PeopleSection() {
           <span>Technical University of Munich</span>
         </span>
         <Logo variant="black" width={64} height={33} />
-      </button>
+      </div>
 
       <div className="ppl__layout">
         <aside className="ppl__intro">

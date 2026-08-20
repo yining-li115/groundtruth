@@ -56,7 +56,9 @@
 }
 
 /* ---- filter tabs (GooeyNav), fixed top-centre ---- */
-.projects .projects-filter {
+.projects /* Enlarged for a hand: at 35px tall with 19px gaps, a full 8x6 grid sweep hit zero of
+   forty-eight positions on these. They worked only when aimed at dead centre. */
+.projects-filter {
   position: fixed;
   top: 1.6rem;
   left: 50%;
@@ -65,6 +67,19 @@
   transition: opacity 0.3s ease;
 }
 /* Hide the filter while a topic detail is open (its "← Back" sits where the tabs are). */
+/*
+ * Hand-sized filter tabs.
+ *
+ * At their default size these are about 35px tall with 19px gaps, and a full 8x6 sweep of the
+ * screen hit none of them — they worked only when aimed at dead centre, which is precisely
+ * what this pointer cannot promise. Enlarged here rather than in the shared component, since
+ * the component is not only used on a wall.
+ */
+.projects-filter li {
+  padding: 1rem 1.4rem;
+  font-size: clamp(0.8rem, 1vmin, 1.1rem);
+}
+
 .projects:has(.sp-detail) .projects-filter {
   opacity: 0;
   pointer-events: none;

@@ -1,6 +1,7 @@
 import { StaggeredMenu, type StaggeredMenuItem } from "@groundtruth/ui";
 import { useKioskStore, type View } from "../state/store";
 import { navigate } from "../lib/navigate";
+import { SWEEP_COLORS } from "../scenes/sectionColors";
 
 const SECTIONS: { key: Exclude<View, "home">; label: string }[] = [
   { key: "teaching", label: "Teaching" },
@@ -22,5 +23,7 @@ export function KioskMenu() {
     onClick: () => navigate(s.key),
   }));
 
-  return <StaggeredMenu items={items} isFixed displayItemNumbering />;
+  // Swept in the same colours the home page stands the sections up in, so opening the menu
+  // reads as a preview of where each colour goes rather than as decoration (sectionColors).
+  return <StaggeredMenu items={items} colors={SWEEP_COLORS} isFixed displayItemNumbering />;
 }

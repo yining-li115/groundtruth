@@ -11,9 +11,12 @@
 }
 
 /* TEST entry button (top-right) → LEGO avatar lab. Remove once real portraits land. */
+/* Bottom-right, not top-right: the navigation toggle owns the top-right corner on every
+   section, and this was sitting on top of it. Dev-only now, but a dev build is what gets
+   demonstrated, so it still must not cover the menu. */
 .ppl__legolab {
   position: fixed;
-  top: 1.25rem;
+  bottom: 1.25rem;
   right: 1.25rem;
   z-index: 50;
   font-size: 0.8rem;

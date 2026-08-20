@@ -1,15 +1,22 @@
 import type { ReactNode } from "react";
 import { Logo } from "@groundtruth/ui";
-import { KioskMenu } from "./KioskMenu";
 import { navigate } from "../lib/navigate";
 
 /** Shared chrome for the light section pages: the floating tab bar, the same top-left brand
  *  block as the other sections (chair / school / university + TUM logo → home), and the
- *  section title. The brand markup + sizing match Projects/People/Research so it lines up. */
+ *  section title. The brand markup + sizing match Projects/People/Research so it lines up.
+ *
+ *  The brand block doubles as "back to home". That is a mouse affordance and no use to a hand
+ *  pointing from across a corridor, so the actual way back is `BackControl`, mounted globally
+ *  in App — only one section ever used this layout, and a control every page needs cannot
+ *  depend on which layout a page happened to pick. */
 export function SectionLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
-      <KioskMenu />
+      {/* No MENU here. Every section's top-right corner is the Home button now: the home
+          page IS the menu, so a drawer that repeats the same five destinations is a second
+          door into a room you can already see — and on the pages with a filter bar across the
+          top it was fighting for the same strip of screen. */}
       <div className="px-10 pt-8">
         <button
           type="button"
