@@ -6,6 +6,7 @@ import { GestureHint } from "./components/GestureHint";
 import { BackControl } from "./components/BackControl";
 import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
+import { HomeBoard } from "./scenes/HomeBoard";
 import { HomeMenu } from "./scenes/HomeMenu";
 import { HomeFly } from "./scenes/HomeFly";
 import { Showreel } from "./scenes/Showreel";
@@ -33,11 +34,12 @@ function CurrentView() {
     case "teaching":
       return <TeachingSection />;
     default:
-      // Three home designs, live-switchable until the supervisor picks one. The menu-as-home
-      // is the default: it is the only one built for a hand pointer.
+      // Four home designs, live-switchable until the supervisor picks one. The board is the
+      // default; the older three stay reachable with `?home=…` for comparison.
       if (homeVariant === "fly") return <HomeFly />;
       if (homeVariant === "classic") return <Home />;
-      return <HomeMenu />;
+      if (homeVariant === "menu") return <HomeMenu />;
+      return <HomeBoard />;
   }
 }
 

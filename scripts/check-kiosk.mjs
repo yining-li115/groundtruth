@@ -172,34 +172,37 @@ async function main() {
     );
 
     // ---------------------------------------------------------------- home
-    console.log("\nthe home page is the menu\n");
+    console.log("\nthe home page carries the whole menu\n");
     await goto(`${BASE}/?enter=1`, 5000);
 
-    const cols = await evaluate(`document.querySelectorAll('.hm__col').length`);
-    ok("every section stands on the home page", cols === 5, `${cols} columns`);
+    // The five colour columns became the dark board's five rows (`scenes/HomeBoard`); the
+    // property being checked is unchanged — every destination stands on the home page, at a
+    // size a hand can hit, and clicking one opens it.
+    const rows = await evaluate(`document.querySelectorAll('.hb-row').length`);
+    ok("every section stands on the home page", rows === 5, `${rows} rows`);
 
-    const narrowest = await evaluate(
+    const shortest = await evaluate(
       `(() => {
-         const w = [...document.querySelectorAll('.hm__col')]
-           .map((c) => Math.round(c.getBoundingClientRect().width));
-         return Math.min(...w);
+         const h = [...document.querySelectorAll('.hb-row')]
+           .map((c) => Math.round(c.getBoundingClientRect().height));
+         return Math.min(...h);
        })()`,
     );
     // These are the primary targets of the whole kiosk, aimed at by a hand from metres away.
-    // Full height already, so width is the only dimension that can be got wrong.
-    ok(`the narrowest column is still a big target (${narrowest}px)`, narrowest >= 100, `${narrowest}px`);
+    // Full column width already, so height is the only dimension that can be got wrong.
+    ok(`the shortest row is still a big target (${shortest}px)`, shortest >= 100, `${shortest}px`);
 
     ok(
       "the home does not also carry a menu toggle (it would be a door into this room)",
-      (await evaluate(`!document.querySelector('.hm .sm-toggle')`)) === true,
+      (await evaluate(`!document.querySelector('.hb .sm-toggle')`)) === true,
     );
     ok("no page errors on the home", problems.length === 0, problems[0]);
 
-    // A real click on a real column, the same call the hand pointer makes.
-    await evaluate(`document.querySelectorAll('.hm__col')[4].click()`);
+    // A real click on a real row, the same call the hand pointer makes.
+    await evaluate(`document.querySelectorAll('.hb-row')[4].click()`);
     await sleep(2500);
     ok(
-      "clicking a column opens that section",
+      "clicking a row opens that section",
       (await evaluate(`!!document.querySelector('.bc-back')`)) === true,
     );
 

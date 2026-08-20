@@ -16,10 +16,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const [url, out, waitArg, scrollArg] = process.argv.slice(2);
+const [url, out, waitArg, scrollArg, sizeArg] = process.argv.slice(2);
 if (!url || !out) throw new Error("usage: shoot.mjs <url> <out.png> [waitMs] [scrollY]");
 const waitMs = Number(waitArg ?? 9000);
 const scrollY = Number(scrollArg ?? 0);
+// A layout that only holds at one window size is not a layout. `1920x1080` etc.
+const size = (sizeArg ?? "1600,900").replace("x", ",");
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -32,7 +34,7 @@ async function main() {
       "--headless=new",
       `--remote-debugging-port=${port}`,
       `--user-data-dir=${profile}`,
-      "--window-size=1600,900",
+      `--window-size=${size}`,
       "--hide-scrollbars",
       "--no-first-run",
       "--enable-unsafe-swiftshader",

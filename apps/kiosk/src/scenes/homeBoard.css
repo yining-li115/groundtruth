@@ -1,0 +1,316 @@
+/* The home board — the supervisor's reference composition, rebuilt on tokens.
+   Every colour here is a token (CLAUDE.md rule 1); the two grounds differ because the right
+   column carries `data-theme="dark"`, not because anything is hard-coded. */
+
+/*
+ * A real grid, not absolutely-placed blocks.
+ *
+ * An early version pinned each piece to a corner with viewport units, which held at exactly
+ * the window it was tuned in and fell apart everywhere else. Columns and percentages cannot
+ * do that. Type sizes are `min(vh, vw)` pairs so a wide-and-short window shrinks the type
+ * instead of pushing the five menu rows off the bottom edge.
+ */
+.hb {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  /* 60.6 / 39.4 — the reference's split. */
+  grid-template-columns: minmax(0, 1.538fr) minmax(18rem, 1fr);
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+
+  --hb-pad-x: 5.7%;
+  --hb-hair: 1px;
+}
+
+/* ---------- left: who this is, what they claim, and the instrument ---------- */
+
+.hb-left {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 6vh var(--hb-pad-x) 7vh;
+  min-width: 0;
+  min-height: 0;
+  background: var(--gt-bg);
+  /* The picture is anchored past the panel's right edge so the terrain runs to it; without
+     this the overflow would be painted over the dark column, where multiply has no light
+     ground to disappear into and the render's white background becomes a visible slab. */
+  overflow: hidden;
+  /* The picture below multiplies against THIS ground and nothing further back. */
+  isolation: isolate;
+}
+
+/*
+ * The instrument. Not a cut-out: the render's background was flattened to white, so
+ * multiplying it into the light ground is what makes its edges disappear — and it keeps the
+ * soft contact shadow and the translucent terrain sheets that an alpha mask would have eaten.
+ *
+ * Bounded by the panel in both axes, so no window size can push it off an edge, and anchored
+ * to the right so the terrain runs to the panel's edge the way the reference does.
+ */
+.hb-shot {
+  position: absolute;
+  /* Anchored to the BOTTOM, not centred: the terrain is ground, and ground sits on the floor
+     of the panel. Centring it left the type and the picture sharing one band across the middle
+     and the bottom third empty. */
+  right: -10%;
+  bottom: 0;
+  /* The render is used WHOLE — its own transparent margin is part of the framing, so the box
+     is deliberately wider than the panel and the edges run off it rather than being cut. */
+  width: 118%;
+  height: auto;
+  /* Stretched and flattened a touch: the plane reads as running further into the distance,
+     and it stays low instead of growing back up into the headline. */
+  transform: scaleX(1.08) scaleY(0.9);
+  transform-origin: right bottom;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* With the instrument back in the frame the picture is twice as tall for the same width, so
+   it needs its own box — vertically centred and sized to keep the instrument clear of the
+   headline, and none of the terrain-only anchoring applies. */
+.hb-shot[data-shot="angle"] {
+  right: -3%;
+  top: 56%;
+  bottom: auto;
+  width: 56%;
+  max-height: 76%;
+  object-fit: contain;
+  object-position: right center;
+  transform: translateY(-50%);
+  /* That render has no alpha — its white ground is removed by multiplying it into the panel
+     (the terrain-only one is a real cut-out and needs no such trick). */
+  mix-blend-mode: multiply;
+}
+
+.hb-brand,
+.hb-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.hb-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  align-self: start;
+}
+.hb-brand__text {
+  display: flex;
+  flex-direction: column;
+  font-size: min(1.25vh, 0.75vw);
+  line-height: 1.32;
+  color: var(--gt-text-secondary);
+}
+.hb-brand__text b {
+  color: var(--gt-text-primary);
+}
+.hb-brand svg {
+  width: min(9.3vh, 5.4vw);
+  height: auto;
+}
+
+/* The claim sits in the upper half, clear of the terrain rather than centred against it.
+   Centring put the blurb's last line right where the picture's left slope rises, so the two
+   were reading through each other; measuring down from the brand instead keeps that gap at
+   every window shape. */
+.hb-copy {
+  align-self: start;
+  margin-top: min(13vh, 7.5vw);
+  min-width: 0;
+}
+
+.hb-headline {
+  margin: min(2.6vh, 1.5vw) 0 0;
+  font-size: min(7vh, 3.95vw);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+/* The one coloured phrase on the page: what the group actually claims to do. */
+.hb-headline em {
+  font-style: normal;
+  color: var(--gt-accent);
+}
+
+.hb-blurb {
+  margin: min(3.4vh, 2vw) 0 0;
+  max-width: 35%;
+  font-size: min(1.65vh, 0.95vw);
+  line-height: 1.55;
+  color: var(--gt-text-secondary);
+}
+
+/* ---------- right: the way in, as a dark board ---------- */
+
+/*
+ * Its own theme rather than its own colours: `data-theme="dark"` re-points the same token
+ * names at the dark set, so the black ground, the lifted card and the white type are all
+ * still tokens (design-system §5).
+ */
+.hb-menu {
+  display: flex;
+  min-width: 0;
+  padding: 7.6vh 4.2% 5.6vh 2.9%;
+  background: var(--gt-bg);
+}
+
+.hb-menu__card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 0.9rem;
+  background: var(--gt-surface);
+  /* The card lifts off the black by a hairline, not by a shadow — a shadow on true black is
+     invisible behind glass. */
+  border: var(--hb-hair) solid color-mix(in srgb, var(--gt-border) 45%, transparent);
+}
+
+.hb-row {
+  position: relative;
+  flex: 1 1 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: min(3.4vh, 2vw);
+  padding: 0 min(5.6vh, 3.2vw) 0 min(3vh, 1.7vw);
+  border: 0;
+  background: none;
+  color: var(--gt-text-primary);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  isolation: isolate;
+}
+/* Hairlines BETWEEN rows only — a rule under the last one would cut the card in half. */
+.hb-row + .hb-row::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--hb-hair);
+  background: color-mix(in srgb, var(--gt-border) 45%, transparent);
+}
+
+/*
+ * Selection arrives rather than fades: a block wipes in from the left and the type turns
+ * white on top of it. The block is the full row — the largest target the column can give a
+ * hand — and it keeps its own edges, so the boundary under a resting cursor never moves.
+ */
+.hb-row::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid color-mix(in srgb, var(--gt-brand-white) 55%, transparent);
+  border-radius: 0.8rem;
+  background: linear-gradient(
+    100deg,
+    var(--gt-accent),
+    color-mix(in srgb, var(--gt-accent) 42%, var(--gt-brand-black))
+  );
+  box-shadow: 0 0 2.5vh color-mix(in srgb, var(--gt-accent) 55%, transparent);
+  opacity: 0;
+  transform: scaleX(0.96);
+  transform-origin: left center;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+.hb-row.is-active::before,
+.hb-row:hover::before,
+.hb-row.gt-hover::before {
+  opacity: 1;
+  transform: scaleX(1);
+}
+/* An active row owns its edges: it hides the hairline it would otherwise sit under. */
+.hb-row.is-active::after,
+.hb-row.is-active + .hb-row::after,
+.hb-row:hover::after,
+.hb-row:hover + .hb-row::after {
+  opacity: 0;
+}
+
+.hb-row__n {
+  font-size: min(1.35vh, 0.78vw);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  color: var(--gt-gray-50);
+  transition: color 0.28s ease 0.06s;
+}
+.hb-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32em;
+  min-width: 0;
+}
+.hb-row__t {
+  font-size: min(4.6vh, 2.6vw);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--gt-gray-50);
+  transition: color 0.28s ease 0.06s;
+}
+.hb-row__sub {
+  font-size: min(1.3vh, 0.75vw);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gt-gray-50) 80%, transparent);
+  transition: color 0.28s ease 0.06s;
+}
+
+.hb-row.is-active .hb-row__t,
+.hb-row:hover .hb-row__t,
+.hb-row.gt-hover .hb-row__t,
+.hb-row.is-active .hb-row__n,
+.hb-row:hover .hb-row__n,
+.hb-row.gt-hover .hb-row__n,
+.hb-row.is-active .hb-row__sub,
+.hb-row:hover .hb-row__sub,
+.hb-row.gt-hover .hb-row__sub {
+  color: var(--gt-brand-white);
+}
+
+/* The arrow every row carries: it says the row leads somewhere, which a word alone does not.
+   It sits on the row's centre line, not below it — an arrow floating between two rows reads
+   as belonging to neither. */
+.hb-row__go {
+  display: grid;
+  place-items: center;
+  width: min(7.2vh, 4.2vw);
+  aspect-ratio: 1;
+  border: var(--hb-hair) solid color-mix(in srgb, var(--gt-gray-50) 70%, transparent);
+  border-radius: 50%;
+  color: var(--gt-gray-50);
+  font-size: min(2.2vh, 1.3vw);
+  transition:
+    color 0.28s ease,
+    border-color 0.28s ease,
+    transform 0.28s ease;
+}
+.hb-row.is-active .hb-row__go,
+.hb-row:hover .hb-row__go,
+.hb-row.gt-hover .hb-row__go {
+  color: var(--gt-brand-white);
+  border-color: var(--gt-brand-white);
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-row::before,
+  .hb-row__n,
+  .hb-row__t,
+  .hb-row__sub,
+  .hb-row__go {
+    transition: none;
+  }
+}

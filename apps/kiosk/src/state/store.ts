@@ -13,12 +13,14 @@ export type View =
   | "teaching";
 
 /** Home-page designs, switchable live (a debug tab on each).
- *  "menu"    = the sections themselves as full-height colour columns beside the slogan.
- *              THE DEFAULT, and the one built for hand control: no scroll to reach a
- *              destination, no drawer to open first, and targets a hand cannot miss.
+ *  "board"   = THE DEFAULT: the light claim + terrain on the left, the five destinations as a
+ *              dark board on the right (`scenes/HomeBoard`). Built for hand control like the
+ *              colour bands were — full-width rows, no scroll, no drawer — but it lets the
+ *              group say who it is without the menu shouting over it.
+ *  "menu"    = the previous default: the sections as full-height colour columns.
  *  "classic" = the old point-cloud hero + Spotlight/News scroll feed.
  *  "fly"     = the campus-splat fly-through story. */
-export type HomeVariant = "menu" | "classic" | "fly";
+export type HomeVariant = "board" | "menu" | "classic" | "fly";
 
 interface KioskState {
   /** Socket connected to the relay. */
@@ -67,11 +69,11 @@ const initialView = ((): View => {
   return valid.includes(v as View) ? (v as View) : "home";
 })();
 
-/** Optional deep-link: `?home=classic` / `?home=fly` open the older home designs. */
+/** Optional deep-link: `?home=menu` / `?home=classic` / `?home=fly` open the older designs. */
 const initialHomeVariant: HomeVariant = ((): HomeVariant => {
-  if (typeof window === "undefined") return "menu";
+  if (typeof window === "undefined") return "board";
   const v = new URLSearchParams(window.location.search).get("home");
-  return v === "classic" || v === "fly" ? v : "menu";
+  return v === "menu" || v === "classic" || v === "fly" ? v : "board";
 })();
 
 /**

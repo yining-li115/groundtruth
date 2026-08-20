@@ -71,6 +71,15 @@ This is the project's only make-or-break risk. Prove it first.
       corner "MENU" button → side drawer with the four sections), not a horizontal row —
       see §6. The central area carries the **point-cloud hero** (next item), not a
       placeholder.
+- [x] **Home, current** — `scenes/HomeBoard` (`?home=board`, the DEFAULT since Aug 2026).
+      Two grounds: the light page on the left (brand block, the claim, and the terrain render
+      used whole and anchored to the floor), the five destinations on the right as a dark
+      board of five equal rows, the selected one a block of `brand.electric` behind the word.
+      It supersedes the five colour bands (`?home=menu`), which stay switchable along with
+      `?home=classic` and `?home=fly`. Rows are ~17% of screen height each — the biggest
+      target the layout can give an arm — and their edges never move on hover. Verified by
+      `node scripts/usertest/home-board.mjs` (75-point coverage grid, both click postures,
+      seam agreement, left-column inertness); design preview at `/?exp=home2`.
 - [ ] Idle showreel as its own auto-playing standby screen (independent of home; may
       reuse the same content JSON as source material) — `docs/architecture.md` §6.
 - [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`. (NOT done yet:

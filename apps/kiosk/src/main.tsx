@@ -108,6 +108,11 @@ const HandLabExperiment = lazy(() =>
     default: m.HandLabExperiment,
   })),
 );
+// The home board lives in `scenes/` now that it IS the home; this keeps the design preview
+// URL it was built under working, pointed at the same component the app renders.
+const Home2Experiment = lazy(() =>
+  import("./scenes/HomeBoard").then((m) => ({ default: m.HomeBoard })),
+);
 const PointerExperiment = lazy(() =>
   import("./experiments/pointer/PointerExperiment").then((m) => ({
     default: m.PointerExperiment,
@@ -162,6 +167,8 @@ const experiment =
     <HandLabExperiment />
   ) : exp === "pointer" ? (
     <PointerExperiment />
+  ) : exp === "home2" ? (
+    <Home2Experiment />
   ) : null;
 
 createRoot(root).render(
