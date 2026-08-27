@@ -8,6 +8,7 @@ import {
   PinchDetector,
   confidence,
   fallbackBox,
+  MIN_PALM_PX,
   interactionBox,
   mapToBox,
   palmCenter,
@@ -17,7 +18,10 @@ import {
   type InteractionBox,
 } from "./calibration";
 import { DEFAULT_ONE_EURO, OneEuroPoint, type OneEuroConfig } from "./oneEuro";
+import { NO_FEATURES, pinchFeatures, type PinchFeatures } from "./features";
+import { noteReject, type GesturePhase, type RejectReason } from "./trace";
 import { SIM_ASPECT, activeSim, simFrame } from "./handSim";
+import { visionLog } from "./visionLog";
 
 /**
  * Hand → cursor. The pointing half of the touchless kiosk.
@@ -175,6 +179,54 @@ export interface PointerState {
    * instance still holding the camera) looks exactly like that.
    */
   fps: number;
+
+  // --- AUDIT FIELDS. Written every frame, read by nothing in production. -------------------
+  //
+  // These exist because the pinch fails silently and everything below this line is an attempt
+  // to make one specific failure distinguishable from the other eight. Adding them changes no
+  // decision: every value here is derived from state the pointer already computed.
+
+  /**
+   * The frame's TRUE pixel size, straight from the camera. NaN until a real frame arrives.
+   * Every pixel figure in `features` is only as honest as this pair.
+   */
+  frame: { w: number; h: number };
+  /**
+   * Landmarks arrived this frame. Explicit rather than inferred from a feature being finite —
+   * the HUD's first version asked "is the pixel aperture a number?", which is also false when
+   * the frame size is unknown, and so reported "no hand" beside "hand frames 100%".
+   */
+  handSeen: boolean;
+  /** Every candidate pinch feature, side by side on this frame. See `features.ts`. */
+  features: PinchFeatures;
+  /** Palm width in ACTUAL camera pixels — the optics figure `confidence` should have used. */
+  palmPx: number;
+  /** Where the gesture state machine is, named. */
+  phase: GesturePhase;
+  /** The raw posture, BEFORE the 350ms debounce — what the sensor said, before policy. */
+  rawHeld: boolean;
+  /** How long the current raw posture has been held, ms. 0 when there is none. */
+  gestureMs: number;
+  /** Cursor speed, in screen fractions per second. Drives the drag/tap confusion. */
+  velocity: number;
+  /** Why no click came out of THIS frame, at the acquisition/recognition layers. */
+  reject: RejectReason | null;
+  /**
+   * Running totals, kept so the three recall figures can be read straight off the state:
+   * hand acquisition, pinch given a hand, click given a pinch.
+   */
+  counts: {
+    frames: number;
+    handFrames: number;
+    /** raw posture latches (the sensor said "closed") */
+    rawLatches: number;
+    /** ...that survived the debounce and became a real press */
+    presses: number;
+    /** presses that ended by the hand vanishing rather than opening */
+    lostReleases: number;
+    /** presses force-released as a mis-read */
+    stuckReleases: number;
+  };
 }
 
 function blankState(): PointerState {
@@ -198,6 +250,23 @@ function blankState(): PointerState {
     hands: [],
     ratio: Number.NaN,
     fps: 0,
+    frame: { w: Number.NaN, h: Number.NaN },
+    handSeen: false,
+    features: NO_FEATURES,
+    palmPx: Number.NaN,
+    phase: "IDLE",
+    rawHeld: false,
+    gestureMs: 0,
+    velocity: 0,
+    reject: null,
+    counts: {
+      frames: 0,
+      handFrames: 0,
+      rawLatches: 0,
+      presses: 0,
+      lostReleases: 0,
+      stuckReleases: 0,
+    },
   };
 }
 
@@ -233,6 +302,10 @@ export class HandPointer {
   private rawSince = 0;
   /** a click was force-released; ignore the posture until it ends */
   private suppressed = false;
+  /** audit only: previous frame's clock, for a velocity that is per-second not per-frame */
+  private lastAt = 0;
+  /** audit only: the last reason reported, so a steady state is not logged sixty times a second */
+  private lastReject: RejectReason | null = null;
 
   constructor(cfg: PointerConfig = DEFAULT_POINTER) {
     this.cfg = { ...cfg, oneEuro: { ...cfg.oneEuro }, box: { ...cfg.box } };
@@ -302,7 +375,26 @@ export class HandPointer {
     s.faceHeld = this.face.held;
     s.hands = res.hands.map((h) => h.landmarks);
     s.ratio = ratio;
+    // AUDIT FINDING (do not silently fix — see docs/vision-audit.md §2): the 1280 here is a
+    // HARD-CODED ASSUMPTION about the camera, not a measurement. `getUserMedia` asks for an
+    // *ideal* 1280×720 and the browser may hand back 640×480 without complaint, in which case
+    // every palm-pixel figure this confidence is judged on is twice the truth — so "too far"
+    // and "hand too small" can never fire on the very camera that most needs them to. The real
+    // number is now measured into `s.palmPx` below; this line is left exactly as it shipped so
+    // that nothing about the interaction moves before the measurement run.
     s.conf = confidence(face, box, hand ? palmNorm * 1280 : Number.NaN);
+
+    // --- audit instrumentation: derived only, decides nothing -----------------------------
+    const frameW = res.frame?.w ?? Number.NaN;
+    const frameH = res.frame?.h ?? Number.NaN;
+    s.frame = { w: frameW, h: frameH };
+    s.handSeen = !!hand;
+    s.features = pinchFeatures(hand, frameW, frameH);
+    s.palmPx = palmNorm * frameW;
+    s.counts.frames += 1;
+    if (hand) s.counts.handFrames += 1;
+    const dtS = this.lastAt ? Math.max(1e-3, (now - this.lastAt) / 1000) : 0;
+    this.lastAt = now;
 
     // --- presence, with hysteresis on both edges so a dropped frame is not an exit ---
     if (hand && palm && box) {
@@ -335,6 +427,18 @@ export class HandPointer {
     // Debounced: a posture has to survive PRESS_DEBOUNCE_MS before the rest of the system
     // hears about it at all. See the constant for what happened without this.
     const rawHeld = pinching || fisting;
+    // Audit: a raw latch that never becomes a press is the single most informative event in
+    // the whole pipeline — it means the CAMERA saw the pinch and the POLICY threw it away.
+    if (rawHeld && !s.rawHeld) s.counts.rawLatches += 1;
+    // ...and its opposite: the raw posture ending while the debounce was still filling.
+    if (!rawHeld && s.rawHeld && s.pressProgress > 0 && !s.pinched) {
+      noteReject(
+        "PINCH_TOO_SHORT",
+        `held ${(now - this.rawSince).toFixed(0)}ms of ${PRESS_DEBOUNCE_MS}ms`,
+        now,
+      );
+    }
+    s.rawHeld = rawHeld;
     if (!rawHeld) {
       this.rawSince = 0;
       this.suppressed = false; // the posture ended; a new one may start
@@ -355,10 +459,13 @@ export class HandPointer {
       // keeps it down until the hand genuinely opens.
       this.suppressed = true;
       s.pinched = false;
+      s.counts.stuckReleases += 1;
+      noteReject("PINCH_HELD_TOO_LONG", `${(now - this.rawSince).toFixed(0)}ms`, now);
     }
     s.pressVia = s.pinched ? (pinching ? "pinch" : "fist") : null;
     if (s.pinched && !wasPinched) {
       s.pressed = true;
+      s.counts.presses += 1;
       // Never reach back past the moment the hand settled. The lookback exists to undo the
       // drift a pinch causes, but applied blindly it also reaches into the travel that brought
       // the cursor here — so pinching the instant you arrive delivered the click to where you
@@ -376,6 +483,10 @@ export class HandPointer {
       s.released = true;
       // No hand this frame means the fingers never opened — the tracking simply stopped.
       s.releasedByLoss = !hand;
+      if (s.releasedByLoss) {
+        s.counts.lostReleases += 1;
+        noteReject("PINCH_RELEASE_NOT_FOUND", "hand lost mid-press", now);
+      }
     }
 
     // --- position ---
@@ -391,6 +502,7 @@ export class HandPointer {
       // Travelling fast means the visitor is still moving toward something; the moment that
       // stops is the moment their aim exists.
       const moved = Math.hypot(f.x - s.liveX, f.y - s.liveY);
+      if (dtS) s.velocity = moved / dtS;
       if (moved > 0.004) this.settledAt = now;
       s.liveX = f.x;
       s.liveY = f.y;
@@ -434,6 +546,56 @@ export class HandPointer {
     } else {
       s.dwell = 0;
     }
+
+    // --- audit: name the phase, and say why no click came out of THIS frame ---------------
+    //
+    // The order below is a claim about causation, not about taste: report the most UPSTREAM
+    // thing that is wrong. A hand that spans forty pixels will also read as "too open", and
+    // saying so would send the next person to tune a threshold when the answer is a lens.
+    const gates = this.pinch.gates;
+    s.gestureMs = this.rawSince ? now - this.rawSince : 0;
+    s.phase = this.suppressed
+      ? "SUPPRESSED"
+      : s.pinched
+        ? "HELD"
+        : rawHeld
+          ? "ARMING"
+          : this.pinch.strength(ratio) > 0.15
+            ? "CLOSING"
+            : "IDLE";
+
+    let reject: RejectReason | null = null;
+    let detail = "";
+    if (!hand) {
+      reject = "HAND_NOT_FOUND";
+    } else if (!box) {
+      reject = "NO_INTERACTION_BOX";
+      detail = "no face and no usable palm scale";
+    } else if (this.suppressed) {
+      reject = "PINCH_HELD_TOO_LONG";
+    } else if (!s.pinched && !rawHeld) {
+      // The true pixel figure, not the one `confidence` was given — see the note above.
+      if (Number.isFinite(s.palmPx) && s.palmPx < MIN_PALM_PX) {
+        reject = "HAND_TOO_SMALL";
+        detail = `palm ${s.palmPx.toFixed(0)}px < ${MIN_PALM_PX}px floor`;
+      } else if (gates.settled <= gates.settleFrames) {
+        reject = "LANDMARK_UNSTABLE";
+        detail = `settling ${gates.settled}/${gates.settleFrames} frames after a tracking gap`;
+      } else if (s.phase === "CLOSING" && Number.isFinite(ratio) && ratio >= this.cfg.pinchOn) {
+        // Gated on CLOSING deliberately. A hand resting open is not being refused, it is not
+        // asking for anything — and counting every idle frame as a rejection would swamp the
+        // taxonomy with the one event that carries no information, in the HUD and in the
+        // recorded metrics alike.
+        reject = "PINCH_SCORE_ABOVE_THRESHOLD";
+        detail = `ratio ${ratio.toFixed(3)} ≥ on ${this.cfg.pinchOn}, closed ${(
+          this.pinch.strength(ratio) * 100
+        ).toFixed(0)}% of the way`;
+      }
+    }
+    s.reject = reject;
+    // Only on a change: a steady open hand is not sixty rejections a second, it is one.
+    if (reject && reject !== this.lastReject) noteReject(reject, detail, now);
+    this.lastReject = reject;
 
     return s;
   }
@@ -576,11 +738,14 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
         const sim = activeSim();
         if (!sim) return;
         const s = pointer.update(simFrame(sim), SIM_ASPECT, performance.now());
+        visionLog.fps = s.fps;
+        visionLog.tick(s);
         setPresent((p) => (p === s.present ? p : s.present));
       };
       if (typeof window !== "undefined") {
         window.__handState = () => ({ ...pointer.state, box: undefined, hands: undefined });
       }
+      visionLog.start();
       raf = requestAnimationFrame(simTick);
       return () => {
         stopped = true;
@@ -607,6 +772,9 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
         await engine.load();
         if (stopped) return;
         setStatus("running");
+        // The recorder needs the element to read the track's real settings off at the end.
+        visionLog.video = video;
+        visionLog.start();
 
         const tick = () => {
           if (stopped) return;
@@ -619,6 +787,10 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
           const aspect = video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 16 / 9;
           const res = engine.process(video, ts);
           const s = pointer.update(res, aspect, performance.now());
+          // Sampled HERE rather than from the interaction loop, so the log has exactly one row
+          // per vision frame — the denominator of every recall figure in the audit.
+          visionLog.fps = s.fps;
+          visionLog.tick(s);
           setPresent((p) => (p === s.present ? p : s.present));
         };
         raf = requestAnimationFrame(tick);

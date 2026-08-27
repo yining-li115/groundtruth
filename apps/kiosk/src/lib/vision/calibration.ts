@@ -306,7 +306,7 @@ export interface Confidence {
  * finger geometry a pinch is read from. Set from the measured working case: the pinch was
  * cleanly separable (d ≈ 42) with a palm spanning roughly a tenth of a 1280-wide frame.
  */
-const MIN_PALM_PX = 42;
+export const MIN_PALM_PX = 42;
 
 /**
  * How much of the frame the reach box may occupy before the visitor is simply too close.
@@ -438,6 +438,23 @@ export class PinchDetector {
 
   get pinched(): boolean {
     return this.on;
+  }
+
+  /**
+   * The gate state, for the audit HUD. READ-ONLY and behaviour-free.
+   *
+   * `settled` below `settleFrames` is a real, invisible refusal: for eight frames after the
+   * hand is reacquired no pinch can latch at all, however deliberate. That is roughly a
+   * quarter of a second, it happens every time tracking blinks, and until now nothing on the
+   * screen or in the logs said it was happening.
+   */
+  get gates(): { settled: number; settleFrames: number; missing: number; graceFrames: number } {
+    return {
+      settled: this.settled,
+      settleFrames: this.settleFrames,
+      missing: this.missing,
+      graceFrames: this.graceFrames,
+    };
   }
 
   /**

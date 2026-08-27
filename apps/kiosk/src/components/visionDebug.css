@@ -1,0 +1,71 @@
+/*
+ * The vision HUD. A DEV INSTRUMENT — it only exists with `?visionDebug=1` on the URL, and no
+ * visitor ever sees it, which is why it is allowed to look like a terminal rather than like
+ * the rest of the site. Colours still come from tokens (CLAUDE.md rule 1); the black scrim
+ * follows the same pattern as the existing `.gt-hand-diag` strip.
+ */
+
+.gt-vision-hud {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 9996;
+  margin: 0;
+  max-height: calc(100vh - 1.5rem);
+  overflow: hidden;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.78);
+  color: var(--gt-brand-white);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  white-space: pre;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.8);
+}
+
+/*
+ * The run prompt. Deliberately enormous: the person performing twenty pinches is two metres
+ * away and cannot read an 11px panel, and a cadence they have to guess at is a cadence that
+ * puts the attempt outside its own window.
+ */
+.gt-vision-cue {
+  position: fixed;
+  left: 50%;
+  bottom: 12vh;
+  transform: translateX(-50%);
+  z-index: 9996;
+  padding: 0.8rem 2rem;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.72);
+  color: var(--gt-brand-white);
+  font-family: var(--font-sans);
+  font-size: clamp(1.4rem, 3vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s linear;
+}
+
+.gt-vision-cue[data-on="true"] {
+  opacity: 1;
+}
+
+/* A bar underneath that drains across the attempt window, so the cadence is visible rather
+   than counted. Driven by `--gt-cue`, written from the loop. */
+.gt-vision-cue[data-on="true"]::after {
+  content: "";
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 0.45rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--gt-accent);
+  transform: scaleX(calc(1 - var(--gt-cue, 0)));
+  transform-origin: left center;
+}

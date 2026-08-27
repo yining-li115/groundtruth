@@ -113,6 +113,9 @@ const HandLabExperiment = lazy(() =>
 const Home2Experiment = lazy(() =>
   import("./scenes/HomeBoard").then((m) => ({ default: m.HomeBoard })),
 );
+const RoiExperiment = lazy(() =>
+  import("./experiments/roi/RoiExperiment").then((m) => ({ default: m.RoiExperiment })),
+);
 const PointerExperiment = lazy(() =>
   import("./experiments/pointer/PointerExperiment").then((m) => ({
     default: m.PointerExperiment,
@@ -167,6 +170,8 @@ const experiment =
     <HandLabExperiment />
   ) : exp === "pointer" ? (
     <PointerExperiment />
+  ) : exp === "roi" ? (
+    <RoiExperiment />
   ) : exp === "home2" ? (
     <Home2Experiment />
   ) : null;

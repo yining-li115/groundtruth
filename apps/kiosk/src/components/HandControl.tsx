@@ -4,6 +4,15 @@ import { flightInput, steer, stopFlight } from "../lib/vision/flightInput";
 import { setCursorPosition } from "../lib/cursorPosition";
 import { dragScrollVelocity, scrollableAt, scrollTarget } from "../lib/scroll";
 import { useKioskStore } from "../state/store";
+import {
+  VISION_TRACE,
+  describeElement,
+  interactionTrace,
+  noteAction,
+  noteReject,
+} from "../lib/vision/trace";
+import { visionLog } from "../lib/vision/visionLog";
+import { VisionDebug } from "./VisionDebug";
 import "./handControl.css";
 
 /**
@@ -113,6 +122,28 @@ export function HandControl() {
     const click = (x: number, y: number) => {
       // The cursor is pointer-events:none, so this reaches the UI beneath it.
       const el = document.elementFromPoint(x, y);
+      // AUDIT ONLY. A click that is dispatched onto nothing, or onto a plain div with no
+      // interactive ancestor, is a complete success by every measure inside the vision
+      // pipeline and a total failure from in front of the screen — the last place the chain
+      // can break, and the only one the pointer cannot see.
+      if (VISION_TRACE) {
+        // The verdict travels WITH the event. A click dispatched onto a non-interactive div is
+        // recorded either way; scoring it as a success would let the end-to-end figure count
+        // gestures the visitor experienced as nothing happening.
+        let verdict: "hit" | "inert" | "nothing";
+        if (!el) {
+          verdict = "nothing";
+          noteReject("NO_CLICK_TARGET", `${x.toFixed(0)},${y.toFixed(0)}`);
+        } else if (!el.closest(HOVERABLE)) {
+          verdict = "inert";
+          noteReject("CLICK_ON_INERT_TARGET", describeElement(el));
+        } else {
+          verdict = "hit";
+          interactionTrace.counts.clicks += 1;
+          noteAction(`click → ${describeElement(el.closest(HOVERABLE))}`);
+        }
+        visionLog.event("click", `${verdict} ${describeElement(el)}`);
+      }
       // A dispatched event rather than `el.click()`, because `click()` is a method on
       // HTMLElement and an SVG element is not one. Guarding on `instanceof HTMLElement` meant
       // every icon button drawn as SVG had a dead centre — the arrows on the publications
@@ -144,6 +175,10 @@ export function HandControl() {
       const nowMs = performance.now();
       const dt = Math.min(0.1, (nowMs - lastFrame) / 1000);
       lastFrame = nowMs;
+      if (VISION_TRACE) {
+        interactionTrace.velocity = s.velocity;
+        interactionTrace.gestureMs = s.gestureMs;
+      }
       const w = window.innerWidth;
       const h = window.innerHeight;
       const px = s.x * w;
@@ -243,6 +278,10 @@ export function HandControl() {
           // Sections that styled their own hover state keep using it.
           if (el.hasAttribute("data-hover")) el.classList.add("is-hover");
         };
+        if (VISION_TRACE) {
+          interactionTrace.hover = describeElement(hot ?? under);
+          interactionTrace.hoverInteractive = !!hot;
+        }
         if (hot !== hovered.current) {
           hovered.current?.classList.remove("is-hover", "gt-hover");
           if (hot) mark(hot);
@@ -277,13 +316,34 @@ export function HandControl() {
         canScroll =
           !!scrollEl || document.documentElement.scrollHeight > window.innerHeight + 8;
         dragging = false;
+        if (VISION_TRACE) {
+          interactionTrace.canScroll = canScroll;
+          interactionTrace.dragFrac = 0;
+          interactionTrace.dragPx = 0;
+          noteAction(`press via ${s.pressVia ?? "?"} at ${(s.x * w).toFixed(0)},${(s.y * h).toFixed(0)}`);
+          visionLog.event("press", s.pressVia ?? "?");
+        }
       } else if (s.pinched && pressAt && dragFrom) {
         // Drag detection runs everywhere, not only inside the site. It is what lets a press be
         // taken back: move away before letting go and it is not a tap. Gating this on being in
         // the site meant a press on the showreel could never be cancelled — grab Enter, change
         // your mind, move half a screen away, release, and you were in anyway.
         const moved = Math.hypot(s.liveX - dragFrom.x, s.liveY - dragFrom.y);
-        if (!dragging && moved > DRAG_START) dragging = true;
+        if (VISION_TRACE) {
+          interactionTrace.dragFrac = moved;
+          interactionTrace.dragPx = moved * Math.hypot(w, h);
+        }
+        if (!dragging && moved > DRAG_START) {
+          dragging = true;
+          if (VISION_TRACE) {
+            interactionTrace.counts.drags += 1;
+            // Crossing the threshold is not yet a lost click — `canScroll` decides that on
+            // release. Logged separately so "the hand wobbled" and "the wobble cost the
+            // click" never end up as the same number.
+            noteReject("RECLASSIFIED_AS_DRAG", `moved ${moved.toFixed(3)} > ${DRAG_START}`);
+            visionLog.event("drag", moved.toFixed(3));
+          }
+        }
         if (dragging && store.entered) {
           // Lean, don't drag: how far the hand has moved from where it grabbed sets a SPEED,
           // and the surface keeps going while it stays there. See `dragScrollVelocity`.
@@ -292,6 +352,17 @@ export function HandControl() {
           if (vx !== 0 || vy !== 0) scrollTarget(scrollEl, vx * dt, vy * dt);
         }
       } else if (s.released) {
+        if (VISION_TRACE) {
+          visionLog.event("release", s.releasedByLoss ? "by loss" : "opened");
+          if (pressAt && dragging && canScroll) {
+            noteReject(
+              "POINTER_MOTION_SUPPRESSED_CLICK",
+              `drag ${interactionTrace.dragFrac.toFixed(3)} over a scrollable surface`,
+            );
+          } else if (pressAt && s.releasedByLoss) {
+            noteReject("CLICK_SUPPRESSED", "released by hand loss");
+          }
+        }
         // A release caused by losing the hand is not a tap — see the note at the top.
         if (pressAt && !(dragging && canScroll) && !s.releasedByLoss) {
           click(pressAt.x * w, pressAt.y * h);
@@ -346,7 +417,10 @@ export function HandControl() {
       // --- dwell is a complete click on its own ---
       if (s.dwellFired) {
         const target = document.elementFromPoint(px, py);
-        if (target?.closest(HOVERABLE)) click(px, py);
+        if (target?.closest(HOVERABLE)) {
+          if (VISION_TRACE) interactionTrace.counts.dwellClicks += 1;
+          click(px, py);
+        }
       }
     };
 
@@ -372,6 +446,10 @@ export function HandControl() {
       </div>
 
       {import.meta.env.DEV ? <div ref={diagRef} className="gt-hand-diag" /> : null}
+
+      {/* The fault-isolation HUD. Renders nothing at all without `?visionDebug=1`, and works
+          in a production build too — the wall is where the measurements have to be taken. */}
+      <VisionDebug video={videoRef} pointer={pointer} />
 
       {status === "error" ? (
         <div className="gt-hand-error" role="status">

@@ -1,0 +1,87 @@
+/* An instrument page (/?exp=roi), never part of the site. Plain, legible, token-coloured. */
+.gt-roi {
+  min-height: 100vh;
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  background: var(--gt-bg);
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+}
+.gt-roi h1 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+.gt-roi__note {
+  max-width: 62ch;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--gt-text-secondary, inherit);
+  opacity: 0.85;
+}
+.gt-roi__stage {
+  position: relative;
+  width: min(640px, 100%);
+  margin: 1rem 0;
+  border: 1px solid var(--gt-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.gt-roi__cam,
+.gt-roi__overlay {
+  display: block;
+  width: 100%;
+  /* Mirrored for the operator only — the model is fed the raw, un-mirrored frame. */
+  transform: scaleX(-1);
+}
+.gt-roi__overlay {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+.gt-roi__bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+  font-size: 0.85rem;
+}
+.gt-roi__bar button {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 999px;
+  background: var(--gt-surface);
+  color: var(--gt-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.gt-roi__bar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.gt-roi__table {
+  margin: 1.5rem 0;
+}
+.gt-roi__table table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+}
+.gt-roi__table th,
+.gt-roi__table td {
+  padding: 0.4rem 1rem 0.4rem 0;
+  text-align: left;
+  border-bottom: 1px solid var(--gt-border);
+}
+.gt-roi__table tr[data-emphasis="true"] td {
+  font-weight: 700;
+  color: var(--gt-accent);
+}
+.gt-roi__hidden {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}

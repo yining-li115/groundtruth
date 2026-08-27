@@ -122,6 +122,16 @@ export interface VisionResult {
   /** every tracked hand this frame, up to two */
   hands: HandResult[];
   face: FaceResult | null;
+  /**
+   * The frame's TRUE pixel size, as the browser actually delivered it.
+   *
+   * Landmarks are normalised, which quietly hides the one number the kiosk's whole distance
+   * problem is about: how many pixels of hand there were. `getUserMedia` is asked for 1280×720
+   * and is free to hand back 640×480, and everything downstream would read identically — a
+   * palm at 0.1 of the frame is 128px or 64px depending on an answer nothing was checking.
+   * Carried here so no consumer has to assume a resolution (one of them was assuming 1280).
+   */
+  frame?: { w: number; h: number };
 }
 
 export class VisionEngine {
@@ -156,7 +166,12 @@ export class VisionEngine {
     const g: GestureRecognizerResult = this.gesture.recognizeForVideo(video, tsMs);
     const f: FaceDetectorResult = this.face.detectForVideo(video, tsMs);
     const hands = allHands(g);
-    return { hand: hands[0] ?? null, hands, face: largestFace(f, video) };
+    return {
+      hand: hands[0] ?? null,
+      hands,
+      face: largestFace(f, video),
+      frame: { w: video.videoWidth, h: video.videoHeight },
+    };
   }
 
   close(): void {
