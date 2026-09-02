@@ -1,7 +1,20 @@
 [
   {
+    "id": "active-aerial-search",
+    "title": "Active Aerial Search in Forests: Multi-UAV Next-Best-View Planning with Prior Scene Data",
+    "authors": [
+      "Strand, Sigrid Helene",
+      "Wiedemann, Thomas",
+      "Shutin, Dmitriy"
+    ],
+    "venue": "Preprint",
+    "year": 2026,
+    "type": "Preprint 2026",
+    "abstract": "Autonomous aerial search in dense forest environments remains challenging due to severe occlusion, limited sensor visibility, and uncertainty in prior scene models. This work presents a multi-Unmanned Aerial Vehicle (UAV) framework for active search that integrates visibility-driven Next Best View (NBV) planning with centralized camera pose allocation informed by prior 3D environmental data. The system adaptively selects camera poses that maximize new visibility in cluttered regions while distributing search effort efficiently across multiple agents. Field experiments in vegetated forests, searching for occluded objects, demonstrate that coordinated NBV planning substantially improves detection performance. Notably, the generated oblique camera poses enabled the detection of all hidden objects that otherwise are hidden for nadir views. These findings highlight the effectiveness of combining multi-agent coordination with visibility-aware NBV strategies, offering a scalable and robust approach for large-scale aerial search and challenging Search and Rescue (SaR) scenarios.",
+    "url": "https://elib.dlr.de/224154/1/Active_Aerial_Search_in_Forests__Multi_UAV_Next_Best_View_Planning_with_Prior_Scene_Data.pdf"
+  },
+  {
     "id": "conceptpose",
-    "type": "CVPR 2026",
     "title": "ConceptPose: Training-Free Zero-Shot Object Pose Estimation using Concept Vectors",
     "authors": [
       "Liming Kuang",
@@ -13,17 +26,105 @@
     ],
     "venue": "CVPR",
     "year": 2026,
-    "abstract": "Object pose estimation is a fundamental task in computer vision and robotics, yet most methods require extensive, dataset-specific training. Concurrently, large-scale vision language models show remarkable zero-shot capabilities. We bridge these two worlds by introducing ConceptPose, a framework for object pose estimation that is both training-free and model-free. ConceptPose leverages a vision-language model (VLM) to create open-vocabulary 3D concept maps, where each point is tagged with a concept vector derived from saliency maps. By establishing robust 3D-3D correspondences across concept maps, our approach allows precise estimation of 6DoF relative pose. Without any object- or dataset-specific training, it achieves state-of-the-art results on common zero-shot relative pose benchmarks, outperforming the strongest baseline by a relative 62% in average ADD(-S).",
+    "type": "CVPR 2026",
+    "abstract": "Object pose estimation is a fundamental task in computer vision and robotics, yet most methods require extensive, dataset-specific training. Concurrently, large-scale vision language models show remarkable zero-shot capabilities. In this work, we bridge these two worlds by introducing ConceptPose, a framework for object pose estimation that is both training-free and model-free. ConceptPose leverages a vision-language-model (VLM) to create open-vocabulary 3D concept maps, where each point is tagged with a concept vector derived from saliency maps. By establishing robust 3D-3D correspondences across concept maps, our approach allows precise estimation of 6DoF relative pose. Without any object or dataset-specific training, our approach achieves state-of-the-art results on common zero shot relative pose estimation benchmarks, outperforming the strongest baseline by a relative 62\\% in average ADD(-S) score, including methods that utilize extensive dataset-specific training.",
     "url": "https://stevenlk.xyz/conceptpose",
     "images": [
-      "/papers/conceptpose/teaser.jpg",
       "/papers/conceptpose/pipeline.jpg",
+      "/papers/conceptpose/teaser.jpg",
       "/papers/conceptpose/qualitative.jpg"
     ]
   },
   {
+    "id": "deworldsg",
+    "title": "DeWorldSG: Depth-Aware 3D Semantic Scene Graph Generation via World-Model Priors",
+    "authors": [
+      "Seok-Young Kim",
+      "Abdelrahman Elskhawy",
+      "Taewook Ha",
+      "Dooyoung Kim",
+      "Eunjae Shin",
+      "Benjamin Busam",
+      "Woontack Woo"
+    ],
+    "venue": "ECCV",
+    "year": 2026,
+    "type": "ECCV 2026",
+    "abstract": "We present DeWorldSG, a novel framework that generates spatio-temporally robust 3D Semantic Scene Graphs from RGB-D sequences. Existing methods often struggle to construct reliable 3D scene graphs due to unstable 3D object representations and missing relations caused by frame-wise inference. DeWorldSG addresses these issues by estimating instance-level geometric 3D Gaussian distributions through depth-guided filtering and representing each object as a probabilistic 3D node rather than a single projected point. To mitigate relational sparsity from frame-wise inference, our framework further aggregates spatiotemporal evidence across object pairs and refines relations using contextual priors derived from a world model (V-JEPA 2). Experiments on the 3DSSG and ReplicaSSG datasets demonstrate state-of-the-art (SoTA) performance in both object and predicate prediction, while producing temporally consistent scene structures. In particular, our method improves triplet recall by 77.4% and predicate recall by 23.2% over prior SoTA approaches, making it suitable for robotic manipulation and AR applications. Our code and models are open-sourced.",
+    "url": "https://arxiv.org/abs/2607.00889",
+    "images": [
+      "/papers/deworldsg/2-main.jpg",
+      "/papers/deworldsg/teaser-eccv.jpg",
+      "/papers/deworldsg/result.jpg"
+    ]
+  },
+  {
+    "id": "dynsup",
+    "title": "DynSUP: Dynamic Gaussian Splatting from an Unposed Image Pair",
+    "authors": [
+      "Weihang Li",
+      "Weirong Chen",
+      "Shenhan Qian",
+      "Jiajie Chen",
+      "Daniel Cremers",
+      "Haoang Li"
+    ],
+    "venue": "IEEE TIP",
+    "year": 2026,
+    "type": "IEEE TIP 2026",
+    "abstract": "Recent advances in 3D Gaussian Splatting have shown promising results. Existing methods typically assume static scenes and/or multiple images with prior poses. Dynamics, sparse views, and unknown poses significantly increase the problem complexity due to insufficient geometric constraints. To overcome this challenge, we propose a method that can use only two images without prior poses to fit Gaussians in dynamic environments. To achieve this, we introduce two technical contributions. First, we propose an object-level two-view bundle adjustment. This strategy decomposes dynamic scenes into piece-wise rigid components, and jointly estimates the camera pose and motions of dynamic objects. Second, we design an SE(3) field-driven Gaussian training method. It enables fine-grained motion modeling through learnable per-Gaussian transformations. Our method leads to high-fidelity novel view synthesis of dynamic scenes while accurately preserving temporal consistency and object motion. Experiments on both synthetic and real-world datasets demonstrate that our method significantly outperforms state-of-the-art approaches designed for the cases of static environments, multiple images, and/or known poses. Our project page is available at https://colin-de.github.io/DynSUP/.",
+    "url": "https://arxiv.org/abs/2412.00851",
+    "images": [
+      "/papers/dynsup/overview.jpg",
+      "/papers/dynsup/teaser.jpg",
+      "/papers/dynsup/kubric-comp.jpg"
+    ]
+  },
+  {
+    "id": "flex",
+    "title": "FLex: Joint Pose and Dynamic Radiance Fields Optimization for Stereo Endoscopic Videos",
+    "authors": [
+      "Florian Philipp Stilz",
+      "Mert Asim Karaoglu",
+      "Felix Tristram",
+      "Nassir Navab",
+      "Benjamin Busam",
+      "Alexander Ladikos"
+    ],
+    "venue": "IJCARS",
+    "year": 2026,
+    "type": "IJCARS 2026",
+    "abstract": "Reconstruction of endoscopic scenes is an important asset for various medical applications, from post-surgery analysis to educational training. Neural rendering has recently shown promising results in endoscopic reconstruction with deforming tissue. However, the setup has been restricted to a static endoscope, limited deformation, or required an external tracking device to retrieve camera pose information of the endoscopic camera. With FLex we adress the challenging setup of a moving endoscope within a highly dynamic environment of deforming tissue. We propose an implicit scene separation into multiple overlapping 4D neural radiance fields (NeRFs) and a progressive optimization scheme jointly optimizing for reconstruction and camera poses from scratch. This improves the ease-of-use and allows to scale reconstruction capabilities in time to process surgical videos of 5,000 frames and more; an improvement of more than ten times compared to the state of the art while being agnostic to external tracking information. Extensive evaluations on the StereoMIS dataset show that FLex significantly improves the quality of novel view synthesis while maintaining competitive pose accuracy.",
+    "url": "https://arxiv.org/abs/2403.12198",
+    "images": [
+      "/papers/flex/architecture.jpg",
+      "/papers/flex/qual-fig.jpg",
+      "/papers/flex/summary.jpg"
+    ]
+  },
+  {
+    "id": "flose",
+    "title": "Generative 6D Pose Estimation via Conditional Flow Matching",
+    "authors": [
+      "Amir Hamza",
+      "Davide Boscaini",
+      "Weihang Li",
+      "Benjamin Busam",
+      "Fabio Poiesi"
+    ],
+    "venue": "arXiv",
+    "year": 2026,
+    "type": "arXiv preprint 2026",
+    "abstract": "Existing methods for instance-level 6D pose estimation typically rely on neural networks that either directly regress the pose in $\\mathrm{SE}(3)$ or estimate it indirectly via local feature matching. The former struggle with object symmetries, while the latter fail in the absence of distinctive local features. To overcome these limitations, we propose a novel formulation of 6D pose estimation as a conditional flow matching problem in $\\mathbb{R}^3$. We introduce Flose, a generative method that infers object poses via a denoising process conditioned on local features. While prior approaches based on conditional flow matching perform denoising solely based on geometric guidance, Flose integrates appearance-based semantic features to mitigate ambiguities caused by object symmetries. We further incorporate RANSAC-based registration to handle outliers. We validate Flose on five datasets from the established BOP benchmark. Flose outperforms prior methods with an average improvement of +4.5 Average Recall. Project Website : https://tev-fbk.github.io/Flose/",
+    "url": "https://tev-fbk.github.io/Flose/",
+    "images": [
+      "/papers/flose/diagram-crop-final.jpg",
+      "/papers/flose/lmo-ape-000788.jpg",
+      "/papers/flose/lmo-water-can-000650.jpg"
+    ]
+  },
+  {
     "id": "node-rf",
-    "type": "CVPR 2026",
     "title": "Node-RF: Learning Generalized Continuous Space-Time Scene Dynamics with Neural ODE-based NeRFs",
     "authors": [
       "Hiran Sarkar",
@@ -33,16 +134,36 @@
     ],
     "venue": "CVPR",
     "year": 2026,
-    "abstract": "Predicting scene dynamics from visual observations is challenging. Existing methods capture dynamics only within observed boundaries, failing to extrapolate far beyond the training sequence. Node-RF (Neural ODE-based NeRF) overcomes this by integrating Neural Ordinary Differential Equations (NODEs) with dynamic Neural Radiance Fields (NeRFs), enabling a continuous-time, spatiotemporal representation that generalizes beyond observed trajectories at constant memory cost. From visual input, Node-RF learns an implicit scene state that evolves over time via an ODE solver, propagating feature embeddings via differential calculus. A NeRF-based renderer interprets the embeddings to synthesize arbitrary views for long-range extrapolation. Training on multiple motion sequences with shared dynamics enables generalization to unseen conditions.",
-    "url": "https://arxiv.org/abs/2603.12078",
+    "type": "CVPR 2026",
+    "abstract": "Predicting scene dynamics from visual observations is challenging. Existing methods capture dynamics only within observed boundaries failing to extrapolate far beyond the training sequence. Node-RF (Neural ODE-based NeRF) overcomes this limitation by integrating Neural Ordinary Differential Equations (NODEs) with dynamic Neural Radiance Fields (NeRFs), enabling a continuous-time, spatiotemporal representation that generalizes beyond observed trajectories at constant memory cost. From visual input, Node-RF learns an implicit scene state that evolves over time via an ODE solver, propagating feature embeddings via differential calculus. A NeRF-based renderer interprets calculated embeddings to synthesize arbitrary views for long-range extrapolation. Training on multiple motion sequences with shared dynamics allows for generalization to unseen conditions. Our experiments demonstrate that Node-RF can characterize abstract system behavior without explicit model to identify critical points for future predictions.",
+    "url": "https://around-star.github.io/node-rf/",
     "images": [
       "/papers/node-rf/architecture.png",
       "/papers/node-rf/result.png"
     ]
   },
   {
+    "id": "odeform",
+    "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
+    "authors": [
+      "Yordanka Velikova",
+      "Mahdi Saleh",
+      "Liming Kuang",
+      "Benjamin Busam"
+    ],
+    "venue": "IROS",
+    "year": 2026,
+    "type": "IROS 2026",
+    "abstract": "Modeling continuous object deformation is important for many computer vision and robotics tasks, such as manipulation and simulation. Existing approaches rely on learning-based methods or physics simulators to model shape deformations. However, these approaches either use discrete time steps or are too computationally intensive for real-time applications. We present ODeform, a novel extension of Neural Ordinary Differential Equations to continuous 4D dynamics of deformable objects in 3D space. Our method transforms 3D point clouds and physical conditions (like material properties) into a unified latent space. By solving the resulting ordinary differential equations over time, we model deformations as continuous flows within this learned embedding, eliminating the need for discrete time steps while maintaining computational efficiency. We evaluate our approach on unseen physical parameter configurations, showing improved motion prediction accuracy over baseline methods. Our experiments further demonstrate a successful transfer to real 3D captured objects with novel shapes, along with effective interpolation and extrapolation of the learned dynamics. Our code and data will be made publicly available.",
+    "url": "https://arxiv.org/abs/2607.20670",
+    "images": [
+      "/papers/odeform/odeform-teaser.jpg",
+      "/papers/odeform/pipeline.jpg",
+      "/papers/odeform/baseline-results-quant-suppl.jpg"
+    ]
+  },
+  {
     "id": "opt-pose",
-    "type": "CVPR 2026",
     "title": "Object Pose Transformer: Unifying Unseen Object Pose Estimation",
     "authors": [
       "Weihang Li",
@@ -53,18 +174,103 @@
     ],
     "venue": "CVPR",
     "year": 2026,
-    "abstract": "Learning model-free object pose estimation for unseen instances remains a fundamental challenge in 3D vision. Existing methods fall into two disjoint paradigms: category-level approaches predict absolute poses in a canonical space but rely on predefined taxonomies, while relative pose methods estimate cross-view transformations but cannot recover single-view absolute pose. We propose Object Pose Transformer (OPT-Pose), a unified feed-forward framework that bridges these paradigms through task factorization within a single model. OPT-Pose jointly predicts depth, point maps, camera parameters, and normalized object coordinates (NOCS) from RGB inputs, enabling both category-level absolute SA(3) pose and unseen-object relative SE(3) pose. Extensive experiments demonstrate state-of-the-art performance in both absolute and relative pose estimation within a single architecture.",
+    "type": "CVPR 2026",
+    "abstract": "Learning model-free object pose estimation for unseen instances remains a fundamental challenge in 3D vision. Existing methods typically fall into two disjoint paradigms: category-level approaches predict absolute poses in a canonical space but rely on predefined taxonomies, while relative pose methods estimate cross-view transformations but cannot recover single-view absolute pose. In this work, we propose Object Pose Transformer (\\ours{}), a unified feed-forward framework that bridges these paradigms through task factorization within a single model. \\ours{} jointly predicts depth, point maps, camera parameters, and normalized object coordinates (NOCS) from RGB inputs, enabling both category-level absolute SA(3) pose and unseen-object relative SE(3) pose. Our approach leverages contrastive object-centric latent embeddings for canonicalization without requiring semantic labels at inference time, and uses point maps as a camera-space representation to enable multi-view relative geometric reasoning. Through cross-frame feature interaction and shared object embeddings, our model leverages relative geometric consistency across views to improve absolute pose estimation, reducing ambiguity in single-view predictions. Furthermore, \\ours{} is camera-agnostic, learning camera intrinsics on-the-fly and supporting optional depth input for metric-scale recovery, while remaining fully functional in RGB-only settings. Extensive experiments on diverse benchmarks (NOCS, HouseCat6D, Omni6DPose, Toyota-Light) demonstrate state-of-the-art performance in both absolute and relative pose estimation tasks within a single unified architecture.",
     "url": "https://colin-de.github.io/OPT-Pose/",
     "images": [
-      "/papers/opt-pose/teaser.jpg",
       "/papers/opt-pose/overview.jpg",
+      "/papers/opt-pose/teaser.jpg",
       "/papers/opt-pose/qual1.png",
       "/papers/opt-pose/qual2.png"
     ]
   },
   {
+    "id": "pose-anything-anywhere",
+    "title": "Pose Anything Anywhere: Model-free Object Poses from Arbitrary References",
+    "authors": [
+      "Hongli Xu",
+      "Jiaqi Hu",
+      "Junwen Huang",
+      "Boyang Zhong",
+      "Peter KT Yu",
+      "Nassir Navab",
+      "Benjamin Busam",
+      "Slobodan Ilic"
+    ],
+    "venue": "ECCV",
+    "year": 2026,
+    "type": "ECCV 2026",
+    "abstract": "Estimating the 6D pose of unseen objects is a fundamental yet challenging problem for open-world robotics and embodied perception. Model-based methods are accurate but depend on CAD assets or heavy onboarding, while most model-free approaches are still limited to pairwise single-anchor matching and thus fail under occlusion and large viewpoint changes with low query-reference overlap. Therefore, we present PANY, a unified model-free framework that seamlessly supports both RGB and RGB-D inputs, operates on one or sparse pose-free reference views, and generalizes effectively to novel objects. Built on a multi-view transformer geometry backbone, PANY moves beyond pairwise matching by learning view-consistent geometry and cross-view alignment cues that remain stable under wide baselines and limited overlap. When additional unposed assist views are available, PANY aggregates them via pose-graph canonical registration to increase geometric coverage and reinforce the final pose. Extensive experiments show that PANY achieves state-of-the-art performance across multiple benchmarks, substantially outperforming existing model-free methods, improving pose accuracy by +12% on YCB-V and over +20% on LM-O. Furthermore, PANY consistently performs well under both single-reference and sparse-reference settings, demonstrating strong robustness in real-world environments.",
+    "url": "https://arxiv.org/abs/2606.23634",
+    "images": [
+      "/papers/pose-anything-anywhere/arg-6d-architecture-new-fina.jpg",
+      "/papers/pose-anything-anywhere/teaser-eccv.jpg",
+      "/papers/pose-anything-anywhere/pose-lm-ycbv-vis-final-two-r.jpg"
+    ]
+  },
+  {
+    "id": "sos-segmentation",
+    "title": "SOS!: A Streamlined Object-Conditional Transformer for Model-free Segmentation",
+    "authors": [
+      "Jiaqi Hu",
+      "Junwen Huang",
+      "Hongli Xu",
+      "Peter KT Yu",
+      "Nassir Navab",
+      "Benjamin Busam",
+      "Slobodan Ilic"
+    ],
+    "venue": "BMVC",
+    "year": 2026,
+    "type": "BMVC 2026",
+    "abstract": "Foundation segmentation models excel at generating high-quality, class-agnostic masks, but they struggle to associate these proposals with specific target objects. This semantic gap severely hinders their deployment in downstream applications like robotic manipulation, which demand precise unseen objects segmentation. Existing approaches attempt to resolve this by relying on exhaustive 3D object model priors, inherently introducing prohibitive computational overhead and complex, multi-stage pipelines. To address these limitations, we propose SOS (Streamlined Object-conditional Transformer for model-free Segmentation). SOS completely eliminates the reliance on 3D models, requiring only a single reference image per target object. Central to our framework is a novel Object-Conditional Transformer that learns identity-anchored queries, unifying mask generation and target identification into a single feed-forward pass. This streamlined design drastically improves both structural and computational efficiency. Extensive evaluations across multiple benchmarks demonstrate that SOS establishes a new state-of-the-art for model-free unseen objects segmentation, delivering accurate and high-efficiency performance. The project page and code are available at https://sos-seg.github.io/.",
+    "url": "https://arxiv.org/abs/2608.15295",
+    "images": [
+      "/papers/sos-segmentation/pipeline.jpg",
+      "/papers/sos-segmentation/teaser.jpg",
+      "/papers/sos-segmentation/lmo-templates-grid.jpg"
+    ]
+  },
+  {
+    "id": "trace",
+    "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
+    "authors": [
+      "Florian Eichinger",
+      "Michael Greza",
+      "Benjamin Busam"
+    ],
+    "venue": "ISPRS Archives",
+    "year": 2026,
+    "type": "ISPRS Archives 2026",
+    "abstract": "State of the art crime scene documentation not only relies on visually and geometrically faithful 3D reconstruction, but also structured access to potentially relevant evidentiary objects. Existing language-aware 3D scene representations enable open-vocabulary object querying and scene-level reasoning, yet they do not explicitly tackle the formation of globally consistent physical object instances across views. This limitation is particularly critical in forensic settings, where evidence is tied to discrete objects and where scenes are often visually complex, unstructured and atypical in appearance. We present TRACE, a training-free framework for instance-level open-vocabulary inventory generation in 3D forensic evidence reconstruction. TRACE combines multiview instance formation, language-aligned aggregation, and 2D–3D semantic lifting within a unified Gaussian-based scene representation. It therefore moves beyond semantic scene querying towards a structured and language-addressable 3D inventory of physical evidence. The proposed formulation provides a bridge between investigator driven object assessment and instance-aware 3D scene understanding for forensic analysis.",
+    "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026",
+    "images": [
+      "/papers/trace/figure-1.jpg",
+      "/papers/trace/figure-2.jpg",
+      "/papers/trace/figure-3.jpg"
+    ]
+  },
+  {
+    "id": "cloud-masking-transfer",
+    "title": "Transferability and Generalization Investigation of Multiclass Cloud Masking Networks for Unseen Biomes and Sensors",
+    "authors": [
+      "Michael Greza",
+      "Tianyi You",
+      "Boris Jutzi"
+    ],
+    "venue": "ISPRS Annals",
+    "year": 2026,
+    "type": "ISPRS Annals 2026",
+    "abstract": "With the rising amount of small satellite Earth observation missions, robust model transferability and generalization is becoming more important in satellite remote sensing image processing pipelines to enable a faster and more efficient processing setup. In this work, the transferability and generalization capabilities of two multiclass cloud masking approaches are tested on the tropical rainforest biome in the Amazon, that is unknown to the models, and on two new satellite systems, Platero and Sentinel-2. This is developed as an examplary test, if the models can be used as a baseline for transfer learning and finetuning for new satellite mission cloud masking processors. The evaluation is on a qualitative level due to the lack of ground truth data and small sample size. The results are promising for the new biome but show that regionally occurring phenomena like snow can mislead the origin networks. Furthermore, the experiments show the importance of finetuning on datasets for new sensor systems, especially when facing high discrepancies in the spectral channels.",
+    "url": "https://doi.org/10.5194/isprs-annals-x-3-w4-2025-185-2026",
+    "images": [
+      "/papers/cloud-masking-transfer/figure-1.jpg",
+      "/papers/cloud-masking-transfer/figure-2.jpg",
+      "/papers/cloud-masking-transfer/figure-3.jpg"
+    ]
+  },
+  {
     "id": "unreflect",
-    "type": "CVPR 2026",
     "title": "UnReflectAnything: RGB-Only Highlight Removal by Rendering Synthetic Specular Supervision",
     "authors": [
       "Alberto Rota",
@@ -77,13 +283,619 @@
     ],
     "venue": "CVPR",
     "year": 2026,
-    "abstract": "Specular highlights distort appearance, obscure texture, and hinder geometric reasoning in both natural and surgical imagery. We present UnReflectAnything, an RGB-only framework that removes highlights from a single image by predicting a highlight map together with a reflection-free diffuse reconstruction. The model uses a frozen vision transformer encoder to extract multi-scale features, a lightweight head to localize specular regions, and a token-level inpainting module that restores corrupted feature patches before producing the final diffuse image. To overcome the lack of paired supervision, we introduce a Virtual Highlight Synthesis pipeline that renders physically plausible specularities using monocular geometry, Fresnel-aware shading, and randomized lighting. The method generalizes across natural and surgical domains and achieves competitive results on several benchmarks.",
+    "type": "CVPR 2026",
+    "abstract": "Specular highlights distort appearance, obscure texture, and hinder geometric reasoning in both natural and surgical imagery. We present UnReflectAnything, an RGB-only framework that removes highlights from a single image by predicting a highlight map together with a reflection-free diffuse reconstruction. The model uses a frozen vision transformer encoder to extract multi-scale features, a lightweight head to localize specular regions, and a token-level inpainting module that restores corrupted feature patches before producing the final diffuse image. To overcome the lack of paired supervision, we introduce a Virtual Highlight Synthesis pipeline that renders physically plausible specularities using monocular geometry, Fresnel-aware shading, and randomized lighting which enables training on arbitrary RGB images with correct geometric structure. UnReflectAnything generalizes across natural and surgical domains where non-Lambertian surfaces and non-uniform lighting create severe highlights and it achieves competitive performance with state-of-the-art results on several benchmarks. Project Page: https://alberto-rota.github.io/UnReflectAnything/",
     "url": "https://alberto-rota.github.io/UnReflectAnything",
     "images": [
       "/papers/unreflect/header.png",
       "/papers/unreflect/model.png",
       "/papers/unreflect/qualitative.png",
       "/papers/unreflect/supervision.png"
+    ]
+  },
+  {
+    "id": "zeroflood",
+    "title": "ZeroFlood: Flood Hazard Mapping from Single-Modality SAR Using Geo-Foundation Models",
+    "authors": [
+      "Hyeongkyun Kim",
+      "Orestis Oikonomou"
+    ],
+    "venue": "EUSAR",
+    "year": 2026,
+    "type": "EUSAR 2026",
+    "abstract": "Flood hazard mapping is essential for disaster prevention but remains challenging in data-scarce regions, where traditional hydrodynamic models require extensive geophysical inputs. This paper introduces \\textit{ZeroFlood}, a framework that leverages Geo-Foundation Models (GeoFMs) to predict flood hazard maps using single-modality Earth Observation (EO) data, specifically SAR imagery. We construct a dataset that pairs EO data with flood hazard simulations across the European continent. Using this dataset, we evaluate several recent GeoFMs for the flood hazard segmentation task. Experimental results show that the best-performing model, TerraMind, achieves an F1-score of 88.36\\%, outperforming supervised learning baselines by more than 3 percentage points. We shows the performance can be further improved by applying the Thinking-in-Modality (TiM) mechanism. These results demonstrate the potential of Geo-Foundation Models for data-driven flood hazard mapping using limited observational inputs. The dataset and experiment code are publicly available at https://github.com/khyeongkyun/zeroflood.",
+    "url": "https://arxiv.org/abs/2510.23364",
+    "images": [
+      "/papers/zeroflood/diagram-tim.jpg",
+      "/papers/zeroflood/diagram-zeroflood.jpg",
+      "/papers/zeroflood/train-heatmap.jpg"
+    ]
+  },
+  {
+    "id": "pairception",
+    "title": "pAirception: Language-Guided Landing Site Detection in Unstructured Environments",
+    "authors": [
+      "DRAGONI, ENEA"
+    ],
+    "venue": "University of Pisa",
+    "year": 2026,
+    "type": "Master's Thesis 2026",
+    "abstract": "The autonomous deployment of Unmanned Aerial Vehicles (UAVs) in unstructured environments requires a delicate balance between high-level semantic scene understanding and strict physical safety guarantees. Traditional geometry-based landing systems fail to distinguish between structurally flat terrain and hazardous materials (e.g., bodies of water or fragile glass roofs), while purely deep-learning approaches lack the deterministic spatial certainty required for critical flight operations. Furthermore, standard graphical human-robot interfaces often prove too rigid and demanding for pilots during high-stress emergency scenarios. To address these fundamental limitations, this thesis presents pAirception, a novel hybrid neuro-symbolic framework for autonomous UAV landing and language-driven pilot guidance. The proposed architecture tightly couples the probabilistic reasoning capabilities of modern Foundation Models with the deterministic safety of 3D geometric processing. A 4-bit quantized Large Language Model (Phi-3-Mini) acts as an interactive reasoning agent, translating unstructured natural language commands into structured robotic actions. To establish semantic awareness, a Vision-Language Model (Qwen2-VL) autonomously identifies safe environmental priors, which condition a zero-shot Promptable Segmentation model (SAM3) to extract dense 2D Regions of Interest. These semantic hypotheses are subsequently projected into the 3D space and rigorously validated by a high-frequency C++ geometric core. Utilizing temporal ego-motion deskewing, robust planar extraction via RANSAC, and constant-time spatial queries via Integral Images, the system deterministically evaluates the physical slope, surface roughness, and obstacle clearance of the targeted terrain. Validated landing spots are then ranked dynamically and presented to the human operator through an intuitive Augmented Telemetry overlay. To prove the viability of the architecture under authentic operational conditions, the framework was evaluated exclusively using real-world multimodal sensor data. The datasets were acquired in unstructured rural environments utilizing a custom UAV payload equipped with a Livox Mid-360 LiDAR and a global-shutter FLIR camera, with hardware time synchronization managed by a Raspberry Pi edge logger. The results demonstrate that delegating open-set semantic target selection to advanced neural networks, while strictly reserving physical safety validation for deterministic spatial algorithms, provides a highly robust, interactive, and reliable autonomous landing pipeline.",
+    "url": "http://etd.adm.unipi.it/theses/available/etd-03162026-101954/"
+  },
+  {
+    "id": "anthropos-v",
+    "title": "ANTHROPOS-V: Benchmarking the Novel Task of Crowd Volume Estimation",
+    "authors": [
+      "Luca Collorone",
+      "Stefano D'Arrigo",
+      "Massimiliano Pappa",
+      "Guido Maria D'Amely di Melendugno",
+      "Giovanni Ficarra",
+      "Fabio Galasso"
+    ],
+    "venue": "WACV",
+    "year": 2025,
+    "type": "WACV 2025",
+    "abstract": "We introduce the novel task of Crowd Volume Estimation (C VE), defined as the process of estimating the collective body volume of crowds using only RGB images. Besides event management and public safety, CVE can be instrumental in approximating body weight, unlocking weight-sensitive applications such as infrastructure stress assessment, and assuring even weight balance. We propose the first benchmark for CVE, comprising ANTHROPOS-V, a synthetic photorealistic video dataset featuring crowds in diverse urban environments. Its annotations include each person's volume, SMPL shape parameters, and key-points. Also, we explore metrics pertinent to CVE, de-fine baseline models adapted from Human Mesh Recov-ery and Crowd Counting domains, and propose a CVE-specific methodology that surpasses baselines. Although synthetic, the weights and heights of individuals are aligned with the real-world population distribution across gen-ders, and they transfer to the downstream task of CVE from real images. Benchmark and code are available at github.com/colloronelucaICrowd- Volume-Estimation.",
+    "url": "https://arxiv.org/abs/2501.01877",
+    "images": [
+      "/papers/anthropos-v/teaser-image.jpg",
+      "/papers/anthropos-v/qualitative-1.jpg",
+      "/papers/anthropos-v/qualitative-2.jpg"
+    ]
+  },
+  {
+    "id": "biodet",
+    "title": "BioDet: Boosting Industrial Object Detection with Image Preprocessing Strategies",
+    "authors": [
+      "Jiaqi Hu",
+      "Hongli Xu",
+      "Junwen Huang",
+      "Peter KT Yu",
+      "Slobodan Ilic",
+      "Benjamin Busam"
+    ],
+    "venue": "ICCV Workshops",
+    "year": 2025,
+    "type": "ICCVW 2025",
+    "abstract": "Accurate 6D pose estimation is essential for robotic manipulation in industrial environments. Existing pipelines typically rely on off-the-shelf object detectors followed by cropping and pose refinement, but their performance degrades under challenging conditions such as clutter, poor lighting, and complex backgrounds, making detection the critical bottleneck. In this work, we introduce a standardized and plug-in pipeline for 2D detection of unseen objects in industrial settings. Based on current SOTA baselines, our approach reduces domain shift and background artifacts through low-light image enhancement and background removal guided by open-vocabulary detection with foundation models. This design suppresses the false positives prevalent in raw SAM outputs, yielding more reliable detections for downstream pose estimation. Extensive experiments on real-world industrial bin-picking benchmarks from BOP demonstrate that our method significantly boosts detection accuracy while incurring negligible inference overhead, showing the effectiveness and practicality of the proposed method.",
+    "url": "https://arxiv.org/abs/2510.21000",
+    "images": [
+      "/papers/biodet/000018-000046.jpg",
+      "/papers/biodet/r6d.jpg"
+    ]
+  },
+  {
+    "id": "uav-search-occlusion",
+    "title": "Enhancing UAV Search under Occlusion using Next Best View Planning",
+    "authors": [
+      "Sigrid Helene Strand",
+      "Thomas Wiedemann",
+      "Bram Burczek",
+      "Dmitriy Shutin"
+    ],
+    "venue": "IEEE JSTARS",
+    "year": 2025,
+    "type": "IEEE JSTARS 2025",
+    "abstract": "Search and rescue missions are often critical following sudden natural disasters or in high-risk environmental situations. The most challenging search and rescue missions involve difficult-to-access terrains, such as dense forests with high occlusion. Deploying unmanned aerial vehicles depends on their ability to capture clear views of the ground, necessitating a robust search strategy to optimize camera positioning and perspective. This work presents an optimized planning strategy and an efficient algorithm for the Next Best View problem in occluded environments. Two novel optimization heuristics, a geometry heuristic, and a visibility heuristic, are proposed to enhance search performance by selecting optimal camera viewpoints. Comparative evaluations in both simulated and real-world settings reveal that the visibility heuristic achieves greater performance, identifying over 90% of hidden objects in simulated forests and offering 10% better detection rates than the geometry heuristic. Additionally, real-world experiments demonstrate that the visibility heuristic provides better coverage under the canopy, highlighting its potential for improving search and rescue missions in occluded environments.",
+    "url": "https://arxiv.org/abs/2511.18353",
+    "images": [
+      "/papers/uav-search-occlusion/example.jpg",
+      "/papers/uav-search-occlusion/workflow-exp.jpg",
+      "/papers/uav-search-occlusion/workflow-sim.jpg"
+    ]
+  },
+  {
+    "id": "gce-pose",
+    "title": "GCE-Pose: Global Context Enhancement for Category-level Object Pose Estimation",
+    "authors": [
+      "Weihang Li",
+      "Hongli Xu",
+      "Junwen Huang",
+      "Hyunjun Jung",
+      "Peter KT Yu",
+      "Nassir Navab",
+      "Benjamin Busam"
+    ],
+    "venue": "CVPR",
+    "year": 2025,
+    "type": "CVPR 2025",
+    "abstract": "A key challenge in model-free category-level pose estimation is the extraction of contextual object features that generalize across varying instances within a specific category. Recent approaches leverage foundational features to capture semantic and geometry cues from data. However, these approaches fail under partial visibility. We overcome this with a first-complete-then-aggregate strategy for feature extraction utilizing class priors. In this paper, we present GCE-Pose, a method that enhances pose estimation for novel instances by integrating category-level global context prior. GCE-Pose performs semantic shape reconstruction with a proposed Semantic Shape Reconstruction (SSR) module. Given an unseen partial RGB-D object instance, our SSR module reconstructs the instance's global geometry and semantics by deforming category-specific 3D semantic prototypes through a learned deep Linear Shape Model. We further introduce a Global Context Enhanced (GCE) feature fusion module that effectively fuses features from partial RGB-D observations and the reconstructed global context. Extensive experiments validate the impact of our global context prior and the effectiveness of the GCE fusion module, demonstrating that GCE-Pose significantly outperforms existing methods on challenging real-world datasets HouseCat6D and NOCS-REAL275. Our project page is available at https://colin-de.github.io/GCE-Pose/.",
+    "url": "https://arxiv.org/abs/2502.04293",
+    "images": [
+      "/papers/gce-pose/pipeline-cr.jpg",
+      "/papers/gce-pose/teaser-cr.jpg",
+      "/papers/gce-pose/ssr.jpg"
+    ]
+  },
+  {
+    "id": "litetracker",
+    "title": "LiteTracker: Leveraging Temporal Causality for Accurate Low-latency Tissue Tracking",
+    "authors": [
+      "Mert Asim Karaoglu",
+      "Wenbo Ji",
+      "Ahmed Abbas",
+      "Nassir Navab",
+      "Benjamin Busam",
+      "Alexander Ladikos"
+    ],
+    "venue": "MICCAI",
+    "year": 2025,
+    "type": "MICCAI 2025",
+    "abstract": "Tissue tracking plays a critical role in various surgical navigation and extended reality (XR) applications. While current methods trained on large synthetic datasets achieve high tracking accuracy and generalize well to endoscopic scenes, their runtime performances fail to meet the low-latency requirements necessary for real-time surgical applications. To address this limitation, we propose LiteTracker, a low-latency method for tissue tracking in endoscopic video streams. LiteTracker builds on a state-of-the-art long-term point tracking method, and introduces a set of training-free runtime optimizations. These optimizations enable online, frame-by-frame tracking by leveraging a temporal memory buffer for efficient feature reuse and utilizing prior motion for accurate track initialization. LiteTracker demonstrates significant runtime improvements being around 7x faster than its predecessor and 2x than the state-of-the-art. Beyond its primary focus on efficiency, LiteTracker delivers high-accuracy tracking and occlusion prediction, performing competitively on both the STIR and SuPer datasets. We believe LiteTracker is an important step toward low-latency tissue tracking for real-time surgical applications in the operating room. Our code is publicly available at https://github.com/ImFusionGmbH/lite-tracker.",
+    "url": "https://arxiv.org/abs/2504.09904",
+    "images": [
+      "/papers/litetracker/figure-main-cropped.jpg",
+      "/papers/litetracker/figure-teaser.jpg",
+      "/papers/litetracker/figure-qualitative.jpg"
+    ]
+  },
+  {
+    "id": "monster",
+    "title": "MonSTeR: A Unified Model for Motion, Scene, Text Retrieval",
+    "authors": [
+      "Luca Collorone",
+      "Matteo Gioia",
+      "Massimiliano Pappa",
+      "Paolo Leoni",
+      "Giovanni Ficarra",
+      "Or Litany",
+      "Indro Spinelli",
+      "Fabio Galasso"
+    ],
+    "venue": "ICCV",
+    "year": 2025,
+    "type": "ICCV 2025",
+    "abstract": "Intention drives human movement in complex environments, but such movement can only happen if the surrounding context supports it. Despite the intuitive nature of this mechanism, existing research has not yet provided tools to evaluate the alignment between skeletal movement (motion), intention (text), and the surrounding context (scene). In this work, we introduce MonSTeR, the first MOtioN-Scene-TExt Retrieval model. Inspired by the modeling of higher-order relations, MonSTeR constructs a unified latent space by leveraging unimodal and cross-modal representations. This allows MonSTeR to capture the intricate dependencies between modalities, enabling flexible but robust retrieval across various tasks. Our results show that MonSTeR outperforms trimodal models that rely solely on unimodal representations. Furthermore, we validate the alignment of our retrieval scores with human preferences through a dedicated user study. We demonstrate the versatility of MonSTeR's latent space on zero-shot in-Scene Object Placement and Motion Captioning. Code and pre-trained models are available at github.com/colloroneluca/MonSTeR.",
+    "url": "https://arxiv.org/abs/2510.03200",
+    "images": [
+      "/papers/monster/teaser.jpg",
+      "/papers/monster/110-619-f.jpg",
+      "/papers/monster/868-scene0641-003114-b5634f7.jpg"
+    ]
+  },
+  {
+    "id": "prism-0",
+    "title": "PRISM-0: A Predicate-Rich Scene Graph Generation Framework for Zero-Shot Open-Vocabulary Tasks",
+    "authors": [
+      "Abdelrahman Elskhawy",
+      "Mengze Li",
+      "Nassir Navab",
+      "Benjamin Busam"
+    ],
+    "venue": "arXiv",
+    "year": 2025,
+    "type": "arXiv preprint 2025",
+    "abstract": "In Scene Graph Generation (SGG), structured representations are extracted from visual inputs as object nodes and connecting predicates, enabling image-based reasoning for diverse downstream tasks. While fully supervised SGG has improved steadily, it suffers from training bias due to limited curated data and long-tail predicate distributions, leading to poor predicate diversity and degraded downstream performance. We present PRISM-0, a zero-shot open-vocabulary SGG framework that leverages foundation models in a bottom-up pipeline to capture a broad spectrum of predicates. Detected object pairs are filtered, described via a Vision-Language Model (VLM), and processed by a Large Language Model (LLM) to generate fine- and coarse-grained predicates, which are then validated by a Visual Question Answering (VQA) model. PRISM-0 modular, dataset-independent design enriches existing SGG datasets such as Visual Genome and produces diverse, unbiased graphs. While operating entirely in a zero-shot setting, PRISM-0 achieves performance on par with state-of-the-art weakly-supervised models on SGG benchmarks and even state-of-the-art supervised methods in tasks such as Sentence-to-Graph Retrieval.",
+    "url": "https://arxiv.org/abs/2504.00844"
+  },
+  {
+    "id": "phystalk",
+    "title": "PhysTalk: Language-driven Real-time Physics in 3D Gaussian Scenes",
+    "authors": [
+      "Luca Collorone",
+      "Mert Kiray",
+      "Indro Spinelli",
+      "Fabio Galasso",
+      "Benjamin Busam"
+    ],
+    "venue": "arXiv",
+    "year": 2025,
+    "type": "arXiv preprint 2025",
+    "abstract": "Realistic visual simulations are omnipresent, yet their creation requires computing time, rendering, and expert animation knowledge. Open-vocabulary visual effects generation from text inputs emerges as a promising solution that can unlock immense creative potential. However, current pipelines lack both physical realism and effective language interfaces, requiring slow offline optimization. In contrast, PhysTalk takes a 3D Gaussian Splatting (3DGS) scene as input and translates arbitrary user prompts into real time, physics based, interactive 4D animations. A large language model (LLM) generates executable code that directly modifies 3DGS parameters through lightweight proxies and particle dynamics. Notably, PhysTalk is the first framework to couple 3DGS directly with a physics simulator without relying on time consuming mesh extraction. While remaining open vocabulary, this design enables interactive 3D Gaussian animation via collision aware, physics based manipulation of arbitrary, multi material objects. Finally, PhysTalk is train-free and computationally lightweight: this makes 4D animation broadly accessible and shifts these workflows from a \"render and wait\" paradigm toward an interactive dialogue with a modern, physics-informed pipeline.",
+    "url": "https://arxiv.org/abs/2512.24986",
+    "images": [
+      "/papers/phystalk/method-fig.jpg",
+      "/papers/phystalk/teaser-fig.jpg",
+      "/papers/phystalk/qualitative-comparison.jpg"
+    ]
+  },
+  {
+    "id": "raypose",
+    "title": "RayPose: Ray Bundling Diffusion for Template Views in Unseen 6D Object Pose Estimation",
+    "authors": [
+      "Junwen Huang",
+      "Shishir Reddy Vutukur",
+      "Peter KT Yu",
+      "Nassir Navab",
+      "Slobodan Ilic",
+      "Benjamin Busam"
+    ],
+    "venue": "ICCV",
+    "year": 2025,
+    "type": "ICCV 2025",
+    "abstract": "Typical template-based object pose pipelines estimate the pose by retrieving the closest matching template and aligning it with the observed image. However, failure to retrieve the correct template often leads to inaccurate pose predictions. To address this, we reformulate template-based object pose estimation as a ray alignment problem, where the viewing directions from multiple posed template images are learned to align with a non-posed query image. Inspired by recent progress in diffusion-based camera pose estimation, we embed this formulation into a diffusion transformer architecture that aligns a query image with a set of posed templates. We reparameterize object rotation using object-centered camera rays and model object translation by extending scale-invariant translation estimation to dense translation offsets. Our model leverages geometric priors from the templates to guide accurate query pose inference. A coarse-to-fine training strategy based on narrowed template sampling improves performance without modifying the network architecture. Extensive experiments across multiple benchmark datasets show competitive results of our method compared to state-of-the-art approaches in unseen object pose estimation.",
+    "url": "https://arxiv.org/abs/2510.18521",
+    "images": [
+      "/papers/raypose/method.jpg",
+      "/papers/raypose/teaser.jpg",
+      "/papers/raypose/fig2.jpg"
+    ]
+  },
+  {
+    "id": "endoscopic-embedding",
+    "title": "Self-Supervised Contrastive Embedding Adaptation for Endoscopic Image Matching",
+    "authors": [
+      "Alberto Rota",
+      "Elena De Momi"
+    ],
+    "venue": "arXiv",
+    "year": 2025,
+    "type": "arXiv preprint 2025",
+    "abstract": "Accurate spatial understanding is essential for image-guided surgery, augmented reality integration and context awareness. In minimally invasive procedures, where visual input is the sole intraoperative modality, establishing precise pixel-level correspondences between endoscopic frames is critical for 3D reconstruction, camera tracking, and scene interpretation. However, the surgical domain presents distinct challenges: weak perspective cues, non-Lambertian tissue reflections, and complex, deformable anatomy degrade the performance of conventional computer vision techniques. While Deep Learning models have shown strong performance in natural scenes, their features are not inherently suited for fine-grained matching in surgical images and require targeted adaptation to meet the demands of this domain. This research presents a novel Deep Learning pipeline for establishing feature correspondences in endoscopic image pairs, alongside a self-supervised optimization framework for model training. The proposed methodology leverages a novel-view synthesis pipeline to generate ground-truth inlier correspondences, subsequently utilized for mining triplets within a contrastive learning paradigm. Through this self-supervised approach, we augment the DINOv2 backbone with an additional Transformer layer, specifically optimized to produce embeddings that facilitate direct matching through cosine similarity thresholding. Experimental evaluation demonstrates that our pipeline surpasses state-of-the-art methodologies on the SCARED datasets improved matching precision and lower epipolar error compared to the related work. The proposed framework constitutes a valuable contribution toward enabling more accurate high-level computer vision applications in surgical endoscopy.",
+    "url": "https://arxiv.org/abs/2512.10379",
+    "images": [
+      "/papers/endoscopic-embedding/model.jpg",
+      "/papers/endoscopic-embedding/projections.jpg",
+      "/papers/endoscopic-embedding/triplets.jpg"
+    ]
+  },
+  {
+    "id": "tricky-depth",
+    "title": "TRICKY 2025 Challenge on Monocular Depth from Images of Specular and Transparent Surfaces",
+    "authors": [
+      "Pierluigi Zama Ramirez",
+      "Alex Costanzino",
+      "Fabio Tosi",
+      "Matteo Poggi",
+      "L. Di Stefano",
+      "Jean-Baptiste Weibel",
+      "Doris Antensteiner",
+      "Markus Vincze",
+      "Benjamin Busam",
+      "Guangyao Zhai",
+      "Weihang Li",
+      "Junwen Huang",
+      "Hyunjun Jung",
+      "M. Lavreniuk",
+      "Pihai Sun",
+      "Yijun Luo",
+      "Hongtao Wang",
+      "Manying Gao",
+      "Kui Jiang",
+      "Junjun Jiang"
+    ],
+    "venue": "ICCV Workshops",
+    "year": 2025,
+    "type": "ICCVW 2025",
+    "abstract": "This paper presents the results of the TRICKY 2025 Monocular Depth Track Challenge, held as part of the Transparent & Reflective objects In the wild Challenges (TRICKY) workshop at ICCV 2025. The challenge aims to advance the state-of-the-art in dense depth prediction for reflective and transparent surfaces, building on recent progress in the field. The competition attracted 50 registered participants, with 8 teams competing during the test phase and 2 teams ultimately submitting their monocular depth estimation pipelines along with detailed technical reports.",
+    "url": "https://doi.org/10.1109/ICCVW69036.2025.00348"
+  },
+  {
+    "id": "tricky-housecat6d",
+    "title": "TRICKY 2025 HouseCat6D Object Pose Estimation Challenge with Specular and Transparent Surfaces",
+    "authors": [
+      "Weihang Li",
+      "Junwen Huang",
+      "Hyunjun Jung",
+      "Guangyao Zhai",
+      "Pierluigi Zama Ramirez",
+      "Alex Costanzino",
+      "Fabio Tosi",
+      "Matteo Poggi",
+      "L. Di Stefano",
+      "Jean-Baptiste Weibel",
+      "Doris Antensteiner",
+      "Markus Vincze",
+      "Jing He",
+      "Yiqing Wang",
+      "Kexin Zhang",
+      "Licheng Jiao",
+      "Lingling Li",
+      "Fang Liu",
+      "Wenping Ma",
+      "Benjamin Busam"
+    ],
+    "venue": "ICCV Workshops",
+    "year": 2025,
+    "type": "ICCVW 2025",
+    "abstract": "This paper presents the TRICKY 2025 HouseCat6D Category-Level Object Pose Estimation Challenge, held in conjunction with the ICCV 2025 workshop on Transpar-ent and Reflective Objects in the Wild. The challenge ad-dresses the critical limitations of existing pose estimation systems when applied to non-Lambertian surfaces, such as glass and metal. Leveraging the HouseCat6D dataset com-prising realistic home environments with a diverse range of transparent and specular objects, the challenge pushes state-of-the-art algorithms to estimate object pose, scale, and shape in photometrically complex scenes. Unlike traditional benchmarks focused on texture-rich, opaque objects, this challenge emphasizes robustness under reflective high-lights, refractions, and partial transparency. By promoting research in these underexplored conditions, the challenge contributes toward generalizable and category-level object understanding in unconstrained real-world settings.",
+    "url": "https://doi.org/10.1109/ICCVW69036.2025.00349"
+  },
+  {
+    "id": "ttapose",
+    "title": "TTAPose: Test-Time Adaptation for Unseen Object Pose Estimation",
+    "authors": [
+      "Junwen Huang",
+      "Peter KT Yu",
+      "N. Navab",
+      "Benjamin Busam"
+    ],
+    "venue": "IEEE RA-L",
+    "year": 2025,
+    "type": "IEEE RA-L 2025",
+    "abstract": "Recent advances in the field of 6D pose estimation of unseen objects not present during training are promising, however, the performance gap between these general methods and object-specific methods remains significant. This letter introduces an innovative unsupervised test-time adaptation method, termed TTAPose, capable of adapting a pose estimator to any unseen object. TTAPose initially undergoes pre-training using a large synthetic dataset and thereafter refines the weights using unsupervised loss conducted on unseen real-world target objects. The network, based on a teacher-student architecture, leverages an RGB-D pose refinement pipeline to incrementally improve pseudo labels. Notably, TTAPose operates with no requirement for target data annotation, thus minimizing time and data expenditure. Experimental results show performance levels comparable to supervised methods, effectively narrowing the gap to object-specific baselines.",
+    "url": "https://doi.org/10.1109/LRA.2025.3564218"
+  },
+  {
+    "id": "cloud-masking-unet",
+    "title": "U-Net- and Transformer-Based Cloud Masking for Multispectral Earth Observation Satellite Missions",
+    "authors": [
+      "Tianyi You",
+      "Michael Greza",
+      "Boris Jutzi"
+    ],
+    "venue": "IGARSS",
+    "year": 2025,
+    "type": "IGARSS 2025",
+    "abstract": "Cloud masking has been playing a vital role in earth observation (EO) satellite data processing, both in preprocessing and the cloud mask as a product. In recent state-of-the-art literature, Convolutional Neural Network (CNN)-based approaches are commonly used for cloud masking applications. In comparison, there are relatively few Transformer-based approaches, yet there lies potential in their architecture due to the possibility to extract long-range dependencies for complex, multidimensional features. For the upcoming multispectral Bavarian EO satellite network \"CuBy\", a CNN-based and a Transformer-based model are adapted for the cloud-masking of multispectral PlanetScope Imagery, due to the similarity in the spectral bands of the future mission’s payload. For the cloud masking architecture, the transformer model is developed based on Maskformer with a Swin Transformer backbone, adapted to inputs with up to nine spectral channels. The CNN model is based on a U-Net that is adapted to eight-channel multispectral inputs. Both approaches are trained and fine-tuned on different biomes and regions to enhance model robustness. The Maskformer-based approach outperforms the U-Net-based approach by around 9.3% in Overall Accuracy (OA) and 29.5% in Mean Intersection over Union (MIoU) on the deep-learning-based ground truth data provided by Planet Labs. Our work contributes two cloud masking approaches that are well-suited for further satellite data processing steps, with the U-Net catering to finer details and the Maskformer producing overall results closer to the ground truth.",
+    "url": "https://doi.org/10.1109/igarss55030.2025.11242475"
+  },
+  {
+    "id": "xyz-ibd",
+    "title": "XYZ-IBD: Benchmarking Robust 6D Object Pose Estimation under Real-World Industrial Complexity",
+    "authors": [
+      "Junwen Huang",
+      "Jiaqi Hu",
+      "Peter KT Yu",
+      "Slobodan Ilic",
+      "Martin Sundermeyer",
+      "Benjamin Busam"
+    ],
+    "venue": "arXiv",
+    "year": 2025,
+    "type": "arXiv preprint 2025",
+    "abstract": "While current 6D pose estimation benchmarks have reached near-saturation on household objects, they often fail to capture the stochastic and optical complexities of industrial environments. We introduce XYZ-IBD, a high-precision benchmark for object detection and 6D pose estimation specifically designed for industrial bin-picking. XYZ-IBD addresses the domain gap by providing 75 multi-view real-world scenes containing approximately 273k annotated instances of metallic, symmetrical, and specular objects. Unlike existing datasets, our benchmark features high-density stochastic stacking and multi-instance ambiguity, reflecting authentic robotic manipulation challenges. We employ a rigorous multi-stage and semi-automatic annotation pipeline, ensuring sub-millimeter annotation accuracy. The annotations are validated through our designed error quantification scheme, securing the reliability of the annotation quality. In addition to real-world evaluation data, we provide a large-scale complementary synthetic training set that is rendered under a realistic bin-picking simulation. Benchmarking state-of-the-art (SOTA) methods for 2D detection and 6D pose estimation reveals a significant performance degradation compared to standard household benchmarks, highlighting the unsolved challenges of industrial vision. XYZ-IBD establishes a new frontier for robust pose estimation in complex, high-occlusion, and reflective scenarios. The dataset and benchmark are publicly available at https://xyz-ibd.github.io.",
+    "url": "https://arxiv.org/abs/2506.00599",
+    "images": [
+      "/papers/xyz-ibd/overview.jpg",
+      "/papers/xyz-ibd/teaser-v3.jpg",
+      "/papers/xyz-ibd/vis-real-scenes.jpg"
+    ]
+  },
+  {
+    "id": "alignist",
+    "title": "Alignist: CAD-Informed Orientation Distribution Estimation by Fusing Shape and Correspondences",
+    "authors": [
+      "Shishir Reddy Vutukur",
+      "Rasmus Laurvig Haugaard",
+      "Junwen Huang",
+      "Benjamin Busam",
+      "Tolga Birdal"
+    ],
+    "venue": "ECCV",
+    "year": 2024,
+    "type": "ECCV 2024",
+    "abstract": "Object pose distribution estimation is crucial in robotics for better path planning and handling of symmetric objects. Recent distribution estimation approaches employ contrastive learning-based approaches by maximizing the likelihood of a single pose estimate in the absence of a CAD model. We propose a pose distribution estimation method leveraging symmetry respecting correspondence distributions and shape information obtained using a CAD model. Contrastive learning-based approaches require an exhaustive amount of training images from different viewpoints to learn the distribution properly, which is not possible in realistic scenarios. Instead, we propose a pipeline that can leverage correspondence distributions and shape information from the CAD model, which are later used to learn pose distributions. Besides, having access to pose distribution based on correspondences before learning pose distributions conditioned on images, can help formulate the loss between distributions. The prior knowledge of distribution also helps the network to focus on getting sharper modes instead. With the CAD prior, our approach converges much faster and learns distribution better by focusing on learning sharper distribution near all the valid modes, unlike contrastive approaches, which focus on a single mode at a time. We achieve benchmark results on SYMSOL-I and T-Less datasets.",
+    "url": "https://arxiv.org/abs/2409.06683",
+    "images": [
+      "/papers/alignist/cp2pd-v4.jpg",
+      "/papers/alignist/cyl.jpg",
+      "/papers/alignist/cylo1.jpg"
+    ]
+  },
+  {
+    "id": "cactuss",
+    "title": "CACTUSS: Common Anatomical CT-US Space for US Examinations",
+    "authors": [
+      "Yordanka Velikova",
+      "Walter Simson",
+      "Mehrdad Salehi",
+      "Mohammad Farid Azampour",
+      "Philipp Paprottka",
+      "Nassir Navab"
+    ],
+    "venue": "IJCARS",
+    "year": 2024,
+    "type": "IJCARS 2024",
+    "abstract": "Abdominal aortic aneurysm (AAA) is a vascular disease in which a section of the aorta enlarges, weakening its walls and potentially rupturing the vessel. Abdominal ultrasound has been utilized for diagnostics, but due to its limited image quality and operator dependency, CT scans are usually required for monitoring and treatment planning. Recently, abdominal CT datasets have been successfully utilized to train deep neural networks for automatic aorta segmentation. Knowledge gathered from this solved task could therefore be leveraged to improve US segmentation for AAA diagnosis and monitoring. To this end, we propose CACTUSS: a common anatomical CT-US space, which acts as a virtual bridge between CT and US modalities to enable automatic AAA screening sonography. CACTUSS makes use of publicly available labelled data to learn to segment based on an intermediary representation that inherits properties from both US and CT. We train a segmentation network in this new representation and employ an additional image-to-image translation network which enables our model to perform on real B-mode images. Quantitative comparisons against fully supervised methods demonstrate the capabilities of CACTUSS in terms of Dice Score and diagnostic metrics, showing that our method also meets the clinical requirements for AAA scanning and diagnosis.",
+    "url": "https://arxiv.org/abs/2207.08619",
+    "images": [
+      "/papers/cactuss/domains.jpg",
+      "/papers/cactuss/overview.jpg",
+      "/papers/cactuss/cut-output.jpg"
+    ]
+  },
+  {
+    "id": "cathflow",
+    "title": "CathFlow: Self-Supervised Segmentation of Catheters in Interventional Ultrasound Using Optical Flow and Transformers",
+    "authors": [
+      "Alex Ranne",
+      "Liming Kuang",
+      "Yordanka Velikova",
+      "Nassir Navab",
+      "Ferdinando Rodriguez y Baena"
+    ],
+    "venue": "IROS",
+    "year": 2024,
+    "type": "IROS 2024",
+    "abstract": "In minimally invasive endovascular procedures, contrast-enhanced angiography remains the most robust imaging technique. However, it is at the expense of the patient and clinician's health due to prolonged radiation exposure. As an alternative, interventional ultrasound has notable benefits such as being radiation-free, fast to deploy, and having a small footprint in the operating room. Yet, ultrasound is hard to interpret, and highly prone to artifacts and noise. Additionally, interventional radiologists must undergo extensive training before they become qualified to diagnose and treat patients effectively, leading to a shortage of staff, and a lack of open-source datasets. In this work, we seek to address both problems by introducing a self-supervised deep learning architecture to segment catheters in longitudinal ultrasound images, without demanding any labeled data. The network architecture builds upon AiAReSeg, a segmentation transformer built with the Attention in Attention mechanism, and is capable of learning feature changes across time and space. To facilitate training, we used synthetic ultrasound data based on physics-driven catheter insertion simulations, and translated the data into a unique CT-Ultrasound common domain, CACTUSS, to improve the segmentation performance. We generated ground truth segmentation masks by computing the optical flow between adjacent frames using FlowNet2, and performed thresholding to obtain a binary map estimate. Finally, we validated our model on a test dataset, consisting of unseen synthetic data and images collected from silicon aorta phantoms, thus demonstrating its potential for applications to clinical data in the future.",
+    "url": "https://arxiv.org/abs/2403.14465",
+    "images": [
+      "/papers/cathflow/main-v2.jpg",
+      "/papers/cathflow/cathflow.jpg",
+      "/papers/cathflow/phantom.jpg"
+    ]
+  },
+  {
+    "id": "dynamon",
+    "title": "DynaMoN: Motion-Aware Fast and Robust Camera Localization for Dynamic Neural Radiance Fields",
+    "authors": [
+      "Nicolas Schischka",
+      "Hannah Schieber",
+      "Mert Asim Karaoglu",
+      "Melih Görgülü",
+      "Florian Grötzner",
+      "Alexander Ladikos",
+      "Daniel Roth",
+      "Nassir Navab",
+      "Benjamin Busam"
+    ],
+    "venue": "IEEE RA-L",
+    "year": 2024,
+    "type": "IEEE RA-L 2024",
+    "abstract": "The accurate reconstruction of dynamic scenes with neural radiance fields is significantly dependent on the estimation of camera poses. Widely used structure-from-motion pipelines encounter difficulties in accurately tracking the camera trajectory when faced with separate dynamics of the scene content and the camera movement. To address this challenge, we propose Dynamic Motion-Aware Fast and Robust Camera Localization for Dynamic Neural Radiance Fields (DynaMoN). DynaMoN utilizes semantic segmentation and generic motion masks to handle dynamic content for initial camera pose estimation and statics-focused ray sampling for fast and accurate novel-view synthesis. Our novel iterative learning scheme switches between training the NeRF and updating the pose parameters for an improved reconstruction and trajectory estimation quality. The proposed pipeline shows significant acceleration of the training process. We extensively evaluate our approach on two real-world dynamic datasets, the TUM RGB-D dataset and the BONN RGB-D Dynamic dataset. DynaMoN improves over the state-of-the-art both in terms of reconstruction quality and trajectory accuracy. We plan to make our code public to enhance research in this area.",
+    "url": "https://arxiv.org/abs/2309.08927",
+    "images": [
+      "/papers/dynamon/architecture-v7.jpg",
+      "/papers/dynamon/teaser.jpg",
+      "/papers/dynamon/dynamon-fig4zoom.jpg"
+    ]
+  },
+  {
+    "id": "satellite-sr-gan",
+    "title": "GAN-Based Dual Image Super Resolution for Satellite Imagery Decreasing Radiometric Uncertainty",
+    "authors": [
+      "Michael Greza",
+      "Indraditya Bhattacharya",
+      "Ludwig Hoegner",
+      "Boris Jutzi"
+    ],
+    "venue": "ISPRS Annals",
+    "year": 2024,
+    "type": "ISPRS Annals 2024",
+    "abstract": "Super resolution for satellite imagery possesses specific challenges due to its unique feature geometry compared to classic computer vision. Specifically, satellite images contain a high amount of relatively small, distributed high-frequency features that are hard to preserve when sampling up to a higher resolution. General adversarial networks (GANs) are suitable for super resolution tasks but need special attention concerning the geometric and radiometric accuracy of the results. We propose a network for versatile satellite imagery super resolution (VSISR) that focuses on high-frequency detail preservation and radiometric consistency. As a novelty, it is able to utilize a reference high resolution image during inference to lower hallucinations without altering the source image’s radiometric characteristics.A GAN that is already handling well high frequencies in standard computer vision cases is adapted for satellite imagery and supplemented with a mixed pixel approach for data augmentation. Training on a diverse RGB dataset from four satellite missions results in a versatile super resolution model that is optimized to preserve radiometric features and minimize hallucinations. Compared to other neural networks for satellite image super resolution in their respective datasets, VSISR performs in the middle regarding mean PSNR (25.30 dB) and SSIM (0.8098). Nevertheless, it is the first time that, using mixed pixel training on a comparably small dataset, this versatility concerning the satellite data source is achieved while maintaining their unique radiometric traits.",
+    "url": "https://doi.org/10.5194/isprs-annals-x-3-2024-155-2024",
+    "images": [
+      "/papers/satellite-sr-gan/figure-1.jpg",
+      "/papers/satellite-sr-gan/figure-2.jpg",
+      "/papers/satellite-sr-gan/figure-3.jpg"
+    ]
+  },
+  {
+    "id": "surgical-curriculum",
+    "title": "Implementation and Assessment of an Augmented Training Curriculum for Surgical Robotics",
+    "authors": [
+      "Alberto Rota",
+      "Ke Fan",
+      "Elena De Momi"
+    ],
+    "venue": "ICRA",
+    "year": 2024,
+    "type": "ICRA 2024",
+    "abstract": "The integration of high-level assistance algorithms in surgical robotics training curricula may be beneficial in establishing a more comprehensive and robust skillset for aspiring surgeons, improving their clinical performance as a consequence. This work presents the development and validation of a haptic-enhanced Virtual Reality simulator for surgical robotics training, featuring 8 surgical tasks that the trainee can interact with thanks to the embedded physics engine. This virtual simulated environment is augmented by the introduction of high-level haptic interfaces for robotic assistance that aim at re-directing the motion of the trainee's hands and wrists toward targets or away from obstacles, and providing a quantitative performance score after the execution of each training exercise.An experimental study shows that the introduction of enhanced robotic assistance into a surgical robotics training curriculum improves performance during the training process and, crucially, promotes the transfer of the acquired skills to an unassisted surgical scenario, like the clinical one.",
+    "url": "https://arxiv.org/abs/2507.07718",
+    "images": [
+      "/papers/surgical-curriculum/results-compact-days.jpg",
+      "/papers/surgical-curriculum/tasks-panel-8h.jpg",
+      "/papers/surgical-curriculum/vfs-graphics-detailed.jpg"
+    ]
+  },
+  {
+    "id": "breathing-compensated-us",
+    "title": "Implicit Neural Representations for Breathing-compensated Volume Reconstruction in Robotic Ultrasound",
+    "authors": [
+      "Yordanka Velikova",
+      "Mohammad Farid Azampour",
+      "Walter Simson",
+      "Marco Esposito",
+      "Nassir Navab"
+    ],
+    "venue": "ICRA",
+    "year": 2024,
+    "type": "ICRA 2024",
+    "abstract": "Ultrasound (US) imaging is widely used in diagnosing and staging abdominal diseases due to its lack of non-ionizing radiation and prevalent availability. However, significant inter-operator variability and inconsistent image acquisition hinder the widespread adoption of extensive screening programs. Robotic ultrasound systems have emerged as a promising solution, offering standardized acquisition protocols and the possibility of automated acquisition. Additionally, these systems enable access to 3D data via robotic tracking, enhancing volumetric reconstruction for improved ultrasound interpretation and precise disease diagnosis. However, the interpretability of 3D US reconstruction of abdominal images can be affected by the patient's breathing motion. This study introduces a method to compensate for breathing motion in 3D US compounding by leveraging implicit neural representations. Our approach employs a robotic ultrasound system for automated screenings. To demonstrate the method's effectiveness, we evaluate our proposed method for the diagnosis and monitoring of abdominal aorta aneurysms as a representative use case. Our experiments demonstrate that our proposed pipeline facilitates robust automated robotic acquisition, mitigating artifacts from breathing motion, and yields smoother 3D reconstructions for enhanced screening and medical diagnosis.",
+    "url": "https://arxiv.org/abs/2311.04999",
+    "images": [
+      "/papers/breathing-compensated-us/inr-arch.jpg",
+      "/papers/breathing-compensated-us/overview-fig.jpg",
+      "/papers/breathing-compensated-us/overview-setup-patient.jpg"
+    ]
+  },
+  {
+    "id": "matchu",
+    "title": "MatchU: Matching Unseen Objects for 6D Pose Estimation from RGB-D Images",
+    "authors": [
+      "Junwen Huang",
+      "Hao Yu",
+      "Kuan-Ting Yu",
+      "Nassir Navab",
+      "Slobodan Ilic",
+      "Benjamin Busam"
+    ],
+    "venue": "CVPR",
+    "year": 2024,
+    "type": "CVPR 2024",
+    "abstract": "Recent learning methods for object pose estimation require resource-intensive training for each individual object instance or category, hampering their scalability in real applications when confronted with previously unseen objects. In this paper, we propose MatchU, a Fuse-Describe-Match strategy for 6D pose estimation from RGB-D images. MatchU is a generic approach that fuses 2D texture and 3D geometric cues for 6D pose prediction of unseen objects. We rely on learning geometric 3D descriptors that are rotation-invariant by design. By encoding pose-agnostic geometry, the learned descriptors naturally generalize to unseen objects and capture symmetries. To tackle ambiguous associations using 3D geometry only, we fuse additional RGB information into our descriptor. This is achieved through a novel attention-based mechanism that fuses cross-modal information, together with a matching loss that leverages the latent space learned from RGB data to guide the descriptor learning process. Extensive experiments reveal the generalizability of both the RGB-D fusion strategy as well as the descriptor efficacy. Benefiting from the novel designs, MatchU surpasses all existing methods by a significant margin in terms of both accuracy and speed, even without the requirement of expensive re-training or rendering.",
+    "url": "https://arxiv.org/abs/2403.01517",
+    "images": [
+      "/papers/matchu/matchu-teaser.jpg",
+      "/papers/matchu/overview.jpg",
+      "/papers/matchu/vis-sym.jpg"
+    ]
+  },
+  {
+    "id": "surgical-adaptive-tasks",
+    "title": "Performance-Driven Tasks with Adaptive Difficulty for Enhanced Surgical Robotics Training",
+    "authors": [
+      "Alberto Rota",
+      "X. Sun",
+      "E. Momi"
+    ],
+    "venue": "IEEE BioRob",
+    "year": 2024,
+    "type": "BioRob 2024",
+    "abstract": "Surgical robotics training most often occurs through standardized curricula and exercises that lack customization and do not adapt to the different levels of proficiency that trainees often present. This work proposes a Virtual Reality (VR) simulator for surgical robotics that autonomously adjusts difficulty levels based on trainee performance, aiming to enhance skill retention and transfer. The study employs a performance-based adaptive difficulty approach, dynamically adjusting parameters of each task's morphology to match individual proficiency levels. The proposed adaptive simulator is evaluated against a non-adaptive counterpart through a week-long training program. The results demonstrate the effectiveness of the adaptive simulator in enhancing performance at higher difficulty levels, supporting its potential to benefit surgical education by providing a tailored and scalable training approach.",
+    "url": "https://doi.org/10.1109/BioRob60516.2024.10719830"
+  },
+  {
+    "id": "ride",
+    "title": "RIDE: Self-Supervised Learning of Rotation-Equivariant Keypoint Detection and Invariant Description for Endoscopy",
+    "authors": [
+      "Mert Asim Karaoglu",
+      "Viktoria Markova",
+      "Nassir Navab",
+      "Benjamin Busam",
+      "Alexander Ladikos"
+    ],
+    "venue": "ICRA",
+    "year": 2024,
+    "type": "ICRA 2024",
+    "abstract": "Unlike in natural images, in endoscopy there is no clear notion of an up-right camera orientation. Endoscopic videos therefore often contain large rotational motions, which require keypoint detection and description algorithms to be robust to these conditions. While most classical methods achieve rotation-equivariant detection and invariant description by design, many learning-based approaches learn to be robust only up to a certain degree. At the same time learning-based methods under moderate rotations often outperform classical approaches. In order to address this shortcoming, in this paper we propose RIDE, a learning-based method for rotation-equivariant detection and invariant description. Following recent advancements in group-equivariant learning, RIDE models rotation-equivariance implicitly within its architecture. Trained in a self-supervised manner on a large curation of endoscopic images, RIDE requires no manual labeling of training data. We test RIDE in the context of surgical tissue tracking on the SuPeR dataset as well as in the context of relative pose estimation on a repurposed version of the SCARED dataset. In addition we perform explicit studies showing its robustness to large rotations. Our comparison against recent learning-based and classical approaches shows that RIDE sets a new state-of-the-art performance on matching and relative pose estimation tasks and scores competitively on surgical tissue tracking.",
+    "url": "https://arxiv.org/abs/2309.09563",
+    "images": [
+      "/papers/ride/qualitative.jpg",
+      "/papers/ride/ride-title-v2.jpg"
+    ]
+  },
+  {
+    "id": "scrream",
+    "title": "SCRREAM: SCan, Register, REnder And Map — A Framework for Annotating Accurate and Dense 3D Indoor Scenes with a Benchmark",
+    "authors": [
+      "HyunJun Jung",
+      "Weihang Li",
+      "Shun-Cheng Wu",
+      "William Bittner",
+      "Nikolas Brasch",
+      "Jifei Song",
+      "Eduardo Pérez-Pellitero",
+      "Zhensong Zhang",
+      "Arthur Moreau",
+      "Nassir Navab",
+      "Benjamin Busam"
+    ],
+    "venue": "NeurIPS",
+    "year": 2024,
+    "type": "NeurIPS 2024",
+    "abstract": "Traditionally, 3d indoor datasets have generally prioritized scale over ground-truth accuracy in order to obtain improved generalization. However, using these datasets to evaluate dense geometry tasks, such as depth rendering, can be problematic as the meshes of the dataset are often incomplete and may produce wrong ground truth to evaluate the details. In this paper, we propose SCRREAM, a dataset annotation framework that allows annotation of fully dense meshes of objects in the scene and registers camera poses on the real image sequence, which can produce accurate ground truth for both sparse 3D as well as dense 3D tasks. We show the details of the dataset annotation pipeline and showcase four possible variants of datasets that can be obtained from our framework with example scenes, such as indoor reconstruction and SLAM, scene editing &amp; object removal, human reconstruction and 6d pose estimation. Recent pipelines for indoor reconstruction and SLAM serve as new benchmarks. In contrast to previous indoor dataset, our design allows to evaluate dense geometry tasks on eleven sample scenes against accurately rendered ground truth depth maps.",
+    "url": "https://arxiv.org/abs/2410.22715",
+    "images": [
+      "/papers/scrream/pipeline-full-large-font.jpg",
+      "/papers/scrream/teaser-v2.jpg",
+      "/papers/scrream/variation-overview.jpg"
+    ]
+  },
+  {
+    "id": "ssr-2d",
+    "title": "SSR-2D: Semantic 3D Scene Reconstruction from 2D Images",
+    "authors": [
+      "Junwen Huang",
+      "Alexey Artemov",
+      "Yujin Chen",
+      "Shuaifeng Zhi",
+      "Kai Xu",
+      "Matthias Nießner"
+    ],
+    "venue": "IEEE TPAMI",
+    "year": 2024,
+    "type": "IEEE TPAMI 2024",
+    "abstract": "Most deep learning approaches to comprehensive semantic modeling of 3D indoor spaces require costly dense annotations in the 3D domain. In this work, we explore a central 3D scene modeling task, namely, semantic scene reconstruction without using any 3D annotations. The key idea of our approach is to design a trainable model that employs both incomplete 3D reconstructions and their corresponding source RGB-D images, fusing cross-domain features into volumetric embeddings to predict complete 3D geometry, color, and semantics with only 2D labeling which can be either manual or machine-generated. Our key technical innovation is to leverage differentiable rendering of color and semantics to bridge 2D observations and unknown 3D space, using the observed RGB images and 2D semantics as supervision, respectively. We additionally develop a learning pipeline and corresponding method to enable learning from imperfect predicted 2D labels, which could be additionally acquired by synthesizing in an augmented set of virtual training views complementing the original real captures, enabling more efficient self-supervision loop for semantics. As a result, our end-to-end trainable solution jointly addresses geometry completion, colorization, and semantic mapping from limited RGB-D images, without relying on any 3D ground-truth information. Our method achieves the state-of-the-art performance of semantic scene completion on two large-scale benchmark datasets MatterPort3D and ScanNet, surpasses baselines even with costly 3D annotations in predicting both geometry and semantics. To our knowledge, our method is also the first 2D-driven method addressing completion and semantic segmentation of real-world 3D scans simultaneously.",
+    "url": "https://arxiv.org/abs/2302.03640",
+    "images": [
+      "/papers/ssr-2d/01-fig-teaser.jpg",
+      "/papers/ssr-2d/03-fig-method-overview.jpg",
+      "/papers/ssr-2d/03-fig-method-semantic-super.jpg"
     ]
   }
 ]

@@ -96,6 +96,78 @@
         "title": "3D Scene Understanding in the OR",
         "description": "Shiyu Li"
       }
+    ],
+    "publications": [
+      {
+        "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
+        "authors": "Florian Eichinger, Michael Greza, Benjamin Busam",
+        "venue": "ISPRS Archives",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026"
+      },
+      {
+        "title": "ThermalAssist: Towards Efficient Annotation of Thermal Imagery",
+        "authors": "Jingwei Zhu, Manoj Biswanath, Benjamin Busam",
+        "venue": "ISPRS Annals",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-annals-xi-2-2026-53-2026"
+      },
+      {
+        "title": "When does fusing hand-crafted knowledge with learned representations pay? A cost-normalized benchmark of stacking, substitution, and interference",
+        "authors": "Ahmad AlMughrabi, Albert Clop, Benjamin Busam, Ricardo Marques, Petia Radeva",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2608.21098"
+      },
+      {
+        "title": "SOS!: A Streamlined Object-Conditional Transformer for Model-free Segmentation",
+        "authors": "Jiaqi Hu, Junwen Huang, Hongli Xu, Peter KT Yu, Nassir Navab, Benjamin Busam, Slobodan Ilic",
+        "venue": "BMVC",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2608.15295"
+      },
+      {
+        "title": "UltraSoundNeRF: Sonographic neural reflection field for novel view synthesis",
+        "authors": "Magdalena Wysocki, Mohammad Farid Azampour, Benjamin Busam, N. Navab",
+        "venue": "Medical Image Analysis",
+        "year": 2026,
+        "url": "https://doi.org/10.1016/j.media.2026.104194"
+      },
+      {
+        "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
+        "authors": "Yordanka Velikova, Mahdi Saleh, Liming Kuang, Benjamin Busam",
+        "venue": "IROS",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.20670"
+      },
+      {
+        "title": "UnderOneFacade: Worldwide Facade Semantic Segmentation Benchmark Dataset",
+        "authors": "Yi Wang, Fan Wang, Prabin Gyawali, Ziyang Xu, Anna Klimkowska, Yixiong Jing, Wanru Yang, Filip Biljecki, Christoph Holst, Benjamin Busam, Brian Sheil, Olaf Wysocki",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.02018"
+      },
+      {
+        "title": "DeWorldSG: Depth-Aware 3D Semantic Scene Graph Generation via World-Model Priors",
+        "authors": "Seok-Young Kim, Abdelrahman Elskhawy, Taewook Ha, Dooyoung Kim, Eunjae Shin, Benjamin Busam, Woontack Woo",
+        "venue": "ECCV",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.00889"
+      },
+      {
+        "title": "Pose Anything Anywhere: Model-free Object Poses from Arbitrary References",
+        "authors": "Hongli Xu, Jiaqi Hu, Junwen Huang, Boyang Zhong, Peter KT Yu, Nassir Navab, Benjamin Busam, Slobodan Ilic",
+        "venue": "ECCV",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2606.23634"
+      },
+      {
+        "title": "Supercharging Thermal Gaussian Splatting with Depth Estimation",
+        "authors": "Manoj Biswanath, Chenxin Cai, Hannah Schieber, Daniel Roth, Benjamin Busam",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2605.30328"
+      }
     ]
   },
   {
@@ -121,7 +193,44 @@
     "lastName": "Collorone",
     "category": "Research Associates",
     "title": "Dr.",
-    "email": "go93rij@mytum.de"
+    "email": "go93rij@mytum.de",
+    "publications": [
+      {
+        "title": "MoDiPO: text-to-motion alignment via AI-feedback-driven Direct Preference Optimization",
+        "authors": "Massimiliano Pappa, Luca Collorone, Giovanni Ficarra, Indro Spinelli, Fabio Galasso",
+        "venue": "Frontiers in Computer Science",
+        "year": 2026,
+        "url": "https://doi.org/10.3389/fcomp.2026.1707808"
+      },
+      {
+        "title": "PhysTalk: Language-driven Real-time Physics in 3D Gaussian Scenes",
+        "authors": "Luca Collorone, Mert Kiray, Indro Spinelli, Fabio Galasso, Benjamin Busam",
+        "venue": "arXiv",
+        "year": 2025,
+        "url": "http://arxiv.org/abs/2512.24986"
+      },
+      {
+        "title": "MonSTeR: A Unified Model for Motion, Scene, Text Retrieval",
+        "authors": "Luca Collorone, Matteo Gioia, Massimiliano Pappa, Paolo Leoni, Giovanni Ficarra, Or Litany, Indro Spinelli, Fabio Galasso",
+        "venue": "ICCV",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/iccv51701.2025.01018"
+      },
+      {
+        "title": "ANTHROPOS-V: Benchmarking the Novel Task of Crowd Volume Estimation",
+        "authors": "Luca Collorone, Stefano D'Arrigo, Massimiliano Pappa, Guido Maria D'Amely di Melendugno, Giovanni Ficarra, Fabio Galasso",
+        "venue": "WACV",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/wacv61041.2025.00516"
+      },
+      {
+        "title": "Multimodal Motion Conditioned Diffusion Model for Skeleton-based Video Anomaly Detection",
+        "authors": "Alessandro Flaborea, Luca Collorone, Guido D'Amely, Stefano D'Arrigo, Bardh Prenkaj, Fabio Galasso",
+        "venue": "ICCV",
+        "year": 2023,
+        "url": "https://doi.org/10.1109/iccv51070.2023.00947"
+      }
+    ]
   },
   {
     "id": "florian-eberhardt",
@@ -172,6 +281,15 @@
         "title": "Autonomous Landing Site Detection for UAVs",
         "description": "Research collaboration with Institute of Flight System Dynamics (TUM) - This project is situated at the intersection of Photogrammetry, Computer Vision and Robotics, and focuses on the development of a multi-modal framework for autonomous landing site detection for (large-scale) UAVs in unstructured environments. The research addresses both hardware and software aspects, including: the design and integration of a synchronized LiDAR-RGB sensor stack, software deployment within ROS2, multi-modal data processing & sensor fusion for robust aerial perception."
       }
+    ],
+    "publications": [
+      {
+        "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
+        "authors": "Florian Eichinger, Michael Greza, Benjamin Busam",
+        "venue": "ISPRS Archives",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026"
+      }
     ]
   },
   {
@@ -186,30 +304,58 @@
     "photo": "michael-greza.jpg",
     "publications": [
       {
+        "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
+        "authors": "Florian Eichinger, Michael Greza, Benjamin Busam",
+        "venue": "ISPRS Archives",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026"
+      },
+      {
+        "title": "Transferability and Generalization Investigation of Multiclass Cloud Masking Networks for Unseen Biomes and Sensors",
+        "authors": "Michael Greza, Tianyi You, Boris Jutzi",
+        "venue": "ISPRS Annals",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-annals-x-3-w4-2025-185-2026"
+      },
+      {
+        "title": "TUM2TWIN: Introducing the Large-Scale Multimodal Urban Digital Twin Benchmark Dataset",
+        "authors": "Olaf Wysocki, Benedikt Schwab, Manoj Kumar Biswanath, Michael Greza, Qilin Zhang, Jingwei Zhu, Thomas Froech, Medhini Heeramaglore, Ihab Hijazi, Khaoula Kanna, Mathias Pechinger, Zhaiyu Chen, Yao Sun, Alejandro Rueda Segura, Ziyang Xu, Omar AbdelGafar, Mansour Mehranfar, Chandan Yeshwanth, Yueh-Cheng Liu, Hadi Yazdi, Jiapan Wang, Stefan Auer, Katharina Anders, Klaus Bogenberger, Andre Borrmann, Angela Dai, Ludwig Hoegner, Christoph Holst, Thomas H. Kolbe, Ferdinand Ludwig, Matthias Nießner, Frank Petzold, Xiao Xiang Zhu, Boris Jutzi",
+        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing",
+        "year": 2026,
+        "url": "https://doi.org/10.1016/j.isprsjprs.2025.12.013"
+      },
+      {
+        "title": "U-Net- and Transformer-Based Cloud Masking for Multispectral Earth Observation Satellite Missions",
+        "authors": "Tianyi You, Michael Greza, Boris Jutzi",
+        "venue": "IGARSS",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/igarss55030.2025.11242475"
+      },
+      {
         "title": "GAN-Based Dual Image Super Resolution for Satellite Imagery Decreasing Radiometric Uncertainty",
-        "authors": "Greza, Michael; Bhattacharya, Indraditya; Hoegner, Ludwig; Jutzi, Boris",
-        "venue": "ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, 2024, 155--162",
+        "authors": "Michael Greza, Indraditya Bhattacharya, Ludwig Hoegner, Boris Jutzi",
+        "venue": "ISPRS Annals",
         "year": 2024,
-        "url": "https://dx.doi.org/10.5194/isprs-annals-x-3-2024-155-2024"
+        "url": "https://doi.org/10.5194/isprs-annals-x-3-2024-155-2024"
       },
       {
         "title": "Bayerisches Satellitennetzwerk für Fernerkundung und Biomonitoring",
-        "authors": "Bauer, Rainer; Pail, Roland; Schilling, Klaus; Stilla, Uwe; Schleder, Daniela; Dotterweich, Michael; Roschlaub, Robert; Kleinschrodt, Alexander; Draschka, Lukas; Gruber, Thomas; Zingerle, Philipp; Greza, Michael",
-        "venue": "zfv – Zeitschrift für Geodäsie, Geoinformation und Landmanagement 148 (4/2023), 2023, 219-229",
+        "authors": "Rainer Bauer, Roland Pail, Klaus Schilling, Uwe Stilla, Daniela Schleder, Michael Dotterweich, Robert Roschlaub, Alexander Kleinschrodt, Lukas Draschka, Thomas Gruber, Philipp Zingerle, Michael Greza",
+        "venue": "zfv",
         "year": 2023,
         "url": "https://dx.doi.org/10.12902/zfv-0436-2023"
       },
       {
-        "title": "Grundlagen zur automatisierten Ermittlung hoch­genauer Passpunkte für CubeSat-Satellitenbilder mittels Deep-Learning-gestützter Delaunay-Triangulation basierend auf Gebäudedaten des Liegenschaftskatasters",
-        "authors": "Roschlaub, Robert; Glock, Clemens; Zerndl, Manfred; Maier, Andreas; Möst, Karin; Hirt, Philipp-Roman; Greza, Michael",
-        "venue": "zfv – Zeitschrift für Geodäsie, Geoinformation und Landmanagement 148 (2/2023), 2023, 66-93",
+        "title": "Grundlagen zur automatisierten Ermittlung hochgenauer Passpunkte für CubeSat-Satellitenbilder mittels Deep-Learning-gestützter Delaunay-Triangulation basierend auf Gebäudedaten des Liegenschaftskatasters",
+        "authors": "Robert Roschlaub, Clemens Glock, Manfred Zerndl, Andreas Maier, Karin Möst, Philipp-Roman Hirt, Michael Greza",
+        "venue": "zfv",
         "year": 2023,
         "url": "https://dx.doi.org/10.12902/zfv-0424-2023"
       },
       {
         "title": "Simulation of Earth Observation Data Utilizing a Virtual Satellite Camera",
-        "authors": "Lenz, Nino; Greza, Michael",
-        "venue": ", 43. Wissenschaftlich-Technische Jahrestagung der DGPF e.V. München. Publikationen der Deutschen Gesellschaft für Photogrammetrie, Fernerkundung und Geoinformation (DGPF) e.V. , 2023",
+        "authors": "Nino Lenz, Michael Greza",
+        "venue": "DGPF Jahrestagung",
         "year": 2023,
         "url": "https://dx.doi.org/10.24407/kxp:184104914x"
       }
@@ -227,7 +373,75 @@
     "lastName": "Kuang",
     "category": "Research Associates",
     "title": "M.Sc.",
-    "email": "liming.kuang@tum.de"
+    "email": "liming.kuang@tum.de",
+    "publications": [
+      {
+        "title": "Still on Target? An Evaluation of IPv6 Target Generation Algorithms",
+        "authors": "Lion Steger, Liming Kuang, Johannes Zirngibl, Georg Carle, Oliver Gasser",
+        "venue": "IEEE Transactions on Network and Service Management",
+        "year": 2026,
+        "url": "https://doi.org/10.1109/TNSM.2026.3705935"
+      },
+      {
+        "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
+        "authors": "Yordanka Velikova, Mahdi Saleh, Liming Kuang, Benjamin Busam",
+        "venue": "IROS",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.20670"
+      },
+      {
+        "title": "Node-RF: Learning Generalized Continuous Space-Time Scene Dynamics with Neural ODE-based NeRFs",
+        "authors": "Hiran Sarkar, Liming Kuang, Yordanka Velikova, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2603.12078"
+      },
+      {
+        "title": "ConceptPose: Training-Free Zero-Shot Object Pose Estimation using Concept Vectors",
+        "authors": "Liming Kuang, Yordanka Velikova, Mahdi Saleh, Jan-Nico Zaech, Danda Pani Paudel, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2512.09056"
+      },
+      {
+        "title": "Topology-Aware and Highly Generalizable Deep Reinforcement Learning for Efficient Retrieval in Multi-Deep Storage Systems",
+        "authors": "Funing Li, Yuan Tian, Ruben Noortwyck, Jifeng Zhou, Liming Kuang, Robert Schulz",
+        "venue": "Journal of Intelligent Manufacturing",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2506.14787"
+      },
+      {
+        "title": "CathFlow: Self-Supervised Segmentation of Catheters in Interventional Ultrasound Using Optical Flow and Transformers",
+        "authors": "Alex Ranne, Liming Kuang, Yordanka Velikova, Nassir Navab, Ferdinando Rodriguez y Baena",
+        "venue": "IROS",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2403.14465"
+      },
+      {
+        "title": "Target Acquired? Evaluating Target Generation Algorithms for IPv6",
+        "authors": "Lion Steger, Liming Kuang, Johannes Zirngibl, Georg Carle, Oliver Gasser",
+        "venue": "TMA",
+        "year": 2023,
+        "url": "https://arxiv.org/abs/2307.06872"
+      }
+    ]
+  },
+  {
+    "id": "nino-lenz",
+    "firstName": "Nino",
+    "lastName": "Lenz",
+    "category": "Research Associates",
+    "title": "M.Sc.",
+    "email": "nino.lenz@tum.de",
+    "publications": [
+      {
+        "title": "Simulation of Earth Observation Data Utilizing a Virtual Satellite Camera",
+        "authors": "Nino Lenz, Michael Greza",
+        "venue": "DGPF Jahrestagung",
+        "year": 2023,
+        "url": "https://dx.doi.org/10.24407/kxp:184104914x"
+      }
+    ]
   },
   {
     "id": "weihang-li",
@@ -247,32 +461,74 @@
     ],
     "publications": [
       {
-        "title": "Texture2LoD3: Enabling LoD3 Building Reconstruction With Panoramic Images",
-        "authors": "Tang, Wenzhao; Li, Weihang; Liang, Xiucheng; Wysocki, Olaf; Biljecki, Filip; Holst, Christoph; Jutzi, Boris",
-        "venue": "https://arxiv.org/abs/2504.05249, 2025",
+        "title": "Object Pose Transformer: Unifying Unseen Object Pose Estimation",
+        "authors": "Weihang Li, Lorenzo Garattoni, Fabien Despinoy, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2603.23370"
+      },
+      {
+        "title": "Generative 6D Pose Estimation via Conditional Flow Matching",
+        "authors": "Amir Hamza, Davide Boscaini, Weihang Li, Benjamin Busam, Fabio Poiesi",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2602.19719"
+      },
+      {
+        "title": "SurgGoal: Rethinking Surgical Planning Evaluation via Goal-Satisfiability",
+        "authors": "Ruochen Li, Kun Yuan, Yufei Xia, Yue Zhou, Qingyu Lu, Weihang Li, Youxiang Zhu, Nassir Navab",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2601.10455"
+      },
+      {
+        "title": "DynSUP: Dynamic Gaussian Splatting from an Unposed Image Pair",
+        "authors": "Weihang Li, Weirong Chen, Shenhan Qian, Jiajie Chen, Daniel Cremers, Haoang Li",
+        "venue": "IEEE TIP",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2412.00851"
+      },
+      {
+        "title": "TRICKY 2025 Challenge on Monocular Depth from Images of Specular and Transparent Surfaces",
+        "authors": "Pierluigi Zama Ramirez, Alex Costanzino, Fabio Tosi, Matteo Poggi, L. Di Stefano, Jean-Baptiste Weibel, Doris Antensteiner, Markus Vincze, Benjamin Busam, Guangyao Zhai, Weihang Li, Junwen Huang, Hyunjun Jung, M. Lavreniuk, Pihai Sun, Yijun Luo, Hongtao Wang, Manying Gao, Kui Jiang, Junjun Jiang",
+        "venue": "ICCV Workshops",
         "year": 2025,
-        "url": "https://dx.doi.org/10.48550/arxiv.2504.05249"
+        "url": "https://doi.org/10.1109/ICCVW69036.2025.00348"
       },
       {
-        "title": "A Lightweight and Detector-Free 3D Single Object Tracker on Point Clouds",
-        "authors": "Xia, Yan; Wu, Qiangqiang; Li, Wei; Chan, Antoni B.; Stilla, Uwe",
-        "venue": "IEEE Transactions on Intelligent Transportation Systems 24 (5), 2023, 5543-5554",
-        "year": 2023,
-        "url": "https://dx.doi.org/10.1109/tits.2023.3243470"
+        "title": "TRICKY 2025 HouseCat6D Object Pose Estimation Challenge with Specular and Transparent Surfaces",
+        "authors": "Weihang Li, Junwen Huang, Hyunjun Jung, Guangyao Zhai, Pierluigi Zama Ramirez, Alex Costanzino, Fabio Tosi, Matteo Poggi, L. Di Stefano, Jean-Baptiste Weibel, Doris Antensteiner, Markus Vincze, Jing He, Yiqing Wang, Kexin Zhang, Licheng Jiao, Lingling Li, Fang Liu, Wenping Ma, Benjamin Busam",
+        "venue": "ICCV Workshops",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/ICCVW69036.2025.00349"
       },
       {
-        "title": "ASFM-Net: asymmetrical siamese feature matching network for point completion",
-        "authors": "Xia, Yaqi; Xia, Yan; Li, Wei; Song, Rui; Cao, Kailang; Stilla, Uwe",
-        "venue": "Proceedings of the 29th ACM International Conference on Multimedia, Association for Computing Machinery, 2021",
-        "year": 2021,
-        "url": "https://dx.doi.org/10.1145/3474085.3475348"
+        "title": "Texture2LoD3: Enabling LoD3 Building Reconstruction With Panoramic Images",
+        "authors": "Wenzhao Tang, Weihang Li, Xiucheng Liang, Olaf Wysocki, Filip Biljecki, Christoph Holst, Boris Jutzi",
+        "venue": "CVPR",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2504.05249"
       },
       {
-        "title": "Foreword to the special issue on advances in pattern recognition in remote sensing",
-        "authors": "Michaelsen, E.; Shan, J.; Stilla, U.; Li, W.",
-        "venue": "IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing 11 (11), 2018, 3927--3930",
-        "year": 2018,
-        "url": "https://dx.doi.org/10.1109/jstars.2018.2878111"
+        "title": "GCE-Pose: Global Context Enhancement for Category-level Object Pose Estimation",
+        "authors": "Weihang Li, Hongli Xu, Junwen Huang, Hyunjun Jung, Peter KT Yu, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2502.04293"
+      },
+      {
+        "title": "SCRREAM: SCan, Register, REnder And Map — A Framework for Annotating Accurate and Dense 3D Indoor Scenes with a Benchmark",
+        "authors": "HyunJun Jung, Weihang Li, Shun-Cheng Wu, William Bittner, Nikolas Brasch, Jifei Song, Eduardo Pérez-Pellitero, Zhensong Zhang, Arthur Moreau, Nassir Navab, Benjamin Busam",
+        "venue": "NeurIPS",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2410.22715"
+      },
+      {
+        "title": "Knowledge-based Programming by Demonstration using semantic action models for industrial assembly",
+        "authors": "Junsheng Ding, Haifan Zhang, Weihang Li, Liangwei Zhou, A. Perzylo",
+        "venue": "IROS",
+        "year": 2024,
+        "url": "https://doi.org/10.1109/IROS58592.2024.10802511"
       }
     ],
     "links": [
@@ -304,6 +560,78 @@
         "label": "Homepage",
         "url": "https://www.cs.cit.tum.de/camp/members/yordanka-velikova/"
       }
+    ],
+    "publications": [
+      {
+        "title": "ZODIAC: Zero-shot Octree-based Diffusion for Anatomical Completion",
+        "authors": "Miruna-Alexandra Gafencu, Vlad Bratulescu, Yordanka Velikova, Mohammad Farid Azampour, Nassir Navab",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2608.24422"
+      },
+      {
+        "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
+        "authors": "Yordanka Velikova, Mahdi Saleh, Liming Kuang, Benjamin Busam",
+        "venue": "IROS",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.20670"
+      },
+      {
+        "title": "DefSynUS: Real-time Patient-specific Intrahepatic Vessel Identification via Deformation-Aware CT-US Domain Adaptation",
+        "authors": "Karl-Philippe Beaudet, Yordanka Velikova, Sidaty El Hadramy, Nassir Navab, Philippe Cattin, Juan Verde, Stéphane Cotin",
+        "venue": "IJCARS",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2605.29570"
+      },
+      {
+        "title": "Feasibility of Augmented Reality-Guided Robotic Ultrasound with Cone-Beam CT Integration for Spine Procedures",
+        "authors": "Tianyu Song, Felix Pabst, Feng Li, Yordanka Velikova, Miruna-Alexandra Gafencu, Yuan Bi, Ulrich Eck, Nassir Navab",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2603.22174"
+      },
+      {
+        "title": "Node-RF: Learning Generalized Continuous Space-Time Scene Dynamics with Neural ODE-based NeRFs",
+        "authors": "Hiran Sarkar, Liming Kuang, Yordanka Velikova, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2603.12078"
+      },
+      {
+        "title": "ConceptPose: Training-Free Zero-Shot Object Pose Estimation using Concept Vectors",
+        "authors": "Liming Kuang, Yordanka Velikova, Mahdi Saleh, Jan-Nico Zaech, Danda Pani Paudel, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2512.09056"
+      },
+      {
+        "title": "US-X Complete: A Multi-Modal Approach to Anatomical 3D Shape Recovery",
+        "authors": "Miruna-Alexandra Gafencu, Yordanka Velikova, Nassir Navab, Mohammad Farid Azampour",
+        "venue": "International Workshop on Shape in Medical Imaging",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2511.15600"
+      },
+      {
+        "title": "Shape Completion and Real-Time Visualization in Robotic Ultrasound Spine Acquisitions",
+        "authors": "Miruna-Alexandra Gafencu, Reem Shaban, Yordanka Velikova, Mohammad Farid Azampour, Nassir Navab",
+        "venue": "IROS",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2508.08923"
+      },
+      {
+        "title": "Ultrasound confidence maps with neural implicit representation",
+        "authors": "V. B. Yesilkaynak, Vanessa Gonzalez Duque, Magdalena Wysocki, Yordanka Velikova, Diana Mateus, N. Navab",
+        "venue": "Annual Conference on Medical Image Understanding and Analysis",
+        "year": 2024,
+        "url": "https://doi.org/10.1007/978-3-031-66958-3_7"
+      },
+      {
+        "title": "Deep Spectral Methods for Unsupervised Ultrasound Image Interpretation",
+        "authors": "Oleksandra Tmenova, Yordanka Velikova, Mahdi Saleh, Nassir Navab",
+        "venue": "MICCAI",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2408.02043"
+      }
     ]
   },
   {
@@ -327,75 +655,76 @@
         "label": "Homepage",
         "url": "https://demianhj.github.io/"
       }
-    ]
-  },
-  {
-    "id": "manoj-biswanath",
-    "firstName": "Manoj Kumar",
-    "lastName": "Biswanath",
-    "category": "Guests (Externals, Scholarships)",
-    "title": "M.Sc.",
-    "email": "manoj.biswanath@tum.de",
-    "phone": "+49 89 289 22638",
-    "room": "1776",
-    "officeHours": "09:00 – 18:00",
-    "photo": "manoj-biswanath.jpg",
+    ],
     "publications": [
       {
-        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
-        "authors": "Wysocki, O.; Schwab, B.; Biswanath, M. K.; Greza, M.; Zhang, Q.; Zhu, J.; Froech, T.; Heeramaglore, M.; Hijazi, I.; Kanna, K.; Pechinger, M.; Chen, Z.; Sun, Y.; Rueda Segura, A.; Xu, Z.; AbdelGafar, O.; Mehranfar, M.; Yeshwanth, C.; Liu, Y.-C.; Yazdi, H.; Wang, J.; Auer, S.; Anders, K.; Bogenberger, K.; Borrmann, A.; Dai, A.; Hoegner, L.; Holst, C.; Kolbe, T. H.; Ludwig, F.; Nießner, M.; Petzold, F.; Zhu, X. X.; Jutzi, B.",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
-        "year": 2026,
-        "url": "https://mediatum.ub.tum.de/node?id=1840528&change_language=en"
+        "title": "XYZ-IBD: Benchmarking Robust 6D Object Pose Estimation under Real-World Industrial Complexity",
+        "authors": "J Huang, J Hu, PKT Yu, S Ilic, M Sundermeyer, B Busam",
+        "venue": "arXiv",
+        "year": 2026
       },
       {
-        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
-        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; ...; Xu, Ziyang; AbdelGafar, Omar; ...; Holst, Christoph; ...; Jutzi, Boris",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
+        "title": "Pose Anything Anywhere: Model-free Object Poses from Arbitrary References",
+        "authors": "Hongli Xu, Jiaqi Hu, Junwen Huang, Boyang Zhong, Peter KT Yu, Nassir Navab, Benjamin Busam, Slobodan Ilic",
+        "venue": "ECCV",
         "year": 2026,
-        "url": "https://mediatum.ub.tum.de/node?id=1840389&change_language=en"
+        "url": "https://arxiv.org/abs/2606.23634"
       },
       {
-        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
-        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, Alejandro Rueda; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, Yueh-Cheng; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, Thomas H.; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, Xiao Xiang; Jutzi, Boris",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
-        "year": 2026,
-        "url": "https://mediatum.ub.tum.de/node?id=1842371&change_language=en"
+        "title": "BioDet: Boosting Industrial Object Detection with Image Preprocessing Strategies",
+        "authors": "Jiaqi Hu, Hongli Xu, Junwen Huang, Peter KT Yu, Slobodan Ilic, Benjamin Busam",
+        "venue": "ICCV Workshops",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2510.21000"
       },
       {
-        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
-        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, Manoj Kumar; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, Alejandro Rueda; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, Yueh-Cheng; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, Thomas H.; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, Xiao Xiang; Jutzi, Boris",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810-830",
-        "year": 2026,
-        "url": "https://mediatum.ub.tum.de/node?id=1840426&change_language=en"
+        "title": "RayPose: Ray Bundling Diffusion for Template Views in Unseen 6D Object Pose Estimation",
+        "authors": "Junwen Huang, Shishir Reddy Vutukur, Peter KT Yu, Nassir Navab, Slobodan Ilic, Benjamin Busam",
+        "venue": "ICCV",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2510.18521"
       },
       {
-        "title": "TUM2TWIN: Introducing the large-scale multimodal urban digital twin benchmark dataset",
-        "authors": "Wysocki, Olaf; Schwab, Benedikt; Biswanath, \\Manoj Kumar\\; Greza, Michael; Zhang, Qilin; Zhu, Jingwei; Froech, Thomas; Heeramaglore, Medhini; Hijazi, Ihab; Kanna, Khaoula; Pechinger, Mathias; Chen, Zhaiyu; Sun, Yao; Segura, \\Alejandro Rueda\\; Xu, Ziyang; AbdelGafar, Omar; Mehranfar, Mansour; Yeshwanth, Chandan; Liu, \\Yueh Cheng\\; Yazdi, Hadi; Wang, Jiapan; Auer, Stefan; Anders, Katharina; Bogenberger, Klaus; Borrmann, André; Dai, Angela; Hoegner, Ludwig; Holst, Christoph; Kolbe, \\Thomas H.\\; Ludwig, Ferdinand; Nießner, Matthias; Petzold, Frank; Zhu, \\Xiao Xiang\\; Jutzi, Boris",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing 232 , 2026, 810--830",
-        "year": 2026,
-        "url": "https://mediatum.ub.tum.de/node?id=1843562&change_language=en"
+        "title": "TRICKY 2025 HouseCat6D Object Pose Estimation Challenge with Specular and Transparent Surfaces",
+        "authors": "Weihang Li, Junwen Huang, Hyunjun Jung, Guangyao Zhai, Pierluigi Zama Ramirez, Alex Costanzino, Fabio Tosi, Matteo Poggi, L. Di Stefano, Jean-Baptiste Weibel, Doris Antensteiner, Markus Vincze, Jing He, Yiqing Wang, Kexin Zhang, Licheng Jiao, Lingling Li, Fang Liu, Wenping Ma, Benjamin Busam",
+        "venue": "ICCV Workshops",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/ICCVW69036.2025.00349"
       },
       {
-        "title": "Artificial Intelligence for the Automated Creation of Multi-scale Digital Twins of the Built World—AI4TWINNING",
-        "authors": "Borrmann, A.; Biswanath, M.; Braun, A.; Zhaiyu, C.; Cremers, D.; Heeramaglore, M.; Hoegner, L.; Mehranfar, M.; Kolbe, T.; Petzold, F.; Rueda, A.; Solonets, S.; Zhu, Z.",
-        "venue": "In: Lecture Notes in Geoinformation and Cartography. Springer Nature Switzerland, 2024, 233--247",
+        "title": "TRICKY 2025 Challenge on Monocular Depth from Images of Specular and Transparent Surfaces",
+        "authors": "Pierluigi Zama Ramirez, Alex Costanzino, Fabio Tosi, Matteo Poggi, L. Di Stefano, Jean-Baptiste Weibel, Doris Antensteiner, Markus Vincze, Benjamin Busam, Guangyao Zhai, Weihang Li, Junwen Huang, Hyunjun Jung, M. Lavreniuk, Pihai Sun, Yijun Luo, Hongtao Wang, Manying Gao, Kui Jiang, Junjun Jiang",
+        "venue": "ICCV Workshops",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/ICCVW69036.2025.00348"
+      },
+      {
+        "title": "TTAPose: Test-Time Adaptation for Unseen Object Pose Estimation",
+        "authors": "Junwen Huang, Peter KT Yu, N. Navab, Benjamin Busam",
+        "venue": "IEEE RA-L",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/LRA.2025.3564218"
+      },
+      {
+        "title": "GCE-Pose: Global Context Enhancement for Category-level Object Pose Estimation",
+        "authors": "Weihang Li, Hongli Xu, Junwen Huang, Hyunjun Jung, Peter KT Yu, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2502.04293"
+      },
+      {
+        "title": "Alignist: CAD-Informed Orientation Distribution Estimation by Fusing Shape and Correspondences",
+        "authors": "Shishir Reddy Vutukur, Rasmus Laurvig Haugaard, Junwen Huang, Benjamin Busam, Tolga Birdal",
+        "venue": "ECCV",
         "year": 2024,
-        "url": "https://mediatum.ub.tum.de/node?id=1788403&change_language=en"
+        "url": "https://arxiv.org/abs/2409.06683"
       },
       {
-        "title": "Thermal Mapping from Point Clouds to 3D Building Model Facades",
-        "authors": "Biswanath, Manoj Kumar; Hoegner, Ludwig; Stilla, Uwe",
-        "venue": "Remote Sensing 15 (19), 2023",
-        "year": 2023,
-        "url": "https://mediatum.ub.tum.de/node?id=1726956&change_language=en"
-      },
-      {
-        "title": "Artificial Intelligence for the automated creation of multi-scale digital twins of the built world – AI4TWINNING",
-        "authors": "Borrmann, A.; Biswanath, M.; Braun, A.; Zhaiyu, C.; Cremers, D.; Heeramaglore, M.; Hoegner, L.; Mehranfar, M.; Kolbe, T.; Petzold, F.; Rueda, A.; Solonets, S.; Zhu, Z.",
-        "venue": "Proc. of the 18th 3D GeoInfo Conference, 2023",
-        "year": 2023,
-        "url": "https://mediatum.ub.tum.de/node?id=1721447&change_language=en"
+        "title": "A self‐learning human‐machine cooperative control method based on driver intention recognition",
+        "authors": "Yan Jiang, Yuyan Ding, Xinglong Zhang, Xin Xu, Junwen Huang",
+        "venue": "CAAI Transactions on Intelligence Technology",
+        "year": 2024,
+        "url": "https://doi.org/10.1049/cit2.12313"
       }
     ]
   },
@@ -404,20 +733,28 @@
     "firstName": "Abdelrahman",
     "lastName": "Elskhawy",
     "category": "Guests (Externals, Scholarships)",
-    "email": "a.elskhawy@tum.de"
-  },
-  {
-    "id": "mert-kiray",
-    "firstName": "Mert",
-    "lastName": "Kıray",
-    "category": "Guests (Externals, Scholarships)",
-    "title": "M.Sc.",
-    "email": "mert.kiray@tum.de",
-    "photo": "mert-kiray.jpg",
-    "links": [
+    "email": "a.elskhawy@tum.de",
+    "publications": [
       {
-        "label": "Homepage",
-        "url": "https://www.cs.cit.tum.de/camp/members/mert-kiray/"
+        "title": "DeWorldSG: Depth-Aware 3D Semantic Scene Graph Generation via World-Model Priors",
+        "authors": "Seok-Young Kim, Abdelrahman Elskhawy, Taewook Ha, Dooyoung Kim, Eunjae Shin, Benjamin Busam, Woontack Woo",
+        "venue": "ECCV",
+        "year": 2026,
+        "url": "https://doi.org/10.48550/arxiv.2607.00889"
+      },
+      {
+        "title": "PRISM-0: A Predicate-Rich Scene Graph Generation Framework for Zero-Shot Open-Vocabulary Tasks",
+        "authors": "Abdelrahman Elskhawy, Mengze Li, Nassir Navab, Benjamin Busam",
+        "venue": "arXiv",
+        "year": 2025,
+        "url": "http://arxiv.org/abs/2504.00844"
+      },
+      {
+        "title": "Continual Class Incremental Learning for CT Thoracic Segmentation",
+        "authors": "Abdelrahman Elskhawy, Aneta Lisowska, Matthias Keicher, Josep Henry, Paul Thomson, Nassir Navab",
+        "venue": "LNCS",
+        "year": 2020,
+        "url": "https://doi.org/10.1007/978-3-030-60548-3_11"
       }
     ]
   },
@@ -429,46 +766,74 @@
     "email": "spiegel@tum.de",
     "publications": [
       {
-        "title": "Improving the exterior orientation of Mars Express regarding different imaging cases",
-        "authors": "Spiegel, M.; Stilla, U.; Neukum, G.",
-        "venue": "International Archives of Photogrammetry and Remote Sensing and Spatial Information Sciences, 2006",
+        "title": "The first Quadrangle of the Mars Express HRSC Multi Orbit Data Products (MC-11-E)",
+        "authors": "K. Gwinner, R. Jaumann, Jonas Bostelmann, A. Dumke, S. Elgner, Christian Heipke, Elke Kersten, G. Michael, Frank Preusker, T. Roatsch, Ralph Schmidt, F. Scholten, Michael Spiegel, S. van Gasselt, S. H. G. Walter, Global Topography",
+        "venue": "DLR elib",
+        "year": 2015,
+        "url": "https://elib.dlr.de/101151/1/EPSC2015-672.pdf"
+      },
+      {
+        "title": "Derivation and Validation of High-Resolution Digital Terrain Models from Mars Express HRSC Data",
+        "authors": "Klaus Gwinner, Frank Scholten, Michael Spiegel, Ralph Schmidt, Bernd Giese, Jürgen Oberst, Christian Heipke, Ralf Jaumann, Gerhard Neukum",
+        "venue": "Photogrammetric Engineering & Remote Sensing",
+        "year": 2009,
+        "url": "https://doi.org/10.14358/pers.75.9.1127"
+      },
+      {
+        "title": "High-Resolution Digital Terrain Models and Ortho-Image Mosaics of Mars: Generation on the Basis of Mars-Express HRSC Data",
+        "authors": "A. Dumke, Michael Spiegel, R. Schmidt, G. Neukum",
+        "venue": "LPSC",
+        "year": 2008,
+        "url": "https://www.ipi.uni-hannover.de/uploads/tx_tkpublikationen/Schmidt_1910.pdf"
+      },
+      {
+        "title": "Improvement of Exterior Orientation of Mars Express HRSC Imagery Using a Photogrammetric Block",
+        "authors": "Michael Spiegel, R. Schmidt, Uwe Stilla, G. Neukum",
+        "venue": "LPSC",
+        "year": 2007,
+        "url": "https://www.ipi.uni-hannover.de/uploads/tx_tkpublikationen/spiegel_etal_lpsc_2007.pdf"
+      },
+      {
+        "title": "Kombinierte Ausgleichung der Mars Express HRSC Zeilenbilddaten und des Mars Global Surveyor MOLA DGM",
+        "authors": "Michael Spiegel",
+        "venue": "mediaTUM",
+        "year": 2007,
+        "url": "http://mediatum.ub.tum.de/node?id=618406"
+      },
+      {
+        "title": "IMPROVING THE EXTERIOR ORIENTATION OF MARS EXPRESS REGARDING DIFFERENT IMAGING CASES",
+        "authors": "Michael Spiegel, Uwe Stilla, G. Neukum",
+        "venue": "Preprint",
         "year": 2006,
-        "url": "https://mediatum.ub.tum.de/node?id=1594695&change_language=en"
+        "url": "http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.434.5458"
       },
       {
-        "title": "Bündelausgleichung von HRSC-Bilddaten mit Mars Observer Laser Altimeter-Daten als Passinformation",
-        "authors": "Spiegel, M.; Stilla, U.; Giese, B.; Neukum, G.",
-        "venue": "PFG Photogrammetrie Fernerkundung Geoinformation 5 , 2005, 381--386",
+        "title": "HRSC on Mars Express – Photogrammetric and Cartographic Research",
+        "authors": "Joerg Albertz, Maria Attwenger, Janet Barrett, Simon Casley, Peter Dorninger, Egon Dorrer, Heinrich Ebner, Stephan Gehrke, Bernd Giese, Klaus Gwinner, Christian Heipke, Elpitha Howington-Kraus, Randolph L. Kirk, Hartmut Lehmann, Helmut Mayer, Jan-Peter Muller, Juergen Oberst, Alexey Ostrovskiy, Joerg Renter, Sergiy Reznik, Ralph Schmidt, Frank Scholten, Michael Spiegel, Uwe Stilla, Marita Wählisch, Gerhard Neukum",
+        "venue": "Photogrammetric Engineering & Remote Sensing",
         "year": 2005,
-        "url": "https://mediatum.ub.tum.de/node?id=1594694&change_language=en"
+        "url": "https://doi.org/10.14358/pers.71.10.1153"
       },
       {
-        "title": "HRSC auf Mars Express - Photogrammetrische und kartographische Auswertungen",
-        "authors": "Heipke, C.; Albertz, J.; Attwenger, M.; Buchroithner, M.; Dorninger, P.; Dorrer, E.; Gehrke, S.; Gwinner, K.; Lehmann, H.; Mayer, H.; Ostrovskiy, A.; Pacher, G.; Rentsch, M.; Schmidt, R.; Scholten, F.; Spiegel, M.; Stilla, U.; Neukum, G.",
-        "venue": "Zeitschrift für Vermessung 130 , 2005, 379--386",
+        "title": "Hochauflösende digitale Geländemodelle auf der Grundlage von Mars Express HRSC-Daten",
+        "authors": "K. Gwinner, F. Scholten, Michael Spiegel, R. Schmidt, B. Giese, J. Oberst, R. Jaumann, G. Neukum, Hrsc Co-Investigator Team",
+        "venue": "DLR elib",
         "year": 2005,
-        "url": "https://mediatum.ub.tum.de/node?id=1594537&change_language=en"
+        "url": "https://elib.dlr.de/20211/"
       },
       {
-        "title": "HRSC on Mars Express - Photogrammetric and Cartographic Research",
-        "authors": "Albertz, J.; Attwenger, M.; Barrett, J.; Casley, S.; Dorninger, P.; Dorrer, E.; Ebner, H.; Gehrke, S.; Giese, B.; Gwinner, K.; Heipke, C.; Howington-Kraus, E.; Kirk, R. L.; Lehmann, H.; Mayer, H.; Muller, J.-P.; Oberst, J.; Ostrovskiy, A.; Rentner, J.; Reznik, S.; Schmidt, R.; Scholten, F.; Spiegel, M.; Stilla, U.; Waehlisch, M.; Neukum, G.",
-        "venue": "Photogrammetric Engineering & Remote Sensing 71 , 2005, 1153--1166",
-        "year": 2005,
-        "url": "https://dx.doi.org/10.14358/pers.71.10.1153"
+        "title": "Improving the exterior orientation of Mars-Express-HRSC imagery",
+        "authors": "H. Ebner, Michael Spiegel, Alexander Baumgärtner, B. Giese, G. Neukum",
+        "venue": "DLR elib",
+        "year": 2004,
+        "url": "https://elib.dlr.de/11048/"
       },
       {
-        "title": "Improving the exterior orientation of Mars Exoress orbiter using MOLA data in bundle adjustment",
-        "authors": "Spiegel, M.; Schmidt, R.; Stilla, U.; Baumgartner, A.; Neukum, G.",
-        "venue": "AOGS 2nd Annual Meeting, 2005",
-        "year": 2005,
-        "url": "https://mediatum.ub.tum.de/node?id=1594692&change_language=en"
-      },
-      {
-        "title": "Registering HRSC imagery of the MarsExpressMission to Mars observer laser",
-        "authors": "Spiegel, M.; Schmidt, R.; Stilla, U.; Baumgartner, A.; Neukum, G.",
-        "venue": "36th Lunar and planetary science conference, 2005",
-        "year": 2005,
-        "url": "https://mediatum.ub.tum.de/node?id=1594693&change_language=en"
+        "title": "Camera Orientation of Mars Express Using DTM Information",
+        "authors": "Christian Heipke, Heinrich Ebner, Ralph Schmidt, Michael Spiegel, Rüdiger Brand, Albert Baumgartner, Gerhard Neukum",
+        "venue": "LNCS",
+        "year": 2004,
+        "url": "https://doi.org/10.1007/978-3-540-28649-3_67"
       }
     ]
   },
@@ -477,7 +842,37 @@
     "firstName": "Sigrid",
     "lastName": "Strand",
     "category": "Guests (Externals, Scholarships)",
-    "email": "sigrid.strand@tum.de"
+    "email": "sigrid.strand@tum.de",
+    "publications": [
+      {
+        "title": "Active Aerial Search in Forests: Multi-UAV Next-Best-View Planning with Prior Scene Data",
+        "authors": "Strand, Sigrid Helene, Wiedemann, Thomas, Shutin, Dmitriy",
+        "venue": "Preprint",
+        "year": 2026,
+        "url": "https://elib.dlr.de/224154/1/Active_Aerial_Search_in_Forests__Multi_UAV_Next_Best_View_Planning_with_Prior_Scene_Data.pdf"
+      },
+      {
+        "title": "Enhancing UAV Search under Occlusion using Next Best View Planning",
+        "authors": "Sigrid Helene Strand, Thomas Wiedemann, Bram Burczek, Dmitriy Shutin",
+        "venue": "IEEE JSTARS",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/jstars.2025.3638881"
+      },
+      {
+        "title": "An Autonomous Drone Swarm for Detecting and Tracking Anomalies among Dense Vegetation",
+        "authors": "Rakesh John Amala Arokia Nathan, Sigrid Strand, Daniel Mehrwald, Dmitriy Shutin, Oliver Bimber",
+        "venue": "Communications Engineering",
+        "year": 2025,
+        "url": "https://doi.org/10.1038/s44172-025-00546-8"
+      },
+      {
+        "title": "Reciprocal Visibility for Guided Occlusion Removal With Drones",
+        "authors": "Rakesh John Amala Arokia Nathan, Sigrid Strand, Dmitriy Shutin, Oliver Bimber",
+        "venue": "IEEE Geoscience and Remote Sensing Letters",
+        "year": 2024,
+        "url": "http://dx.doi.org/10.1109/lgrs.2024.3451486"
+      }
+    ]
   },
   {
     "id": "tianyi-you",
@@ -493,18 +888,37 @@
       "2D/3D Computer Vision and Remote Sensing",
       "Multimodality and Foundation Models",
       "Model Explainability and Trustworthy Systems"
+    ],
+    "publications": [
+      {
+        "title": "Transferability and Generalization Investigation of Multiclass Cloud Masking Networks for Unseen Biomes and Sensors",
+        "authors": "Michael Greza, Tianyi You, Boris Jutzi",
+        "venue": "ISPRS Annals",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-annals-x-3-w4-2025-185-2026"
+      },
+      {
+        "title": "U-Net- and Transformer-Based Cloud Masking for Multispectral Earth Observation Satellite Missions",
+        "authors": "Tianyi You, Michael Greza, Boris Jutzi",
+        "venue": "IGARSS",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/igarss55030.2025.11242475"
+      },
+      {
+        "title": "A Modular 1U Detector for In-Situ Monitoring of the Sub-Millimetric Space Debris Environment",
+        "authors": "Rok Sesko, Allan Gabriel Schweinfurth, Paul Pucknus, Tianyi You, Jonah Merz, Ralf Hansen, Ines Terraza Palanca, Detlef Koschny, Philipp Reiss",
+        "venue": "22nd IAA Symposium on Space Debris",
+        "year": 2024,
+        "url": "https://doi.org/10.52202/078360-0113"
+      },
+      {
+        "title": "MOVE-III: A CubeSat for the detection of sub-millimetre space debris and meteoroids in Low Earth Orbit",
+        "authors": "Xanthi Oikonomidou, Eleftherios Karagiannis, Dominik Still, Florian Strasser, Felix S. Firmbach, Jonathan Hettwer, Allan G. Schweinfurth, Paul Pucknus, Deniz Menekay, Tianyi You, Maximilian Vovk, Selina Weber, Zeyu Zhu",
+        "venue": "Frontiers in Space Technologies",
+        "year": 2022,
+        "url": "https://doi.org/10.3389/frspt.2022.933988"
+      }
     ]
-  },
-  {
-    "id": "qilin-zhang",
-    "firstName": "Qilin",
-    "lastName": "Zhang",
-    "category": "Guests (Externals, Scholarships)",
-    "title": "M.Sc.",
-    "email": "qilin.zhang@tum.de",
-    "phone": "+49 89 289 22630",
-    "room": "1776",
-    "photo": "qilin-zhang.jpg"
   },
   {
     "id": "christian-albrecht",
@@ -515,29 +929,29 @@
     "publications": [
       {
         "title": "Investigation on robustness of vehicle localization using cameras and lidar",
-        "authors": "Albrecht, Christian Rudolf; Behre, Jenny; Herrmann, Eva; Jürgens, Stefan; Stilla, Uwe",
-        "venue": "Vehicles 4 (2), 2022, 445--463",
+        "authors": "C. Albrecht, Jenny Behre, E. Herrmann, Stefan Jürgens, Uwe Stilla",
+        "venue": "Vehicles",
         "year": 2022,
         "url": "https://dx.doi.org/10.3390/vehicles4020027"
       },
       {
         "title": "Investigation on misclassification of pedestrians as poles by simulation",
-        "authors": "Albrecht, Christian Rudolf; Névir, Daniel; Hildebrandt, Arne-Christoph; Kraus, Sven; Stilla, Uwe",
-        "venue": "2021 IEEE Intelligent Vehicles Symposium (IV), Institute of Electrical and Electronics Engineers (IEEE), 2021",
+        "authors": "C. Albrecht, Daniel Névir, Arne-Christoph Hildebrandt, S. Kraus, Uwe Stilla",
+        "venue": "IEEE IV",
         "year": 2021,
         "url": "https://dx.doi.org/10.1109/iv48863.2021.9575583"
       },
       {
         "title": "Concept on landmark detection in road scene images taken from a top-view camera system",
-        "authors": "Albrecht, C.; Kraus, S.; Stilla, U.",
-        "venue": "ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences XLIII-B1-2020 , 2020, 205--209",
+        "authors": "C. Albrecht, S. Kraus, Uwe Stilla",
+        "venue": "ISPRS Archives",
         "year": 2020,
         "url": "https://dx.doi.org/10.5194/isprs-archives-xliii-b1-2020-205-2020"
       },
       {
         "title": "A concept for an automated approach of public transport vehi cles to a bus stop",
-        "authors": "Albrecht, C.; Kraus, S.; Zimmermann, A.; Stilla, U.",
-        "venue": "ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences XLII-2/W16 , 2019, 13--20",
+        "authors": "C. Albrecht, S. Kraus, A. Zimmermann, Uwe Stilla",
+        "venue": "ISPRS Archives",
         "year": 2019,
         "url": "https://dx.doi.org/10.5194/isprs-archives-xlii-2-w16-13-2019"
       }
@@ -574,6 +988,15 @@
         "label": "LinkedIn",
         "url": "https://www.linkedin.com/in/enea-dragoni-270ve701a"
       }
+    ],
+    "publications": [
+      {
+        "title": "pAirception: Language-Guided Landing Site Detection in Unstructured Environments",
+        "authors": "DRAGONI, ENEA",
+        "venue": "University of Pisa",
+        "year": 2026,
+        "url": "http://etd.adm.unipi.it/theses/available/etd-03162026-101954/"
+      }
     ]
   },
   {
@@ -586,6 +1009,78 @@
       {
         "label": "LinkedIn",
         "url": "https://www.linkedin.com/in/mertkaraoglu/"
+      }
+    ],
+    "publications": [
+      {
+        "title": "Point Tracking in Surgery--The 2025 Surgical Tattoos in Infrared Challenge (STIRC2025)",
+        "authors": "Adam Schmidt, Mert Asim Karaoglu, Zijian Wu, Jiaming Zhang, Yuxin Chen, Tim Salcudean, Ho-Gun Ha, Minkang Jang, Kyungmin Jung, Ihsan Ullah, Hyunki Lee, Suresh Guttikonda, Sarah Latus, Alexander Schlaefer, Xinkai Zhao, Yuichiro Hayashi, Masahiro Oda, Takayuki Kitasaka, Kensaku Mori, Peng Liu, Chenyang Li, Stefanie Speidel, Aoife Gardiner, Agostino Stilli, Danail Stoyanov, Francisco Vasconcelos, Anwesa Choudhuri, Meng Zheng, Zhongpai Gao, Benjamin Planche, Van Nguyen Nguyen, Terrence Chen, Ziyan Wu, Alexander Ladikos, Omid Mohareri",
+        "venue": "arXiv",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.12939"
+      },
+      {
+        "title": "UnReflectAnything: RGB-Only Highlight Removal by Rendering Synthetic Specular Supervision",
+        "authors": "Alberto Rota, Mert Kiray, Mert Asim Karaoglu, Patrick Ruhkamp, Elena De Momi, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2512.09583"
+      },
+      {
+        "title": "FLex: Joint Pose and Dynamic Radiance Fields Optimization for Stereo Endoscopic Videos",
+        "authors": "Florian Philipp Stilz, Mert Asim Karaoglu, Felix Tristram, Nassir Navab, Benjamin Busam, Alexander Ladikos",
+        "venue": "IJCARS",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2403.12198"
+      },
+      {
+        "title": "LiteTracker: Leveraging Temporal Causality for Accurate Low-latency Tissue Tracking",
+        "authors": "Mert Asim Karaoglu, Wenbo Ji, Ahmed Abbas, Nassir Navab, Benjamin Busam, Alexander Ladikos",
+        "venue": "MICCAI",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2504.09904"
+      },
+      {
+        "title": "Point Tracking in Surgery--The 2024 Surgical Tattoos in Infrared (STIR) Challenge",
+        "authors": "Adam Schmidt, Mert Asim Karaoglu, Soham Sinha, Mingang Jang, Ho-Gun Ha, Kyungmin Jung, Kyeongmo Gu, Ihsan Ullah, Hyunki Lee, Jonáš Šerých, Michal Neoral, Jiří Matas, Rulin Zhou, Wenlong He, An Wang, Hongliang Ren, Bruno Silva, Sandro Queirós, Estêvão Lima, João L. Vilaça, Shunsuke Kikuchi, Atsushi Kouno, Hiroki Matsuzaki, Tongtong Li, Yulu Chen, Ling Li, Xiang Ma, Xiaojian Li, Mona Sheikh Zeinoddin, Xu Wang, Zafer Tandogdu, Greg Shaw, Evangelos Mazomenos, Danail Stoyanov, Yuxin Chen, Zijian Wu, Alexander Ladikos, Simon DiMaio, Septimiu E. Salcudean, Omid Mohareri",
+        "venue": "arXiv",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2503.24306"
+      },
+      {
+        "title": "SurgRIPE challenge: Benchmark of Surgical Robot Instrument Pose Estimation",
+        "authors": "Haozheng Xu, Alistair Weld, Chi Xu, Alfie Roddan, Joao Cartucho, Mert Asim Karaoglu, Alexander Ladikos, Yangke Li, Yiping Li, Daiyun Shen, Geonhee Lee, Seyeon Park, Jongho Shin, Young-Gon Kim, Lucy Fothergill, Dominic Jones, Pietro Valdastri, Duygu Sarikaya, Stamatia Giannarou",
+        "venue": "Medical Image Analysis",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2501.02990"
+      },
+      {
+        "title": "RIDE: Self-Supervised Learning of Rotation-Equivariant Keypoint Detection and Invariant Description for Endoscopy",
+        "authors": "Mert Asim Karaoglu, Viktoria Markova, Nassir Navab, Benjamin Busam, Alexander Ladikos",
+        "venue": "ICRA",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2309.09563"
+      },
+      {
+        "title": "DynaMoN: Motion-Aware Fast and Robust Camera Localization for Dynamic Neural Radiance Fields",
+        "authors": "Nicolas Schischka, Hannah Schieber, Mert Asim Karaoglu, Melih Görgülü, Florian Grötzner, Alexander Ladikos, Daniel Roth, Nassir Navab, Benjamin Busam",
+        "venue": "IEEE RA-L",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2309.08927"
+      },
+      {
+        "title": "Integrating 3d cameras into sterile surgical environments: a comparison of different protective materials regarding scan accuracy",
+        "authors": "Lars Wagner, L. Bernhard, Jonas Fuchtmann, Mert Asim Karaoglu, A. Ladikos, H. Feußner, D. Wilhelm",
+        "venue": "Current Directions in Biomedical Engineering",
+        "year": 2022,
+        "url": "https://doi.org/10.1515/cdbme-2022-0007"
+      },
+      {
+        "title": "Adversarial Domain Feature Adaptation for Bronchoscopic Depth Estimation",
+        "authors": "Mert Asim Karaoglu, Nikolas Brasch, Marijn Stollenga, Wolfgang Wein, Nassir Navab, Federico Tombari, Alexander Ladikos",
+        "venue": "MICCAI",
+        "year": 2021,
+        "url": "https://arxiv.org/abs/2109.11798"
       }
     ]
   },
@@ -602,6 +1097,15 @@
         "label": "GitHub",
         "url": "https://github.com/khyeongkyun"
       }
+    ],
+    "publications": [
+      {
+        "title": "ZeroFlood: Flood Hazard Mapping from Single-Modality SAR Using Geo-Foundation Models",
+        "authors": "Hyeongkyun Kim, Orestis Oikonomou",
+        "venue": "EUSAR",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2510.23364"
+      }
     ]
   },
   {
@@ -615,6 +1119,76 @@
       {
         "label": "GitHub",
         "url": "https://github.com/alberto-rota"
+      }
+    ],
+    "publications": [
+      {
+        "title": "Deep Learning for Decision Support in Ovarian Cancer Treatment Planning",
+        "authors": "F Fati, M Rosanu, L De Vitis, A Rota, A Traversa, L Ribero, G Schivardi, ...",
+        "venue": "npj Women's Health",
+        "year": 2026
+      },
+      {
+        "title": "A Lightweight Fiducial-Based Pipeline for 3D Hyperspectral Mapping of ex-vivo Lumpectomy Specimens",
+        "authors": "Anna Bicchi, Alberto Rota, Leonardo Passoni, Nicola Ancellotti, Andrea Peroni, Lorenzo Vinco, Dario Polli, Elena De Momi",
+        "venue": "Ital-IA",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2606.14534"
+      },
+      {
+        "title": "Adapting Foundation Models for Annotation-Efficient Adnexal Mass Segmentation in Cine Images",
+        "authors": "Francesca Fati, Alberto Rota, Adriana V. Gregory, Anna Catozzo, Maria C. Giuliano, Mrinal Dhar, Luigi De Vitis, Annie T. Packard, Francesco Multinu, Elena De Momi, Carrie L. Langstraat, Timothy L. Kline",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2604.08045"
+      },
+      {
+        "title": "UnReflectAnything: RGB-Only Highlight Removal by Rendering Synthetic Specular Supervision",
+        "authors": "Alberto Rota, Mert Kiray, Mert Asim Karaoglu, Patrick Ruhkamp, Elena De Momi, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2512.09583"
+      },
+      {
+        "title": "Self-Supervised Contrastive Embedding Adaptation for Endoscopic Image Matching",
+        "authors": "Alberto Rota, Elena De Momi",
+        "venue": "arXiv",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2512.10379"
+      },
+      {
+        "title": "Implementation and Assessment of an Augmented Training Curriculum for Surgical Robotics",
+        "authors": "Alberto Rota, Ke Fan, Elena De Momi",
+        "venue": "ICRA",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2507.07718"
+      },
+      {
+        "title": "Performance-Driven Tasks with Adaptive Difficulty for Enhanced Surgical Robotics Training",
+        "authors": "Alberto Rota, X. Sun, E. Momi",
+        "venue": "IEEE BioRob",
+        "year": 2024,
+        "url": "https://doi.org/10.1109/BioRob60516.2024.10719830"
+      },
+      {
+        "title": "Augmented Reality and Human-Robot Collaboration Framework for Percutaneous Nephrolithotomy: System Design, Implementation, and Performance Metrics",
+        "authors": "Junling Fu, Matteo Pecorella, Elisa Iovene, Maria Chiara Palumbo, Alberto Rota, Alberto Redaelli, Giancarlo Ferrigno, Elena De Momi",
+        "venue": "IEEE Robotics & Automation Magazine",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2401.04492"
+      },
+      {
+        "title": "Augmented Reality and Shared Control Framework for Robot-Assisted Percutaneous Nephrolithotomy",
+        "authors": "J Fu, M Pecorella, MC Palumbo, E Iovene, A Rota, D Riggio, I Burzo, ...",
+        "venue": "ICRA",
+        "year": 2023
+      },
+      {
+        "title": "Recent advancements in augmented reality for robotic applications: A survey",
+        "authors": "Junling Fu, Alberto Rota, Shufei Li, Jianzhuang Zhao, Qingsheng Liu, Elisa Iovene, G. Ferrigno, E. De Momi",
+        "venue": "Actuators",
+        "year": 2023,
+        "url": "https://doi.org/10.3390/act12080323"
       }
     ]
   },
@@ -637,6 +1211,50 @@
       {
         "label": "Homepage",
         "url": "https://www.professoren.tum.de/honorarprofessoren/s/strunz-guenter/"
+      }
+    ],
+    "publications": [
+      {
+        "title": "Information System for Planetary Research Data: A Prototype Development for Multi-Mission Application",
+        "authors": "Andrea Nass, Martin Muhlbauer, Torsten Heinen, Mathias Bock, Robert Munteanu, Mario D'Amore, Torsten Riedlinger, Thomas Roatsch, Gunter Strunz, Jorn Helbert",
+        "venue": "IGARSS",
+        "year": 2022,
+        "url": "https://doi.org/10.1109/igarss46834.2022.9884300"
+      },
+      {
+        "title": "Towards Exploiting Stakeholder Resources for Data-Driven Resilient Hazard Management",
+        "authors": "Xiaoming Fu, Tingting Yuan, Weijun Wang, Fabian Wolk, Gunter Strunz",
+        "venue": "IEEE ICDCS Workshops",
+        "year": 2022,
+        "url": "https://doi.org/10.1109/icdcsw56584.2022.00055"
+      },
+      {
+        "title": "Disaster Intensity-Based Selection of Training Samples for Remote Sensing Building Damage Classification",
+        "authors": "Luis Moya, Christian Geis, Masakazu Hashimoto, Erick Mas, Shunichi Koshimura, Gunter Strunz",
+        "venue": "IEEE Transactions on Geoscience and Remote Sensing",
+        "year": 2021,
+        "url": "https://doi.org/10.1109/tgrs.2020.3046004"
+      },
+      {
+        "title": "From crisis management to humanitarian technology — A European perspective",
+        "authors": "Stefan Voigt, Konstanze Lechner, Elisabeth Schoepfer, Gunter Strunz",
+        "venue": "IEEE GHTC",
+        "year": 2017,
+        "url": "https://doi.org/10.1109/ghtc.2017.8239243"
+      },
+      {
+        "title": "Setting up the water balance simulation model WaSiM for the assessment of climate change impacts in Chiba basin, Tunisia",
+        "authors": "Franz Hummel, Joachim Post, Gunter Strunz, Ralf Ludwig, Annemarie Hoffmann, Sihem Benabdallah",
+        "venue": "ICMSAO",
+        "year": 2013,
+        "url": "https://doi.org/10.1109/icmsao.2013.6552594"
+      },
+      {
+        "title": "DERIVATION OF POPULATION DISTRIBUTION BY COMBINING CENSUS AND LANDUSE DATA: AS AN INPUT FOR TSUNAMI RISK AND VULNERABILITY ASSESSMENT",
+        "authors": "Muhamad Rokhis Khomarudin, Gunter Strunz, Joachim Post, Kai Zobeder, Ralf Ludwig",
+        "venue": "International Journal of Remote Sensing and Earth Sciences (IJReSES)",
+        "year": 2010,
+        "url": "https://doi.org/10.30536/j.ijreses.2009.v6.a1238"
       }
     ]
   }
