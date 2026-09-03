@@ -247,11 +247,14 @@
 }
 /* Centred, not left-hugged: at 8vw padding on a 2000px wall the text sat in the leftmost
    quarter with two thirds of the screen empty beside it. `margin-inline: auto` puts the
-   measure in the middle of the glass, where someone standing in front of it is looking. */
+   measure in the middle of the glass, where someone standing in front of it is looking.
+   A poster read from across a corridor, so it is centred as a whole — every child gets its
+   own measure below and is re-centred with `margin-inline: auto`. */
 .projects .sp-detail-inner {
-  max-width: 72ch;
+  max-width: 96ch;
   margin-inline: auto;
   width: 100%;
+  text-align: center;
 }
 .projects .sp-detail-type {
   text-transform: uppercase;
@@ -260,40 +263,49 @@
   font-weight: 700;
   color: var(--gt-accent);
 }
+/* The title gets its OWN measure, not the body's. Sharing the 72ch body column meant a
+   88px title broke every seven characters — "Long-term 4D Dynamic Object Reconstruction and
+   Pose Estimation" came out as five stacked lines. `ch` here is relative to the title's own
+   size, so 20ch is roughly twice the body width and the same headline lands in three. */
 .projects .sp-detail-title {
-  margin: 0.9rem 0 0;
+  margin: 0.9rem auto 0;
+  max-width: 20ch;
   font-size: clamp(2rem, 4.4vw, 4.5rem);
   font-weight: 700;
-  line-height: 1.02;
+  line-height: 1.05;
   letter-spacing: -0.02em;
+  text-wrap: balance;
   color: var(--gt-text-primary);
 }
 /* Same reasoning as the publications detail: read from a corridor, so the body scales with
    the viewport and the measure is in `ch` so the line length holds as the type grows. */
 .projects .sp-detail-summary {
-  margin: 1.8rem 0 0;
-  max-width: 52ch;
+  margin: 1.8rem auto 0;
+  max-width: 46ch;
   font-size: clamp(1.15rem, 1.25vw, 1.75rem);
   font-weight: 700;
   line-height: 1.4;
+  text-wrap: balance;
   color: var(--gt-text-primary);
 }
 .projects .sp-detail-desc {
-  margin: 1.6rem 0 0;
-  max-width: 62ch;
+  margin: 1.6rem auto 0;
+  max-width: 58ch;
   font-size: clamp(1rem, 1.05vw, 1.45rem);
   line-height: 1.7;
   color: var(--gt-text-secondary);
 }
 .projects .sp-detail-meta {
-  margin-top: 2.6rem;
+  margin-top: 2.8rem;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 2.5rem 4rem;
 }
 .projects .sp-meta-block {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.55rem;
 }
 .projects .sp-meta-label {
@@ -318,6 +330,7 @@
 .projects .sp-chips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.55rem;
 }
 .projects .sp-chip {
