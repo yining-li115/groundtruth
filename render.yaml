@@ -80,10 +80,16 @@ services:
     staticPublishPath: apps/kiosk/dist
     pullRequestPreviewsEnabled: false
     # Rebuild only on kiosk or shared-package changes (it pulls in packages/ui/tokens etc.).
+    # content/** MUST be here: lib/content.ts imports the JSON directly, so Vite compiles it
+    # into the bundle at build time — there is no runtime fetch, and dist contains no JSON at
+    # all. Without this path a content-only push is judged "not the kiosk's business", the
+    # build is skipped, and the site keeps serving the previous bundle with the old copy in
+    # it. Nothing fails; the deploy just silently does nothing.
     buildFilter:
       paths:
         - apps/kiosk/**
         - packages/**
+        - content/**
         - package.json
         - package-lock.json
     routes:
