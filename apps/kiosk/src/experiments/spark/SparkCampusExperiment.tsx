@@ -249,9 +249,16 @@ const CARD_SCRIM_WIDTH = PARAMS?.get("scrim") ?? "78vw";
 /** The copy owns the right half of the screen; the scrim runs wider still so its far edge
  *  falls off in the middle of the picture rather than behind the text. */
 const CARD_WIDTH = PARAMS?.get("card") ?? "50vw";
-/** Stops are matched to spotlights by order. The copy is placeholder, so an explicit anchor
- *  field on the content schema can wait until the real spotlights exist. */
-const SPOTLIGHTS = showreel.filter((s) => s.kind === "spotlight");
+/** Stops are matched to cards by order. Every showreel item, not just `kind: "spotlight"` —
+ *  filtering to one kind was fine while the other five were placeholder copy, but now that
+ *  they are the group's actual news the idle wall should cycle all of them. (An explicit
+ *  anchor field, pinning a given card to a given viewpoint, can still come later.) */
+const CARDS = showreel;
+const KIND_LABEL: Record<string, string> = {
+  spotlight: "Spotlight",
+  news: "News",
+  "open-topic": "Open position",
+};
 const DEFAULT_FOV = 60;
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
@@ -845,7 +852,7 @@ export function CampusFlight({
       {/* Spotlight card for the stop the flight is resting on. The campus fills the frame by
           design, so the copy sits over a scrim rather than a panel — the shot stays the
           picture, the text just has to stay legible on top of it. */}
-      {card && SPOTLIGHTS[card.stop % SPOTLIGHTS.length] && (
+      {card && CARDS[card.stop % CARDS.length] && (
         <div
           className="pointer-events-none absolute inset-y-0 right-0 flex items-center justify-end"
           style={{
@@ -870,17 +877,19 @@ export function CampusFlight({
               className="mb-4 text-sm font-bold uppercase tracking-[0.18em]"
               style={{ color: dark.accent }}
             >
-              Spotlight {String((card.stop % SPOTLIGHTS.length) + 1).padStart(2, "0")} /{" "}
-              {String(SPOTLIGHTS.length).padStart(2, "0")}
+              {KIND_LABEL[CARDS[card.stop % CARDS.length]!.kind] ??
+                CARDS[card.stop % CARDS.length]!.kind}{" "}
+              {String((card.stop % CARDS.length) + 1).padStart(2, "0")} /{" "}
+              {String(CARDS.length).padStart(2, "0")}
             </div>
             <h2
               className="text-6xl font-bold leading-[1.04] tracking-tight"
               style={{ color: dark.text.primary }}
             >
-              {SPOTLIGHTS[card.stop % SPOTLIGHTS.length]!.title}
+              {CARDS[card.stop % CARDS.length]!.title}
             </h2>
             <p className="mt-6 max-w-[38rem] text-xl leading-snug" style={{ color: dark.text.secondary }}>
-              {SPOTLIGHTS[card.stop % SPOTLIGHTS.length]!.blurb}
+              {CARDS[card.stop % CARDS.length]!.blurb}
             </p>
           </div>
         </div>
