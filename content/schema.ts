@@ -93,11 +93,20 @@ export const studentProjectSchema = z.object({
   id,
   title: nonEmpty,
   type: z.enum(["Bachelor", "Master", "Guided Research", "IDP", "Other"]),
-  year: z.number().int(),
+  /** Optional: an ongoing project has no completion year yet, and some supervisor
+   *  tables list a project without one. Prefer `term` for display. */
+  year: z.number().int().optional(),
   students: z.array(nonEmpty), // names (not necessarily group members)
   supervisorIds: z.array(id), // → Person.id
-  abstract: nonEmpty,
-  cover: nonEmpty,
+  /** The supervisor's own label for the term, verbatim: "2023/24 WS", "2024 SS", "ongoing". */
+  term: z.string().optional(),
+  /** The "Additional Info" a supervisor page carries: a partner, a paper, where the
+   *  student went next ("Went to Google", "Paper at ECCV 2022", "with BMW"). */
+  note: z.string().optional(),
+  /** Optional: the scraped supervisor tables give a title and a student, not a summary,
+   *  and no figure. Both stay blank until someone writes/picks one. */
+  abstract: z.string().optional(),
+  cover: z.string().optional(),
   topicIds: z.array(id).optional(), // → ResearchTopic.id
   media: z.array(mediaItemSchema).optional(),
 });
