@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
 import { Logo } from "@groundtruth/ui";
-import { topics } from "../lib/content";
+import { topics, topicCoverUrl } from "../lib/content";
 import { horizontalLoop } from "../lib/horizontalLoop";
 import "./research.css";
 
@@ -18,7 +18,7 @@ const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
 
 export function ResearchSection() {
   const slides = useMemo(
-    () => topics.map((t) => ({ id: t.id, title: t.title, blurb: t.summary, image: t.cover })),
+    () => topics.map((t) => ({ id: t.id, title: t.title, blurb: t.summary, image: topicCoverUrl(t.cover) })),
     [],
   );
 

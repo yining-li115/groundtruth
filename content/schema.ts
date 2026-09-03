@@ -84,7 +84,10 @@ export const researchTopicSchema = z.object({
   description: nonEmpty, // detail view
   cover: nonEmpty,
   tags: z.array(nonEmpty),
-  leadPersonIds: z.array(id), // → Person.id
+  /** Optional, and unused by the Research view, which shows only title, summary and cover.
+   *  A direction is carried by several people at once; naming "leads" on the wall picks
+   *  winners among the PhDs who share it. */
+  leadPersonIds: z.array(id).optional(), // → Person.id
   publications: z.array(publicationSchema).optional(),
   media: z.array(mediaItemSchema).optional(),
 });

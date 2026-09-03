@@ -49,6 +49,25 @@ export function personPhotoUrl(photo?: string): string | undefined {
   return entry?.[1];
 }
 
+/**
+ * The same trick for research topic covers under content/media/topics/.
+ *
+ * It needs its own glob because Vite requires a literal pattern — it cannot take the
+ * directory as a variable. Until this existed only `people/` had a resolver, so a bare
+ * filename in research-topics.json was handed to the browser as a relative URL and 404'd.
+ * That went unnoticed while every cover was an absolute picsum placeholder.
+ */
+const topicMedia = import.meta.glob<string>(
+  "../../../../content/media/topics/*.{jpg,jpeg,png,webp}",
+  { eager: true, import: "default" },
+);
+export function topicCoverUrl(cover?: string): string | undefined {
+  if (!cover) return undefined;
+  if (/^https?:\/\//i.test(cover) || cover.startsWith("/")) return cover;
+  const entry = Object.entries(topicMedia).find(([path]) => path.endsWith(`/${cover}`));
+  return entry?.[1];
+}
+
 const personById = new Map(people.map((p) => [p.id, p]));
 const topicById = new Map(topics.map((t) => [t.id, t]));
 const projectById = new Map(projects.map((p) => [p.id, p]));

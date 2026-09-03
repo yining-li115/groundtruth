@@ -10,48 +10,6 @@
       "unseen objects",
       "embodied AI",
       "benchmarks"
-    ],
-    "leadPersonIds": [
-      "benjamin-busam",
-      "weihang-li",
-      "junwen-huang"
-    ],
-    "publications": [
-      {
-        "title": "Object Pose Transformer: Unifying Unseen Object Pose Estimation",
-        "authors": "Weihang Li, Lorenzo Garattoni, Fabien Despinoy, Nassir Navab, Benjamin Busam",
-        "venue": "CVPR 2026",
-        "year": 2026,
-        "url": "https://colin-de.github.io/OPT-Pose/"
-      },
-      {
-        "title": "ConceptPose: Training-Free Zero-Shot Object Pose Estimation using Concept Vectors",
-        "authors": "Liming Kuang, Yordanka Velikova, Mahdi Saleh, Jan-Nico Zaech, Danda Pani Paudel, Benjamin Busam",
-        "venue": "CVPR 2026",
-        "year": 2026,
-        "url": "https://stevenlk.xyz/conceptpose"
-      },
-      {
-        "title": "GCE-Pose: Global Context Enhancement for Category-level Object Pose Estimation",
-        "authors": "Weihang Li, Hongli Xu, Junwen Huang, Hyunjun Jung, Peter KT Yu, Nassir Navab, Benjamin Busam",
-        "venue": "CVPR 2025",
-        "year": 2025,
-        "url": "https://arxiv.org/abs/2502.04293"
-      },
-      {
-        "title": "RayPose: Ray Bundling Diffusion for Template Views in Unseen 6D Object Pose Estimation",
-        "authors": "Junwen Huang, Shishir Reddy Vutukur, Peter KT Yu, Nassir Navab, Slobodan Ilic, Benjamin Busam",
-        "venue": "ICCV 2025",
-        "year": 2025,
-        "url": "https://arxiv.org/abs/2510.18521"
-      },
-      {
-        "title": "MatchU: Matching Unseen Objects for 6D Pose Estimation from RGB-D Images",
-        "authors": "Junwen Huang, Hao Yu, Kuan-Ting Yu, Nassir Navab, Slobodan Ilic, Benjamin Busam",
-        "venue": "CVPR 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2403.01517"
-      }
     ]
   },
   {
@@ -65,48 +23,6 @@
       "Gaussian splatting",
       "neural ODEs",
       "4D reconstruction"
-    ],
-    "leadPersonIds": [
-      "weihang-li",
-      "liming-kuang",
-      "yordanka-velikova"
-    ],
-    "publications": [
-      {
-        "title": "Node-RF: Learning Generalized Continuous Space-Time Scene Dynamics with Neural ODE-based NeRFs",
-        "authors": "Hiran Sarkar, Liming Kuang, Yordanka Velikova, Benjamin Busam",
-        "venue": "CVPR 2026",
-        "year": 2026,
-        "url": "https://around-star.github.io/node-rf/"
-      },
-      {
-        "title": "DynSUP: Dynamic Gaussian Splatting from an Unposed Image Pair",
-        "authors": "Weihang Li, Weirong Chen, Shenhan Qian, Jiajie Chen, Daniel Cremers, Haoang Li",
-        "venue": "IEEE TIP 2026",
-        "year": 2026,
-        "url": "https://arxiv.org/abs/2412.00851"
-      },
-      {
-        "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
-        "authors": "Yordanka Velikova, Mahdi Saleh, Liming Kuang, Benjamin Busam",
-        "venue": "IROS 2026",
-        "year": 2026,
-        "url": "https://arxiv.org/abs/2607.20670"
-      },
-      {
-        "title": "DynaMoN: Motion-Aware Fast and Robust Camera Localization for Dynamic Neural Radiance Fields",
-        "authors": "Nicolas Schischka, Hannah Schieber, Mert Asim Karaoglu, Melih Görgülü, Florian Grötzner, Alexander Ladikos, Daniel Roth, Nassir Navab, Benjamin Busam",
-        "venue": "IEEE RA-L 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2309.08927"
-      },
-      {
-        "title": "SSR-2D: Semantic 3D Scene Reconstruction from 2D Images",
-        "authors": "Junwen Huang, Alexey Artemov, Yujin Chen, Shuaifeng Zhi, Kai Xu, Matthias Nießner",
-        "venue": "IEEE TPAMI 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2302.03640"
-      }
     ]
   },
   {
@@ -120,48 +36,6 @@
       "self-supervised learning",
       "surgical vision",
       "implicit representations"
-    ],
-    "leadPersonIds": [
-      "yordanka-velikova",
-      "mert-karaoglu",
-      "alberto-rota"
-    ],
-    "publications": [
-      {
-        "title": "UnReflectAnything: RGB-Only Highlight Removal by Rendering Synthetic Specular Supervision",
-        "authors": "Alberto Rota, Mert Kiray, Mert Asim Karaoglu, Patrick Ruhkamp, Elena De Momi, Nassir Navab, Benjamin Busam",
-        "venue": "CVPR 2026",
-        "year": 2026,
-        "url": "https://alberto-rota.github.io/UnReflectAnything"
-      },
-      {
-        "title": "LiteTracker: Leveraging Temporal Causality for Accurate Low-latency Tissue Tracking",
-        "authors": "Mert Asim Karaoglu, Wenbo Ji, Ahmed Abbas, Nassir Navab, Benjamin Busam, Alexander Ladikos",
-        "venue": "MICCAI 2025",
-        "year": 2025,
-        "url": "https://arxiv.org/abs/2504.09904"
-      },
-      {
-        "title": "CathFlow: Self-Supervised Segmentation of Catheters in Interventional Ultrasound Using Optical Flow and Transformers",
-        "authors": "Alex Ranne, Liming Kuang, Yordanka Velikova, Nassir Navab, Ferdinando Rodriguez y Baena",
-        "venue": "IROS 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2403.14465"
-      },
-      {
-        "title": "CACTUSS: Common Anatomical CT-US Space for US Examinations",
-        "authors": "Yordanka Velikova, Walter Simson, Mehrdad Salehi, Mohammad Farid Azampour, Philipp Paprottka, Nassir Navab",
-        "venue": "IJCARS 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2207.08619"
-      },
-      {
-        "title": "Implicit Neural Representations for Breathing-compensated Volume Reconstruction in Robotic Ultrasound",
-        "authors": "Yordanka Velikova, Mohammad Farid Azampour, Walter Simson, Marco Esposito, Nassir Navab",
-        "venue": "ICRA 2024",
-        "year": 2024,
-        "url": "https://arxiv.org/abs/2311.04999"
-      }
     ]
   },
   {
@@ -175,41 +49,6 @@
       "multispectral",
       "cloud masking",
       "super-resolution"
-    ],
-    "leadPersonIds": [
-      "michael-greza",
-      "nino-lenz",
-      "tianyi-you"
-    ],
-    "publications": [
-      {
-        "title": "Transferability and Generalization Investigation of Multiclass Cloud Masking Networks for Unseen Biomes and Sensors",
-        "authors": "Michael Greza, Tianyi You, Boris Jutzi",
-        "venue": "ISPRS Annals 2026",
-        "year": 2026,
-        "url": "https://doi.org/10.5194/isprs-annals-x-3-w4-2025-185-2026"
-      },
-      {
-        "title": "GAN-Based Dual Image Super Resolution for Satellite Imagery Decreasing Radiometric Uncertainty",
-        "authors": "Michael Greza, Indraditya Bhattacharya, Ludwig Hoegner, Boris Jutzi",
-        "venue": "ISPRS Annals 2024",
-        "year": 2024,
-        "url": "https://doi.org/10.5194/isprs-annals-x-3-2024-155-2024"
-      },
-      {
-        "title": "U-Net- and Transformer-Based Cloud Masking for Multispectral Earth Observation Satellite Missions",
-        "authors": "Tianyi You, Michael Greza, Boris Jutzi",
-        "venue": "IGARSS 2025",
-        "year": 2025,
-        "url": "https://doi.org/10.1109/igarss55030.2025.11242475"
-      },
-      {
-        "title": "ZeroFlood: Flood Hazard Mapping from Single-Modality SAR Using Geo-Foundation Models",
-        "authors": "Hyeongkyun Kim, Orestis Oikonomou",
-        "venue": "EUSAR 2026",
-        "year": 2026,
-        "url": "https://arxiv.org/abs/2510.23364"
-      }
     ]
   },
   {
@@ -223,20 +62,6 @@
       "open-vocabulary 3D",
       "forensic reconstruction",
       "scene graphs"
-    ],
-    "leadPersonIds": [
-      "florian-eichinger",
-      "michael-greza",
-      "benjamin-busam"
-    ],
-    "publications": [
-      {
-        "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
-        "authors": "Florian Eichinger, Michael Greza, Benjamin Busam",
-        "venue": "ISPRS Archives 2026",
-        "year": 2026,
-        "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026"
-      }
     ]
   },
   {
@@ -250,34 +75,6 @@
       "sensor fusion",
       "next-best-view",
       "language-guided robotics"
-    ],
-    "leadPersonIds": [
-      "enea-dragoni",
-      "florian-eichinger",
-      "sigrid-strand"
-    ],
-    "publications": [
-      {
-        "title": "Enhancing UAV Search under Occlusion using Next Best View Planning",
-        "authors": "Sigrid Helene Strand, Thomas Wiedemann, Bram Burczek, Dmitriy Shutin",
-        "venue": "IEEE JSTARS 2025",
-        "year": 2025,
-        "url": "https://arxiv.org/abs/2511.18353"
-      },
-      {
-        "title": "Active Aerial Search in Forests: Multi-UAV Next-Best-View Planning with Prior Scene Data",
-        "authors": "Strand, Sigrid Helene, Wiedemann, Thomas, Shutin, Dmitriy",
-        "venue": "Preprint 2026",
-        "year": 2026,
-        "url": "https://elib.dlr.de/224154/1/Active_Aerial_Search_in_Forests__Multi_UAV_Next_Best_View_Planning_with_Prior_Scene_Data.pdf"
-      },
-      {
-        "title": "pAirception: Language-Guided Landing Site Detection in Unstructured Environments",
-        "authors": "DRAGONI, ENEA",
-        "venue": "University of Pisa 2026",
-        "year": 2026,
-        "url": "http://etd.adm.unipi.it/theses/available/etd-03162026-101954/"
-      }
     ]
   }
 ]
