@@ -236,7 +236,10 @@ const loadPins = (): Waypoint[] => {
 /** auto-record drops a via every this many seconds of flying (only while actually moving) */
 const RECORD_INTERVAL_S = 0.3;
 const RECORD_MIN_MOVE = 0.5; // world units — don't spam vias while hovering in place
-const DWELL_S = 2.5; // how long the flight rests on a "stop"
+/** How long the flight rests on a "stop". This is reading time, not pacing: the card that
+ *  arrives with the stop is a headline plus three or four lines of news, and 2.5s was not
+ *  enough to finish one from across a corridor. */
+const DWELL_S = 5;
 const CRUISE_SPEED = 6; // world units/sec along the spline
 const MIN_LEG_S = 2.5; // even a short hop between stops gets time to read
 const TURN_RATE = 0.6; // rad/sec — a stop that mostly turns in place still needs to pan slowly
