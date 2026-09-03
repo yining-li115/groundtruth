@@ -342,30 +342,15 @@
   color: var(--gt-text-primary);
 }
 
-.projects .sp-detail-back {
-  position: absolute;
-  top: 2.2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 1rem;
-  color: var(--gt-text-primary);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.projects .sp-detail-back:hover,
-.projects .sp-detail-back.is-hover {
-  color: var(--gt-accent);
-}
-
+/* Bottom CENTRE, not bottom left. Two reasons: the Home control now owns the bottom-left
+   corner, and this is the rule BackControl already states — the top/bottom edge midpoints
+   are the cheapest points on the wall for an arm-steered pointer, and moving around inside
+   a page belongs at the bottom. */
 .projects .sp-detail-nav {
   position: absolute;
   bottom: 2.4rem;
-  left: 8vw;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 1.4rem;

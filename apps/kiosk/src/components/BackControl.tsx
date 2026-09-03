@@ -15,11 +15,17 @@ import "./backControl.css";
  * same place, the same shape and the same size wherever they are — so it is mounted once, for
  * the whole app, rather than left to each section to remember.
  *
- * Top centre, and that is the whole rule of the kiosk's chrome: TOP CENTRE LEAVES THE PAGE,
- * BOTTOM CENTRE MOVES AROUND INSIDE IT. Corners were the natural place to tuck controls away
- * and the worst place to put them here — a hand is steered by moving a whole arm, so a corner
- * is the most expensive point on the wall to reach and the easiest to overshoot past. The
- * middle of an edge is the cheapest.
+ * The rule of the kiosk's chrome is now about HEIGHT, not left/right: LEAVING THE PAGE SITS
+ * BOTTOM LEFT, MOVING AROUND INSIDE IT SITS BOTTOM CENTRE. The hand is held up in front of
+ * the camera and steered with the whole arm, so anything along the top edge is reached with
+ * the arm at its most raised and least steady — the bottom edge is where a tired arm already
+ * is. Bottom left rather than bottom centre leaves the cheapest point on the wall, the
+ * bottom midpoint, to the in-page prev/next controls.
+ *
+ * (It has now been in three places: top centre, then top right to stop colliding with the
+ * filter tabs several sections run across the top, and now here. Sections must not add a
+ * second exit of their own — Projects had one two centimetres away, and a control competing
+ * with the control is worse than either alone.)
  */
 export function BackControl() {
   const entered = useKioskStore((s) => s.entered);

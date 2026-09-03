@@ -173,14 +173,10 @@ export function ProjectsSection() {
             exit={{ opacity: 0, y: 32 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            <button
-              type="button"
-              data-hover
-              className="sp-detail-back"
-              onClick={() => setSelected(null)}
-            >
-              ← Back
-            </button>
+            {/* No page-level Back here. The global Home control is the one way out of a
+                section, and a second exit two centimetres from it — in the strip a hand
+                crosses on its way to the filter tabs — was a control competing with the
+                control. Prev/next below still moves between topics. */}
 
             <div className="sp-detail-inner">
               <span className="sp-detail-type">
