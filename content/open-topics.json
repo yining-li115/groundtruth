@@ -2,47 +2,72 @@
   {
     "id": "ot-world-action-model",
     "title": "World-Action-Model",
-    "types": ["Master Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Combine VLA models and world models, and find out where each one carries the other.",
     "description": "VLA models and world models have both emerged as promising paradigms for general-purpose robotic intelligence, and they fail in opposite directions: VLA models perform strongly on a specific task but struggle to multi-task, while world models degrade gracefully out of distribution. You would work hands-on with both, in simulation and in real-world deployment. Starting point: research.nvidia.com/labs/cosmos-lab/cosmos-predict2.5/",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-longterm-4d-pose",
     "title": "Long-term 4D Dynamic Object Reconstruction and Pose Estimation",
-    "types": ["Master Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Push a feed-forward geometric foundation model from benchmark novel-object generalisation to long-term everyday tracking.",
     "description": "The current feed-forward geometric foundation model already reasons about object geometry and pose, and generalises to novel objects across several benchmarks. This project targets the harder, more realistic case: long-term tracking and pose understanding in everyday settings. Starting point: the group's own Object Pose Transformer, arxiv.org/abs/2603.23370",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-structured-semantics-3d",
     "title": "Structured Semantics 3D Reconstruction",
-    "types": ["Master Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Turn raw reconstructed geometry into a wireframe you can actually measure — roof dimensions, slope angles, edge classes.",
     "description": "Standard 3D reconstruction produces raw geometry: point clouds or meshes, from which no measurement can be read off directly. This project targets a more useful output — given ground-level imagery of a building, produce a structured wireframe carrying meaningful quantities: roof dimensions, slope angles, edge classifications. The practical payoff is direct, for instance estimating roof geometry to place solar panels automatically. Starting point: arxiv.org/abs/2503.08208",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-slam-foundation-models",
     "title": "SLAM Foundation Models (in collaboration with Cambridge)",
-    "types": ["Master Thesis", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "Guided Research"
+    ],
     "summary": "Extend emerging 3D foundation models toward adaptive, continuous online scene mapping.",
     "description": "How far can emerging 3D foundation models be pushed toward adaptive and continuous online scene mapping? The work bridges large-scale 3D representation learning with real-time SLAM and robotic perception in dynamic environments. Run as a collaboration with Cambridge — remote collaboration, a visit to Cambridge, or a master's thesis inside the group all work. Related reading: arxiv.org/abs/2512.25008, any-4d.github.io, arxiv.org/pdf/2601.09499",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-uncertainty-4d-world-models",
     "title": "Uncertainty-aware 4D World Models (in collaboration with Cambridge)",
-    "types": ["Master Thesis", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "Guided Research"
+    ],
     "summary": "Model uncertainty under noise, occlusion and sensor degradation so 4D world models stay reliable.",
     "description": "Existing 4D reconstruction frameworks assume observations they rarely get. This project introduces uncertainty modelling under dynamic and incomplete observation, aiming at more reliable state estimation and future prediction when the input carries noise, occlusion and sensor degradation. A collaboration with Cambridge. Related reading: robots.ox.ac.uk/~vgg/research/vdpm/, st4rtrack.github.io, any-4d.github.io",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-dlr-building-damage",
     "title": "Synthetic Training Data Generation for Building Damage Assessment from Optical Remote Sensing Imagery",
-    "types": ["Master Thesis"],
+    "types": [
+      "Master Thesis"
+    ],
     "summary": "A paid master's thesis with DLR: generate synthetic 3D post-disaster scenes so damage models can train where real labels do not exist.",
     "description": "A master's thesis with DLR's Earth Observation Center in Oberpfaffenhofen. Building damage assessment from satellite and aerial imagery drives disaster response, but per-pixel ground truth for post-disaster imagery is scarce, expensive and geographically biased. You would develop a deep learning algorithm that synthesises realistic 3D post-disaster scenes — physically plausible structural damage and debris fields, conditioned on environmental context and disaster type — then benchmark it against DLR's existing synthetic data pipeline by training state-of-the-art damage-assessment models on controlled mixes of real and synthetic data. The work sits inside DLR's operational partnerships with the World Bank, the World Food Programme and the German Red Cross, is compensated (TVöD Bund E5), and is supervised toward a peer-reviewed publication. Apply with CV, cover letter and transcript to Sebastian Gapp, sebastian.gapp@dlr.de.",
     "prerequisites": [
@@ -50,38 +75,59 @@
       "Python and PyTorch",
       "A plus: generative models, 3D Gaussian Splatting, Blender or Unreal, remote sensing image analysis",
       "English, spoken and written"
-    ]
+    ],
+    "contact": "sebastian.gapp@dlr.de"
   },
   {
     "id": "ot-embodied-ai-3d-foundation",
     "title": "Embodied AI and 3D Foundation Models — Open Call",
-    "types": ["Master Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Standing offer: bring your own angle on Embodied AI or 3D foundation models, with A100/H100/RTX5090 and a Franka arm behind it.",
     "description": "Beyond the specific topics listed, Weihang Li welcomes students who want to work on Embodied AI or 3D foundation models and bring their own angle. The group aims at top-tier venues — CVPR, ICCV, NeurIPS, IJCV, TIP, ICRA — and backs projects with compute (A100 / H100 / RTX 5090) and robotics hardware (Franka). Reach out any time with your CV and transcript.",
-    "supervisorId": "weihang-li"
+    "supervisorId": "weihang-li",
+    "contact": "weihang.li@tum.de"
   },
   {
     "id": "ot-xray-gaussian-splatting",
     "title": "X-ray Gaussian Splatting and Synthetic-to-Real Domain Adaptation",
-    "types": ["Master Thesis", "Bachelor Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "Bachelor Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Standing offer: novel 3D reconstruction, domain transfer and experimental imaging pipelines for X-ray.",
     "description": "Florian Eberhardt offers student projects and theses in X-ray Gaussian Splatting, synthetic-to-real X-ray domain adaptation, and related areas. If you want to work on novel 3D reconstruction methods, domain transfer techniques, or experimental imaging pipelines, the scope is shaped with you — get in touch to hear what is currently open.",
-    "supervisorId": "florian-eberhardt"
+    "supervisorId": "florian-eberhardt",
+    "contact": "florian.eberhardt@tum.de"
   },
   {
     "id": "ot-robotic-ultrasound-representations",
     "title": "Learned Representations for Robotic and Interventional Ultrasound",
-    "types": ["Master Thesis", "Bachelor Thesis", "IDP", "Guided Research"],
+    "types": [
+      "Master Thesis",
+      "Bachelor Thesis",
+      "IDP",
+      "Guided Research"
+    ],
     "summary": "Standing offer: implicit neural representations, unsupervised segmentation and diffusion models, applied to ultrasound.",
     "description": "Yordanka Velikova supervises IDPs, guided research and bachelor/master theses around representation learning, implicit neural representations, unsupervised segmentation and tracking, diffusion models for image generation, robotic ultrasound and ultrasound simulation. Projects she has supervised include diffusion models for ultrasound image generation, optical-flow catheter tracking, shape completion for robotic liver scans and breathing compensation for autonomous abdominal sweeps. Contact her to agree on a topic.",
-    "supervisorId": "yordanka-velikova"
+    "supervisorId": "yordanka-velikova",
+    "contact": "dani.velikova@tum.de"
   },
   {
     "id": "ot-3d-vision-industry",
     "title": "3D Vision Topics with Industry Support — Open Call",
-    "types": ["Master Thesis"],
+    "types": [
+      "Master Thesis"
+    ],
     "summary": "Standing offer from the chair: master's thesis topics in 3D vision, several with an industrial partner behind them.",
     "description": "There are always available topics in 3D vision for master's theses, a number of them with potential industry support. The group's industrial partners are continuously looking for motivated working students, graduates and young professionals, and internships across different computer vision application areas are offered alongside the thesis topics. If you want to write your thesis in 3D vision, or want the industry experience, contact Benjamin Busam directly.",
-    "supervisorId": "benjamin-busam"
+    "supervisorId": "benjamin-busam",
+    "contact": "b.busam@tum.de"
   }
 ]

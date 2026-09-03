@@ -352,7 +352,7 @@
 .publications .pub-detail-type {
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 0.8vw, 1.1rem);
   font-weight: 700;
   color: var(--gt-accent);
 }
@@ -365,42 +365,30 @@
   letter-spacing: -0.02em;
   color: var(--gt-accent);
 }
+/* Body sizes below are read from across a corridor, not from a desk (CLAUDE.md rule 7):
+   they scale with the viewport and are clamped so a laptop preview stays sane. The old
+   fixed 0.95rem/460px squeezed the abstract into a narrow strip in a column twice as wide. */
 .publications .pub-detail-authors {
-  margin: 1.8rem 0 0;
-  max-width: 600px;
-  font-size: 1rem;
+  margin: 2.2rem 0 0;
+  max-width: 46ch;
+  font-size: clamp(1rem, 0.95vw, 1.3rem);
   font-weight: 700;
+  line-height: 1.4;
   color: var(--gt-text-primary);
 }
 .publications .pub-detail-venue {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+  font-size: clamp(0.9rem, 0.8vw, 1.1rem);
   color: var(--gt-text-secondary);
 }
 .publications .pub-detail-abstract {
-  margin: 1.4rem 0 0;
-  max-width: 460px;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  margin: 1.8rem 0 0;
+  /* A measure, not a pixel box — stays readable as the type scales up on the wall. */
+  max-width: 60ch;
+  font-size: clamp(1rem, 1.05vw, 1.45rem);
+  line-height: 1.65;
   color: var(--gt-text-secondary);
 }
-.publications .pub-detail-link {
-  margin-top: 2.8rem;
-  padding: 0.55rem 1.2rem;
-  border: 1px solid var(--gt-accent);
-  border-radius: 9999px;
-  color: var(--gt-accent);
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-.publications .pub-detail-link:hover,
-.publications .pub-detail-link.is-hover {
-  background: var(--gt-accent);
-  color: var(--gt-brand-white);
-}
-
 /* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
 .publications .frame__logo {
   pointer-events: auto;

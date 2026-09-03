@@ -52,14 +52,16 @@ export function PublicationsSection() {
 
   // Auto-fit the detail title to the column: largest size that still wraps within the
   // width and stays under a max height, so titles of any length fill the space cleanly.
+  // The budget is deliberately under a third of the screen — at 46vh a four-line title ate
+  // half the wall and pushed the abstract into a strip nobody reads from two metres away.
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const el = titleRef.current;
     if (!el) return;
     const fit = () => {
-      const maxH = window.innerHeight * 0.46;
+      const maxH = window.innerHeight * 0.3;
       let lo = 22;
-      let hi = 130;
+      let hi = 96;
       let best = 22;
       while (lo <= hi) {
         const mid = (lo + hi) >> 1;
@@ -167,7 +169,11 @@ export function PublicationsSection() {
               ← Back
             </button>
 
-            <div className="pub-detail-text">
+            {/* Lenis owns the document wheel, and this detail is a fixed full-screen
+                layout with nothing for the page itself to scroll — so without
+                `data-lenis-prevent` the wheel is swallowed and a long abstract (measured:
+                1241px of content in a 757px column) simply cannot be reached. */}
+            <div className="pub-detail-text" data-lenis-prevent>
               <span className="pub-detail-type">{selected.type}</span>
               <h2 className="pub-detail-title" ref={titleRef}>
                 {selected.title}
@@ -177,17 +183,6 @@ export function PublicationsSection() {
                 {selected.venue} · {selected.year}
               </p>
               <p className="pub-detail-abstract">{selected.abstract}</p>
-              {selected.url && (
-                <a
-                  className="pub-detail-link"
-                  data-hover
-                  href={selected.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Read paper ↗
-                </a>
-              )}
             </div>
 
             <div className="pub-detail-right">

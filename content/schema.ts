@@ -154,6 +154,10 @@ export const openTopicSchema = z.object({
   description: nonEmpty, // the offer: what the student would do
   posted: z.string().optional(), // ISO date "YYYY-MM-DD" — sorts the "All" tab (newest first)
   supervisorId: id.optional(), // → Person.id
+  /** Who to write to. Usually the supervisor's own address, but not always: a topic run with
+   *  an external partner names their contact instead, and some topics have no roster
+   *  supervisor at all. So this is its own field, never derived from `supervisorId`. */
+  contact: z.string().email().optional(),
   prerequisites: z.array(nonEmpty).optional(),
 });
 

@@ -164,6 +164,10 @@ export function ProjectsSection() {
             key="sp-detail"
             ref={detailRef}
             className="sp-detail"
+            /* Lenis owns the document wheel. Without this it swallows the gesture and
+               scrolls the page — which, on a fixed full-screen detail, means nothing
+               moves and a topic longer than the viewport cannot be read to the end. */
+            data-lenis-prevent
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 32 }}
@@ -191,6 +195,12 @@ export function ProjectsSection() {
                   <div className="sp-meta-block">
                     <span className="sp-meta-label">Supervisor</span>
                     <span className="sp-meta-value">{personName(selected.supervisorId)}</span>
+                  </div>
+                )}
+                {selected.contact && (
+                  <div className="sp-meta-block">
+                    <span className="sp-meta-label">Contact</span>
+                    <span className="sp-meta-value sp-meta-contact">{selected.contact}</span>
                   </div>
                 )}
                 {selected.prerequisites && selected.prerequisites.length > 0 && (
