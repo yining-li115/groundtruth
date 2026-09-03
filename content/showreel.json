@@ -1,57 +1,46 @@
 [
   {
-    "id": "spotlight-motto",
-    "kind": "spotlight",
-    "title": "Making machines see & think in 3D",
-    "blurb": "Photogrammetry & Remote Sensing at TUM — turning pixels and points into an understanding of the world.",
-    "media": {
-      "kind": "image",
-      "src": "/media/spotlight/overview.webp",
-      "caption": "City-scale reconstruction"
-    },
-    "cta": "Scan to explore"
-  },
-  {
-    "id": "spotlight-sensing",
-    "kind": "spotlight",
-    "title": "Sensing the city, one pass at a time",
-    "blurb": "Airborne and terrestrial capture campaigns that turn a campus block into billions of measured points.",
-    "cta": "Placeholder copy"
-  },
-  {
-    "id": "spotlight-semantics",
-    "kind": "spotlight",
-    "title": "From points to meaning",
-    "blurb": "Learned segmentation lifts raw geometry into roofs, façades, vegetation and streets that a machine can reason about.",
-    "cta": "Placeholder copy"
-  },
-  {
-    "id": "spotlight-change",
-    "kind": "spotlight",
-    "title": "Watching the world change",
-    "blurb": "Repeat surveys make deformation, construction and vegetation growth measurable over time, not just visible.",
-    "cta": "Placeholder copy"
-  },
-  {
     "id": "news-cvpr-2026",
     "kind": "news",
-    "title": "Five papers accepted at CVPR 2026",
-    "blurb": "The chair's own news line for the year: five papers at CVPR 2026, with Benjamin Busam serving as Lead Area Chair and named an Outstanding Area Chair.",
-    "media": {
-      "kind": "image",
-      "src": "/papers/conceptpose/teaser.jpg"
-    },
+    "title": "Five CVPR 2026 papers: towards agentic 3D vision systems",
+    "blurb": "Five papers accepted to CVPR 2026, presented at the main conference in Denver. Together they trace one line — from raw pixels to geometry to dynamics to agents: UnReflectAnything cleans the input, ConceptPose and OPT-Pose understand unseen objects, Node-RF learns the dynamics.",
+    "cta": "See the papers",
     "refId": "object-pose"
+  },
+  {
+    "id": "news-dlr-workshop",
+    "kind": "news",
+    "title": "Joint DLR–TUM workshop on photogrammetry and remote sensing",
+    "blurb": "PRS co-organised an exchange workshop with the German Aerospace Center at its Remote Sensing Technology Institute in Oberpfaffenhofen — a day of presentations, technical discussion and strategic planning with the RST and RSA groups from TUM.",
+    "refId": "earth-observation"
+  },
+  {
+    "id": "news-mcml-phd",
+    "kind": "open-topic",
+    "title": "Fully funded PhD positions through MCML",
+    "blurb": "The Munich Center for Machine Learning — a joint TUM and LMU initiative — funds full PhD positions in machine learning, computer vision and AI. PRS welcomes candidates working on 3D computer vision, generative world modelling and multimodal perception.",
+    "cta": "Talk to us",
+    "refId": "neural-scene-4d"
+  },
+  {
+    "id": "news-busam-appointment",
+    "kind": "news",
+    "title": "Benjamin Busam takes over the Photogrammetry and Remote Sensing Lab",
+    "blurb": "Professor and Director of PRS since 1 September 2025, returning to the institution where his academic path began — by way of ParisTech, Melbourne, FRAMOS, Huawei Research London and, until 2025, the Chair for Computer Aided Medical Procedures at TUM.",
+    "refId": "benjamin-busam"
+  },
+  {
+    "id": "spotlight-motto",
+    "kind": "spotlight",
+    "title": "Making machines see and think in 3D",
+    "blurb": "We build 3D in silico replicas of our world — reconstruction, semantic understanding and multimodal sensor fusion, from satellite and aerial imagery down to mobile and embodied sensing. From sensor to system.",
+    "cta": "Raise a hand to explore"
   },
   {
     "id": "open-4d-world-models",
     "kind": "open-topic",
-    "title": "Open: Uncertainty-aware 4D world models, with Cambridge",
+    "title": "Open: uncertainty-aware 4D world models, with Cambridge",
     "blurb": "A master's thesis or guided research project on modelling uncertainty under noise, occlusion and sensor degradation, so 4D reconstruction stays reliable outside the lab.",
-    "media": {
-      "kind": "image",
-      "src": "/papers/node-rf/architecture.png"
-    },
     "cta": "Talk to us",
     "refId": "neural-scene-4d"
   }
