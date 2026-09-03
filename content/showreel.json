@@ -4,7 +4,11 @@
     "kind": "spotlight",
     "title": "Making machines see & think in 3D",
     "blurb": "Photogrammetry & Remote Sensing at TUM — turning pixels and points into an understanding of the world.",
-    "media": { "kind": "image", "src": "/media/spotlight/overview.webp", "caption": "City-scale reconstruction" },
+    "media": {
+      "kind": "image",
+      "src": "/media/spotlight/overview.webp",
+      "caption": "City-scale reconstruction"
+    },
     "cta": "Scan to explore"
   },
   {
@@ -29,20 +33,26 @@
     "cta": "Placeholder copy"
   },
   {
-    "id": "news-isprs-award",
+    "id": "news-cvpr-2026",
     "kind": "news",
-    "title": "Best Paper Award at ISPRS 2026",
-    "blurb": "Our work on regularised mesh reconstruction from fused aerial LiDAR and imagery received the conference best paper award.",
-    "media": { "kind": "image", "src": "/papers/node-rf/result.png" },
-    "refId": "urban-3d-reconstruction"
+    "title": "Five papers accepted at CVPR 2026",
+    "blurb": "The chair's own news line for the year: five papers at CVPR 2026, with Benjamin Busam serving as Lead Area Chair and named an Outstanding Area Chair.",
+    "media": {
+      "kind": "image",
+      "src": "/papers/conceptpose/teaser.jpg"
+    },
+    "refId": "object-pose"
   },
   {
-    "id": "open-nerf-facades",
+    "id": "open-4d-world-models",
     "kind": "open-topic",
-    "title": "Open: Master's thesis on neural fields for façade modelling",
-    "blurb": "Looking for a student to explore neural radiance and signed-distance fields for detailed building façade reconstruction.",
-    "media": { "kind": "image", "src": "/papers/unreflect/qualitative.png" },
+    "title": "Open: Uncertainty-aware 4D world models, with Cambridge",
+    "blurb": "A master's thesis or guided research project on modelling uncertainty under noise, occlusion and sensor degradation, so 4D reconstruction stays reliable outside the lab.",
+    "media": {
+      "kind": "image",
+      "src": "/papers/node-rf/architecture.png"
+    },
     "cta": "Talk to us",
-    "refId": "urban-3d-reconstruction"
+    "refId": "neural-scene-4d"
   }
 ]

@@ -1,74 +1,283 @@
 [
   {
-    "id": "urban-3d-reconstruction",
-    "title": "Urban 3D Reconstruction",
-    "summary": "Turning aerial imagery and LiDAR into accurate, textured 3D city models.",
-    "description": "We develop end-to-end pipelines that fuse multi-view aerial imagery with airborne LiDAR to reconstruct buildings, vegetation, and terrain at city scale. Research questions include robust multi-view stereo, mesh regularisation under noisy observations, and keeping models consistent as new data arrives.",
-    "cover": "https://picsum.photos/seed/topic-urban3d/1200/800",
-    "tags": ["point cloud", "photogrammetry", "3D reconstruction", "multi-view stereo"],
-    "leadPersonIds": ["benjamin-busam"],
+    "id": "object-pose",
+    "title": "Object Pose & Embodied Perception",
+    "summary": "Working out where an object is — for objects the system has never seen before.",
+    "description": "Most pose estimators are trained on the objects they will later meet. We work on the case that actually occurs outside a lab: an object arrives with no CAD model, no category label and no training run of its own. Our methods recover full 6D pose from a handful of reference views, from a single RGB image, or from language alone — and they are built to survive what benchmarks usually leave out: specular and transparent surfaces, cluttered industrial bins, and objects that will not hold still. The group runs the TRICKY and category-level challenges at ICCV to put those failure cases in front of the whole field.",
+    "cover": "object-pose.jpg",
+    "tags": [
+      "6D pose",
+      "unseen objects",
+      "embodied AI",
+      "benchmarks"
+    ],
+    "leadPersonIds": [
+      "benjamin-busam",
+      "weihang-li",
+      "junwen-huang"
+    ],
     "publications": [
       {
-        "title": "Regularised Mesh Reconstruction from Fused Aerial LiDAR and Imagery",
-        "authors": "Hartmann, L., Rao, A.",
-        "venue": "ISPRS Journal of Photogrammetry and Remote Sensing",
+        "title": "Object Pose Transformer: Unifying Unseen Object Pose Estimation",
+        "authors": "Weihang Li, Lorenzo Garattoni, Fabien Despinoy, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR 2026",
+        "year": 2026,
+        "url": "https://colin-de.github.io/OPT-Pose/"
+      },
+      {
+        "title": "ConceptPose: Training-Free Zero-Shot Object Pose Estimation using Concept Vectors",
+        "authors": "Liming Kuang, Yordanka Velikova, Mahdi Saleh, Jan-Nico Zaech, Danda Pani Paudel, Benjamin Busam",
+        "venue": "CVPR 2026",
+        "year": 2026,
+        "url": "https://stevenlk.xyz/conceptpose"
+      },
+      {
+        "title": "GCE-Pose: Global Context Enhancement for Category-level Object Pose Estimation",
+        "authors": "Weihang Li, Hongli Xu, Junwen Huang, Hyunjun Jung, Peter KT Yu, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR 2025",
         "year": 2025,
-        "url": "https://doi.org/10.0000/example-urban3d"
+        "url": "https://arxiv.org/abs/2502.04293"
+      },
+      {
+        "title": "RayPose: Ray Bundling Diffusion for Template Views in Unseen 6D Object Pose Estimation",
+        "authors": "Junwen Huang, Shishir Reddy Vutukur, Peter KT Yu, Nassir Navab, Slobodan Ilic, Benjamin Busam",
+        "venue": "ICCV 2025",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2510.18521"
+      },
+      {
+        "title": "MatchU: Matching Unseen Objects for 6D Pose Estimation from RGB-D Images",
+        "authors": "Junwen Huang, Hao Yu, Kuan-Ting Yu, Nassir Navab, Slobodan Ilic, Benjamin Busam",
+        "venue": "CVPR 2024",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2403.01517"
       }
     ]
   },
   {
-    "id": "sar-deep-learning",
-    "title": "Deep Learning for SAR",
-    "summary": "Learning-based despeckling, InSAR analysis, and change detection for radar data.",
-    "description": "Synthetic Aperture Radar sees through clouds and works day or night, but its speckle noise and complex geometry make interpretation hard. We design neural methods — often self-supervised — for despeckling, interferometric phase estimation, and detecting change between acquisitions, with applications in deformation monitoring.",
-    "cover": "https://picsum.photos/seed/topic-sar/1200/800",
-    "tags": ["SAR", "InSAR", "deep learning", "change detection"],
-    "leadPersonIds": ["florian-eberhardt"],
+    "id": "neural-scene-4d",
+    "title": "Neural Scene Representation & 4D Dynamics",
+    "summary": "Scenes that are not just reconstructed but keep moving — geometry with time built in.",
+    "description": "A reconstruction that freezes the world at one instant is of little use to a robot or a monitoring system. We build representations carrying time as a first-class dimension: neural ODEs that continue a scene's motion past the end of the observed sequence, Gaussian splats recovered from image pairs whose camera poses are unknown, radiance fields that stay stable while both the scene and the camera move. The recurring question is how much can be extrapolated from how little.",
+    "cover": "neural-scene-4d.jpg",
+    "tags": [
+      "neural fields",
+      "Gaussian splatting",
+      "neural ODEs",
+      "4D reconstruction"
+    ],
+    "leadPersonIds": [
+      "weihang-li",
+      "liming-kuang",
+      "yordanka-velikova"
+    ],
     "publications": [
       {
-        "title": "Self-Supervised Despeckling of Single-Look Complex SAR",
-        "authors": "Bianchi, M., Hartmann, L.",
-        "venue": "IEEE Transactions on Geoscience and Remote Sensing",
+        "title": "Node-RF: Learning Generalized Continuous Space-Time Scene Dynamics with Neural ODE-based NeRFs",
+        "authors": "Hiran Sarkar, Liming Kuang, Yordanka Velikova, Benjamin Busam",
+        "venue": "CVPR 2026",
+        "year": 2026,
+        "url": "https://around-star.github.io/node-rf/"
+      },
+      {
+        "title": "DynSUP: Dynamic Gaussian Splatting from an Unposed Image Pair",
+        "authors": "Weihang Li, Weirong Chen, Shenhan Qian, Jiajie Chen, Daniel Cremers, Haoang Li",
+        "venue": "IEEE TIP 2026",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2412.00851"
+      },
+      {
+        "title": "ODeform: Learning Continuous 4D Motion for Shape Deformation with Neural ODEs",
+        "authors": "Yordanka Velikova, Mahdi Saleh, Liming Kuang, Benjamin Busam",
+        "venue": "IROS 2026",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2607.20670"
+      },
+      {
+        "title": "DynaMoN: Motion-Aware Fast and Robust Camera Localization for Dynamic Neural Radiance Fields",
+        "authors": "Nicolas Schischka, Hannah Schieber, Mert Asim Karaoglu, Melih Görgülü, Florian Grötzner, Alexander Ladikos, Daniel Roth, Nassir Navab, Benjamin Busam",
+        "venue": "IEEE RA-L 2024",
         "year": 2024,
-        "url": "https://doi.org/10.0000/example-sar"
+        "url": "https://arxiv.org/abs/2309.08927"
+      },
+      {
+        "title": "SSR-2D: Semantic 3D Scene Reconstruction from 2D Images",
+        "authors": "Junwen Huang, Alexey Artemov, Yujin Chen, Shuaifeng Zhi, Kai Xu, Matthias Nießner",
+        "venue": "IEEE TPAMI 2024",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2302.03640"
       }
     ]
   },
   {
-    "id": "semantic-lidar",
-    "title": "Semantic LiDAR & Digital Twins",
-    "summary": "Giving point clouds meaning, then keeping a living digital twin in sync.",
-    "description": "Beyond geometry, we label every point — facade, road, tree, vehicle — so a 3D scene becomes queryable. We then study how to maintain a digital twin over time as the real environment changes, fusing repeated mobile-mapping scans into a single, up-to-date semantic model.",
-    "cover": "https://picsum.photos/seed/topic-semantic/1200/800",
-    "tags": ["LiDAR", "semantic segmentation", "digital twin", "point cloud"],
-    "leadPersonIds": ["weihang-li", "benjamin-busam"]
+    "id": "robotic-imaging",
+    "title": "Robotic & Interventional Imaging",
+    "summary": "Making ultrasound, endoscopy and X-ray legible to machines — and to the clinician holding the probe.",
+    "description": "Medical imaging breaks the assumptions computer vision is built on: no texture to match, no reliable lighting, anatomy that deforms as it is observed, and almost no labelled data. We work on self-supervised segmentation and tracking that needs no annotation, implicit representations that compensate for breathing during a robotic sweep, common anatomical spaces that let CT and ultrasound be compared at all, and highlight removal that recovers the surface an endoscope is actually looking at.",
+    "cover": "robotic-imaging.jpg",
+    "tags": [
+      "robotic ultrasound",
+      "self-supervised learning",
+      "surgical vision",
+      "implicit representations"
+    ],
+    "leadPersonIds": [
+      "yordanka-velikova",
+      "mert-karaoglu",
+      "alberto-rota"
+    ],
+    "publications": [
+      {
+        "title": "UnReflectAnything: RGB-Only Highlight Removal by Rendering Synthetic Specular Supervision",
+        "authors": "Alberto Rota, Mert Kiray, Mert Asim Karaoglu, Patrick Ruhkamp, Elena De Momi, Nassir Navab, Benjamin Busam",
+        "venue": "CVPR 2026",
+        "year": 2026,
+        "url": "https://alberto-rota.github.io/UnReflectAnything"
+      },
+      {
+        "title": "LiteTracker: Leveraging Temporal Causality for Accurate Low-latency Tissue Tracking",
+        "authors": "Mert Asim Karaoglu, Wenbo Ji, Ahmed Abbas, Nassir Navab, Benjamin Busam, Alexander Ladikos",
+        "venue": "MICCAI 2025",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2504.09904"
+      },
+      {
+        "title": "CathFlow: Self-Supervised Segmentation of Catheters in Interventional Ultrasound Using Optical Flow and Transformers",
+        "authors": "Alex Ranne, Liming Kuang, Yordanka Velikova, Nassir Navab, Ferdinando Rodriguez y Baena",
+        "venue": "IROS 2024",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2403.14465"
+      },
+      {
+        "title": "CACTUSS: Common Anatomical CT-US Space for US Examinations",
+        "authors": "Yordanka Velikova, Walter Simson, Mehrdad Salehi, Mohammad Farid Azampour, Philipp Paprottka, Nassir Navab",
+        "venue": "IJCARS 2024",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2207.08619"
+      },
+      {
+        "title": "Implicit Neural Representations for Breathing-compensated Volume Reconstruction in Robotic Ultrasound",
+        "authors": "Yordanka Velikova, Mohammad Farid Azampour, Walter Simson, Marco Esposito, Nassir Navab",
+        "venue": "ICRA 2024",
+        "year": 2024,
+        "url": "https://arxiv.org/abs/2311.04999"
+      }
+    ]
   },
   {
-    "id": "neural-implicit-surfaces",
-    "title": "Neural Implicit Surfaces",
-    "summary": "Continuous surface reconstruction from oblique aerial photogrammetry.",
-    "description": "We represent buildings and terrain as neural implicit fields rather than discrete meshes, learning a continuous signed-distance or occupancy function directly from multi-view oblique imagery. This yields watertight, level-of-detail-adaptive surfaces that interpolate cleanly across sparsely observed facades.",
-    "cover": "https://picsum.photos/seed/gt-research-neural/1200/800",
-    "tags": ["neural fields", "implicit surfaces", "photogrammetry", "3D reconstruction"],
-    "leadPersonIds": ["weihang-li"]
+    "id": "earth-observation",
+    "title": "Earth Observation & Small-Satellite Missions",
+    "summary": "From mission design to the pixel — building the sensor as well as the algorithms that read it.",
+    "description": "This group does not only process satellite imagery; it helps build the satellite. In CuBy — Satellite Network Bavaria we accompany a multispectral small-satellite mission for the State of Bavaria from mission design through payload evaluation, camera simulation, pre-launch calibration and on-orbit calibration strategy, all the way to the products at the far end: cloud masking, super-resolution, georeferencing. Aquila pushes the resolution question further, asking how much detail can be recovered from a microsatellite constellation without hallucinating any of it.",
+    "cover": "earth-observation.jpg",
+    "tags": [
+      "small satellites",
+      "multispectral",
+      "cloud masking",
+      "super-resolution"
+    ],
+    "leadPersonIds": [
+      "michael-greza",
+      "nino-lenz",
+      "tianyi-you"
+    ],
+    "publications": [
+      {
+        "title": "Transferability and Generalization Investigation of Multiclass Cloud Masking Networks for Unseen Biomes and Sensors",
+        "authors": "Michael Greza, Tianyi You, Boris Jutzi",
+        "venue": "ISPRS Annals 2026",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-annals-x-3-w4-2025-185-2026"
+      },
+      {
+        "title": "GAN-Based Dual Image Super Resolution for Satellite Imagery Decreasing Radiometric Uncertainty",
+        "authors": "Michael Greza, Indraditya Bhattacharya, Ludwig Hoegner, Boris Jutzi",
+        "venue": "ISPRS Annals 2024",
+        "year": 2024,
+        "url": "https://doi.org/10.5194/isprs-annals-x-3-2024-155-2024"
+      },
+      {
+        "title": "U-Net- and Transformer-Based Cloud Masking for Multispectral Earth Observation Satellite Missions",
+        "authors": "Tianyi You, Michael Greza, Boris Jutzi",
+        "venue": "IGARSS 2025",
+        "year": 2025,
+        "url": "https://doi.org/10.1109/igarss55030.2025.11242475"
+      },
+      {
+        "title": "ZeroFlood: Flood Hazard Mapping from Single-Modality SAR Using Geo-Foundation Models",
+        "authors": "Hyeongkyun Kim, Orestis Oikonomou",
+        "venue": "EUSAR 2026",
+        "year": 2026,
+        "url": "https://arxiv.org/abs/2510.23364"
+      }
+    ]
   },
   {
-    "id": "cross-view-geolocalisation",
-    "title": "Cross-View Geo-Localisation",
-    "summary": "Matching ground-level photos to satellite tiles to recover where they were taken.",
-    "description": "Given a single street-level photograph, we estimate its geographic location by matching it against a database of overhead satellite tiles. The challenge is the extreme viewpoint gap between ground and aerial imagery; we learn a shared embedding in which co-located views are close despite that gap.",
-    "cover": "https://picsum.photos/seed/gt-research-geoloc/1200/800",
-    "tags": ["geo-localisation", "cross-view", "retrieval", "deep learning"],
-    "leadPersonIds": ["florian-eichinger"]
+    "id": "digital-twin-forensics",
+    "title": "Digital Twins of the Built World & Forensics",
+    "summary": "Reconstructions precise enough to be evidence, and legible enough to be questioned.",
+    "description": "A digital twin is only worth building if you can ask it something. Working with the Bavarian State Criminal Police Office, we reconstruct scenes as geometrically accurate, photorealistic twins and then make them answerable — instance-level inventories of the objects present, open-vocabulary queries over them, and agents that reason about where those objects sit in relation to one another. The same methods documented human rights violations in Visual Investigations, shown at the Pinakothek der Moderne.",
+    "cover": "digital-twin-forensics.jpg",
+    "tags": [
+      "digital twins",
+      "open-vocabulary 3D",
+      "forensic reconstruction",
+      "scene graphs"
+    ],
+    "leadPersonIds": [
+      "florian-eichinger",
+      "michael-greza",
+      "benjamin-busam"
+    ],
+    "publications": [
+      {
+        "title": "TRACE: Instance-Level Open-Vocabulary Inventory Generation for 3D Forensic Evidence Reconstruction",
+        "authors": "Florian Eichinger, Michael Greza, Benjamin Busam",
+        "venue": "ISPRS Archives 2026",
+        "year": 2026,
+        "url": "https://doi.org/10.5194/isprs-archives-xlix-b2-2026-397-2026"
+      }
+    ]
   },
   {
-    "id": "multitemporal-change-detection",
-    "title": "Multi-Temporal Change Detection",
-    "summary": "Spotting what changed between SAR acquisitions with transformer attention.",
-    "description": "By aligning long stacks of Synthetic Aperture Radar acquisitions and attending across time, we detect and characterise change — new construction, subsidence, flooding — while separating real surface change from speckle and seasonal nuisance variation.",
-    "cover": "https://picsum.photos/seed/gt-research-change/1200/800",
-    "tags": ["SAR", "change detection", "transformer", "time series"],
-    "leadPersonIds": ["florian-eberhardt"]
+    "id": "aerial-robotics",
+    "title": "Aerial Robotics & Autonomous Perception",
+    "summary": "Perception for aircraft that have to decide where to look, and where to land.",
+    "description": "An autonomous aircraft needs an answer before it has all the data. With TUM's Institute of Flight System Dynamics we build the whole stack for landing-site detection in unstructured terrain — a synchronised LiDAR–RGB sensor rig, deployment in ROS2, multimodal fusion for robust aerial perception — and add language, so a site can be described rather than merely scored. A second line asks where to point the camera next: next-best-view planning that finds what a forest canopy is hiding.",
+    "cover": "aerial-robotics.jpg",
+    "tags": [
+      "UAV",
+      "sensor fusion",
+      "next-best-view",
+      "language-guided robotics"
+    ],
+    "leadPersonIds": [
+      "enea-dragoni",
+      "florian-eichinger",
+      "sigrid-strand"
+    ],
+    "publications": [
+      {
+        "title": "Enhancing UAV Search under Occlusion using Next Best View Planning",
+        "authors": "Sigrid Helene Strand, Thomas Wiedemann, Bram Burczek, Dmitriy Shutin",
+        "venue": "IEEE JSTARS 2025",
+        "year": 2025,
+        "url": "https://arxiv.org/abs/2511.18353"
+      },
+      {
+        "title": "Active Aerial Search in Forests: Multi-UAV Next-Best-View Planning with Prior Scene Data",
+        "authors": "Strand, Sigrid Helene, Wiedemann, Thomas, Shutin, Dmitriy",
+        "venue": "Preprint 2026",
+        "year": 2026,
+        "url": "https://elib.dlr.de/224154/1/Active_Aerial_Search_in_Forests__Multi_UAV_Next_Best_View_Planning_with_Prior_Scene_Data.pdf"
+      },
+      {
+        "title": "pAirception: Language-Guided Landing Site Detection in Unstructured Environments",
+        "authors": "DRAGONI, ENEA",
+        "venue": "University of Pisa 2026",
+        "year": 2026,
+        "url": "http://etd.adm.unipi.it/theses/available/etd-03162026-101954/"
+      }
+    ]
   }
 ]
