@@ -139,7 +139,7 @@ async function main() {
 
     // ---------------------------------------------------------------- showreel
     console.log("\nshowreel (the idle screen, and the way in)\n");
-    await goto(`${BASE}/`, 9000);
+    await goto(`${BASE}/?calibrate=0`, 9000);
 
     ok(
       "the camera actually started",
@@ -173,7 +173,7 @@ async function main() {
 
     // ---------------------------------------------------------------- home
     console.log("\nthe home page carries the whole menu\n");
-    await goto(`${BASE}/?enter=1`, 5000);
+    await goto(`${BASE}/?enter=1&calibrate=0`, 5000);
 
     // The five colour columns became the dark board's five rows (`scenes/HomeBoard`); the
     // property being checked is unchanged — every destination stands on the home page, at a
@@ -209,7 +209,7 @@ async function main() {
     // ---------------------------------------------------------------- sections
     console.log("\nevery section renders, and can be left again\n");
     for (const view of ["people", "research", "projects", "publications", "teaching"]) {
-      await goto(`${BASE}/?view=${view}`, 5000);
+      await goto(`${BASE}/?view=${view}&calibrate=0`, 5000);
       // The site shell only shows once someone has come in; deep links start at the showreel.
       await evaluate(`document.querySelector('.sf-enter__btn')?.click()`);
       await sleep(2000);
@@ -258,7 +258,7 @@ async function main() {
 
     // ---------------------------------------------------------------- scrolling
     console.log("\nthe pages can actually be scrolled by a drag\n");
-    await goto(`${BASE}/?view=people`, 5000);
+    await goto(`${BASE}/?view=people&calibrate=0`, 5000);
     await evaluate(`document.querySelector('.sf-enter__btn')?.click()`);
     await sleep(2000);
     const scrollable = await evaluate(
@@ -274,7 +274,7 @@ async function main() {
     // ---------------------------------------------------------------- scrollable
     console.log("\nevery section has something the drag can actually scroll\n");
     for (const view of ["people", "research", "projects", "publications", "teaching"]) {
-      await goto(`${BASE}/?view=${view}&enter=1`, 4500);
+      await goto(`${BASE}/?view=${view}&enter=1&calibrate=0`, 4500);
       // A section has to be navigable by hand SOMEHOW: either the document scrolls, or
       // something under the cursor does, or it is browsed by controls (the research slider has
       // prev/next buttons). What must never happen is the case this check was written for —
@@ -318,7 +318,7 @@ async function main() {
     // ---------------------------------------------------------------- experiments
     console.log("\nthe tuning pages still work\n");
     for (const exp of ["handlab", "pointer"]) {
-      await goto(`${BASE}/?exp=${exp}`, 7000);
+      await goto(`${BASE}/?exp=${exp}&calibrate=0`, 7000);
       ok(`/?exp=${exp}: renders`, (await evaluate(`document.body.children.length > 0`)) === true);
       ok(`/?exp=${exp}: no page errors`, problems.length === 0, problems[0]);
     }

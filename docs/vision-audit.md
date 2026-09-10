@@ -95,13 +95,17 @@ number.
 
 ### 3.3 Findings
 
-**F1 — a hard-coded 1280 in the confidence calculation.** `handPointer.update` calls
+**F1 — a hard-coded 1280 in the confidence calculation. FIXED, Sep 2026** — `handPointer.update`
+now reads the frame width off `VisionResult.frame` instead. The original finding follows.
+
+ `handPointer.update` calls
 `confidence(face, box, palmNorm * 1280)`. If the camera returns 640×480, every palm-pixel
 figure the "too far" and "hand too small" verdicts are judged on is **exactly twice the truth**,
 so the two warnings that exist for the distance problem can never fire on the camera that most
 needs them. Left in place, marked in the source, and the true value is now measured into
-`state.palmPx` beside it. *Not fixed yet — fixing it changes on-screen behaviour, which this
-phase does not do.*
+`state.palmPx` beside it. ~~*Not fixed yet — fixing it changes on-screen behaviour, which this
+phase does not do.*~~ Fixed once the calibration screen landed, since that phase changes
+on-screen behaviour deliberately.
 
 **F2 — `videoWidth === 0` is a silent, complete failure.** Observed in headless Chrome: the
 track reports `readyState: "live"` and `getSettings()` returns a confident `1280×720`, while

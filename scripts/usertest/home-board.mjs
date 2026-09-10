@@ -21,7 +21,7 @@
  */
 import { openKiosk, sleep } from "./driver.mjs";
 
-const URL = process.env.KIOSK_URL ?? "http://localhost:5173/?enter=1";
+const URL = process.env.KIOSK_URL ?? "http://localhost:5173/?enter=1&calibrate=0";
 const ROWS = ["research", "people", "projects", "publications", "teaching"];
 
 const findings = [];

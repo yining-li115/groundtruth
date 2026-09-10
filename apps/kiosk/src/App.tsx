@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { startSmoothScroll } from "./lib/scroll";
 import { useKioskStore } from "./state/store";
 import { HandControl } from "./components/HandControl";
+import { Calibration } from "./components/Calibration";
 import { GestureHint } from "./components/GestureHint";
 import { BackControl } from "./components/BackControl";
 import { PixelOverlay } from "./components/PixelOverlay";
@@ -57,6 +58,7 @@ function CurrentView() {
  */
 export default function App() {
   const entered = useKioskStore((s) => s.entered);
+  const calibrated = useKioskStore((s) => s.calibrated);
 
   // Start the smooth-scroll + ScrollTrigger loop once for the tab's lifetime.
   useEffect(() => {
@@ -65,6 +67,13 @@ export default function App() {
 
   return (
     <main className="relative" style={{ background: "var(--gt-bg)" }}>
+      {/* Before anything else, once per camera: measure the room.
+          It renders nothing at all when this machine has already been measured, so the wall
+          comes up straight into its showreel on every restart after the first. */}
+      {!calibrated && (
+        <Calibration onDone={() => useKioskStore.getState().setCalibrated(true)} />
+      )}
+
       {entered ? (
         <CurrentView />
       ) : (

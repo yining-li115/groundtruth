@@ -435,10 +435,11 @@ events out of 20 performed.
 
 **Known code faults, left in place until the measurement run:**
 
-- `confidence()` is fed `palmNorm * 1280` — a **hard-coded assumption** about camera width. If the
-  camera returns 640×480, every palm-pixel figure the "too far" and "hand too small" warnings are
-  judged on is exactly twice the truth, so the two warnings that exist for the distance problem can
-  never fire on the camera that most needs them.
+- ~~`confidence()` is fed `palmNorm * 1280` — a **hard-coded assumption** about camera width.~~
+  **FIXED (Sep 2026).** It now uses the frame width the browser actually decoded, which arrives on
+  `VisionResult.frame`. On a 640-wide camera every palm-pixel figure the "too far" and "hand too
+  small" warnings were judged on had been exactly twice the truth, so neither could fire on the one
+  camera that most needed them.
 - `videoWidth === 0` is a **silent total failure**: the track reports `readyState: "live"` and a
   confident `1280×720` while not one frame ever decodes. The loop correctly skips, and status still
   reports `running` — a dead screen that believes it is working.
@@ -450,6 +451,49 @@ events out of 20 performed.
 **No temporal filtering on the gesture signal itself.** Hysteresis yes, debounce yes — but a
 per-frame noisy `ratio` goes raw into a threshold, and all the temporal robustness lives downstream
 on the resulting boolean.
+
+---
+
+## 9b · Calibration — measuring the room instead of guessing it
+
+**Added Sep 2026** (`components/Calibration.tsx`, `lib/vision/reachFit.ts`, `lib/vision/profile.ts`).
+
+Everything in §4–§6 was fitted honestly against **one camera, at one distance, on one pair of
+hands**. That is a defensible default and a bad law, and it produces one specific, measurable
+failure: with the shipped box, at 0.5–1.0 m, the bottom edge of the *screen* maps onto the bottom
+edge of the camera *frame*.
+
+```
+dist    faceW   box x        box y        verdict
+0.5 m   0.200   0.05..0.95   0.00..1.00   CUT — the box is wider than the frame
+0.8 m   0.130   0.21..0.79   0.31..1.00   bottom pinned to the frame edge
+1.0 m   0.100   0.28..0.72   0.47..1.00   bottom pinned to the frame edge
+1.5 m   0.068   0.35..0.65   0.48..0.85   fits
+```
+
+So reaching for anything along the bottom of the display puts the palm half out of shot, tracking
+stops, and the pointer freezes. The corner is not hard to hit — it is unreachable, and nothing on
+screen says so.
+
+A ~20-second flow, run **once per camera** (keyed by `deviceId` in `localStorage`), measures four
+things and replaces four sets of constants:
+
+| Step | Measures | Replaces |
+|---|---|---|
+| sweep a hand around | the region this camera can actually track, in face widths | the hand-tuned `BoxConfig` (4.5 × 3.0, drop 2.6) |
+| hold it still | the noise floor, by replaying the **real** 1€ filter over the recording and taking the highest cutoff that stays under 0.3% drift | `minCutoff 0.4`, `dwellRadius 0.035` |
+| open the hand, then pinch a few times | this person's open and closed clouds, and thresholds landed in the gap between them | `PINCH_ON 0.74` / `PINCH_OFF 0.88` — and if the clouds overlap, `clickGesture` switches to `fist` |
+| touch four corners | proof, with the calibrated pointer. A corner that cannot be held shrinks the box and retries | — |
+
+Also recorded: the true frame size, the measured frame rate (used to re-derive the frame-counted
+gates of §6.1 as durations), and the palm width in real pixels.
+
+Per-camera and not per-visitor on purpose: what it measures is mostly a fact about the
+installation — this lens, this mounting height, this angle — while the per-visitor part (distance,
+hand size) is already handled by the face-width ruler the box is expressed in. Asking every
+passer-by to calibrate would destroy the premise in §0.
+
+`?calibrate=1` re-runs it, `?calibrate=0` skips the screen but still applies what was stored.
 
 ---
 

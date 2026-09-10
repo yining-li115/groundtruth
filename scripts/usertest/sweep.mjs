@@ -112,7 +112,7 @@ async function controls(k) {
 }
 
 async function main() {
-  const k = await openKiosk({ url: `${BASE}/?enter=1`, width: 1600, height: 900 });
+  const k = await openKiosk({ url: `${BASE}/?enter=1&calibrate=0`, width: 1600, height: 900 });
   try {
     await installHuman(k, PROFILE, CAMERA);
     await reachPx(k, 800, 450);
@@ -125,8 +125,8 @@ async function main() {
     );
 
     const PAGES = [
-      { view: "home", url: `${BASE}/?enter=1` },
-      { view: "people", url: `${BASE}/?enter=1&view=people` },
+      { view: "home", url: `${BASE}/?enter=1&calibrate=0` },
+      { view: "people", url: `${BASE}/?enter=1&view=people&calibrate=0` },
       { view: "research", url: `${BASE}/?enter=1&view=research` },
       { view: "projects", url: `${BASE}/?enter=1&view=projects` },
       { view: "publications", url: `${BASE}/?enter=1&view=publications` },
@@ -235,13 +235,13 @@ async function main() {
     // ---------------------------------------------------------------- repeatability
     // The complaint this whole harness exists for: "I pinch and sometimes nothing happens."
     // Ten pinches at the same big target, counted.
-    await goto(k, `${BASE}/?enter=1`);
+    await goto(k, `${BASE}/?enter=1&calibrate=0`);
     const target = (await controls(k))[1];
     const TRIES = 12;
     let pinchHits = 0;
     let silent = 0;
     for (let i = 0; i < TRIES; i += 1) {
-      await goto(k, `${BASE}/?enter=1`);
+      await goto(k, `${BASE}/?enter=1&calibrate=0`);
       await reachPx(k, target.x, target.y);
       await k.evaluate(`window.__lastClick = null`);
       // Watch the cursor for ANY acknowledgement while the fingers close — a pinch that fails
@@ -269,7 +269,7 @@ async function main() {
     // that decides which gesture the wall should ask for.
     let fistHits = 0;
     for (let i = 0; i < TRIES; i += 1) {
-      await goto(k, `${BASE}/?enter=1`);
+      await goto(k, `${BASE}/?enter=1&calibrate=0`);
       await reachPx(k, target.x, target.y);
       await k.evaluate(`window.__lastClick = null`);
       await k.fist({ holdMs: 500 });
@@ -289,7 +289,7 @@ async function main() {
     // The other half of "I don't know what happened": a click nobody asked for. A noisy
     // aperture can cross the threshold on its own, so the hand is parked on a live control,
     // open, and left there.
-    await goto(k, `${BASE}/?enter=1`);
+    await goto(k, `${BASE}/?enter=1&calibrate=0`);
     const park = (await controls(k))[2];
     await reachPx(k, park.x, park.y);
     await k.evaluate(`window.__lastClick = null`);

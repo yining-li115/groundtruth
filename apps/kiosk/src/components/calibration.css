@@ -1,0 +1,168 @@
+/* The one-time setup screen. Tokens only (CLAUDE.md rule 1). */
+
+/*
+ * Dark, like the showreel it stands in front of — this is the screen before the screen, and
+ * dropping a white page in front of an unattended dark wall reads as a fault rather than as a
+ * step. It carries `data-theme="dark"` so the token set resolves the same way the idle backdrop
+ * does (design-system §5) instead of hard-coding anything.
+ */
+.cal {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 4vh, 4rem);
+  background: var(--gt-brand-black);
+  color: var(--gt-brand-white);
+  font-family: var(--font-sans);
+  text-align: center;
+  padding: clamp(2rem, 5vh, 5rem) 8vw;
+}
+
+/* The live picture of the measurement. Small, and above the words rather than beside them:
+   it is evidence, not the interface. */
+.cal-frame {
+  flex: none;
+  border: 1px solid var(--gt-gray-80);
+  border-radius: 0.6rem;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--gt-brand-white) 4%, transparent);
+}
+.cal-canvas {
+  display: block;
+  width: clamp(18rem, 26vw, 34rem);
+  height: auto;
+}
+
+.cal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.7rem, 1.4vh, 1.4rem);
+  max-width: 46ch;
+}
+.cal-step {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: clamp(0.75rem, 0.85vmin, 1.05rem);
+  font-weight: 700;
+  color: var(--gt-brand-electric);
+  min-height: 1em;
+}
+/* Read from across a corridor, not from a desk (CLAUDE.md rule 7). */
+.cal-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.4vmin, 4rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.cal-hint {
+  margin: 0;
+  font-size: clamp(1rem, 1.35vmin, 1.6rem);
+  line-height: 1.55;
+  color: var(--gt-gray-20);
+  min-height: 3em;
+}
+
+/* Progress as a filled rule rather than a spinner: every step here has a known length, and a
+   spinner would claim otherwise. */
+.cal-bar {
+  width: min(34rem, 60vw);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--gt-gray-80);
+  overflow: hidden;
+}
+.cal-bar__fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: var(--gt-brand-electric);
+}
+
+/* The corner test. Big, because the whole point of the test is the corners being reachable —
+   a small dot would be measuring aim instead of reach. */
+.cal-corner {
+  position: fixed;
+  width: clamp(5rem, 9vmin, 11rem);
+  height: clamp(5rem, 9vmin, 11rem);
+  margin: calc(clamp(5rem, 9vmin, 11rem) / -2);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--gt-brand-white) 55%, transparent);
+  background: color-mix(in srgb, var(--gt-brand-white) 8%, transparent);
+  transition: background 0.25s ease-out, border-color 0.25s ease-out, transform 0.25s ease-out;
+}
+.cal-corner.is-on {
+  border-color: var(--gt-brand-electric);
+  background: color-mix(in srgb, var(--gt-brand-electric) 55%, transparent);
+  transform: scale(1.12);
+}
+
+/*
+ * The way out.
+ *
+ * Centred, and that is the whole design: somebody skipping this is very likely somebody whose
+ * mapping is wrong, and the middle of the screen is the one place that every mapping — including
+ * a badly broken one — can still reach. A skip button in a corner is a joke at the expense of
+ * the person who needs it.
+ */
+.cal-skip {
+  margin-top: clamp(0.5rem, 2vh, 2rem);
+  padding: clamp(0.9rem, 1.3vmin, 1.8rem) clamp(2rem, 3vmin, 4rem);
+  border: 1px solid var(--gt-gray-80);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gt-gray-20);
+  font-family: var(--font-sans);
+  font-size: clamp(0.95rem, 1.2vmin, 1.4rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s ease-out, border-color 0.2s ease-out;
+}
+.cal-skip:hover,
+.cal-skip.gt-hover,
+.cal-skip.is-hover {
+  color: var(--gt-brand-white);
+  border-color: var(--gt-brand-white);
+}
+
+/* What was measured, said in numbers, before the screen hands itself over. Not for the visitor
+   — for whoever mounted the camera and needs to know whether it worked. */
+.cal-summary {
+  margin: 0.5rem 0 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.45rem 1.6rem;
+  text-align: left;
+  font-size: clamp(0.85rem, 1.05vmin, 1.2rem);
+}
+.cal-summary > div {
+  display: contents;
+}
+.cal-summary dt {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  font-size: 0.85em;
+  color: var(--gt-gray-50);
+}
+.cal-summary dd {
+  margin: 0;
+  color: var(--gt-brand-white);
+}
+.cal-summary__note {
+  color: var(--gt-brand-electric);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-corner,
+  .cal-skip {
+    transition: none;
+  }
+}

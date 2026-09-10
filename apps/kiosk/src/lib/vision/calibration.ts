@@ -43,6 +43,18 @@ export interface BoxConfig {
   heightFaces: number;
   /** how far the box centre sits BELOW the centre of the face — roughly chest height */
   dropFaces: number;
+  /**
+   * How far the box centre sits to one SIDE of the face, in face widths. Raw frame direction,
+   * like everything else in this file: positive is toward the right of the IMAGE, which is the
+   * visitor's left. Mirroring happens once, in `mapToBox`.
+   *
+   * Zero for the hand-tuned default, because a symmetric guess is the only fair one to make
+   * about a stranger. It is here for `reachFit`: a measured reach is never symmetric — people
+   * favour a hand, and a camera is rarely mounted exactly on the centre line of where they
+   * stand — and forcing the fitted box back to centre would throw away the reachable side to
+   * match the unreachable one.
+   */
+  shiftFaces?: number;
 }
 
 /**
@@ -54,6 +66,7 @@ export const DEFAULT_BOX: BoxConfig = {
   widthFaces: 4.5,
   heightFaces: 3.0,
   dropFaces: 2.6,
+  shiftFaces: 0,
 };
 
 export interface InteractionBox {
@@ -103,7 +116,7 @@ export function interactionBox(
   // y-units are compressed relative to x-units by the aspect ratio, so any vertical
   // measurement expressed in face widths has to be scaled by it to stay physically square.
   const halfH = (cfg.heightFaces * f * aspect) / 2;
-  const cx = face.cx;
+  const cx = face.cx + (cfg.shiftFaces ?? 0) * f;
   const cy = face.cy + cfg.dropFaces * f * aspect;
 
   // Slide the box back inside the frame if it hangs over an edge, and only cut it if it is
@@ -391,10 +404,10 @@ export class PinchDetector {
   private settled = 0;
 
   constructor(
-    private readonly onAt = PINCH_ON,
-    private readonly offAt = PINCH_OFF,
+    private onAt = PINCH_ON,
+    private offAt = PINCH_OFF,
     /** how many hand-less frames to ride out before releasing a held pinch (~5 = 165ms @30fps) */
-    private readonly graceFrames = 5,
+    private graceFrames = 5,
     /**
      * How many consecutive good frames must follow a tracking gap before a NEW pinch may
      * latch.
@@ -406,8 +419,32 @@ export class PinchDetector {
      * seconds: moving the cursor was firing it. Waiting a few frames costs nothing, because
      * nobody completes a deliberate pinch inside a tenth of a second anyway.
      */
-    private readonly settleFrames = 8,
+    private settleFrames = 8,
   ) {}
+
+  /**
+   * Re-point the detector at measured numbers.
+   *
+   * The thresholds are the whole classifier, and the shipped pair was fitted against one
+   * camera and one pair of hands at half a metre. A calibration measures THIS visitor's open
+   * and closed clouds on THIS camera and lands the pair in the gap between them; the two gates
+   * are frame counts that mean different amounts of time at different frame rates, so they are
+   * re-derived from the measured rate too (`profile.ts` → `framesFor`).
+   *
+   * Deliberately does NOT reset the latch: changing the numbers under a held pinch should
+   * change what happens next, not fabricate a release.
+   */
+  configure(cfg: {
+    on?: number;
+    off?: number;
+    graceFrames?: number;
+    settleFrames?: number;
+  }): void {
+    if (Number.isFinite(cfg.on ?? NaN)) this.onAt = cfg.on!;
+    if (Number.isFinite(cfg.off ?? NaN)) this.offAt = cfg.off!;
+    if (cfg.graceFrames !== undefined) this.graceFrames = Math.max(1, Math.round(cfg.graceFrames));
+    if (cfg.settleFrames !== undefined) this.settleFrames = Math.max(0, Math.round(cfg.settleFrames));
+  }
 
   /**
    * Feed one frame's aperture/palm ratio — NaN when no hand was tracked.

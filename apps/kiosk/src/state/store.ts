@@ -30,6 +30,14 @@ interface KioskState {
   /** Manually entered the site from the showreel (a click, no phone) — e.g. for a demo. Lets the
    *  interactive shell show without a real driver; the phone cursor still only appears with one. */
   entered: boolean;
+  /**
+   * The camera in front of this screen has been measured — or the measurement was skipped, or
+   * there is no camera to measure. Everything else waits behind it.
+   *
+   * Not "has a profile": a wall with a dead camera must still play its showreel rather than sit
+   * on a setup screen forever, so this means "the question has been settled", however it was.
+   */
+  calibrated: boolean;
   /** Current screen in the interactive shell. */
   view: View;
   /** Which home design the "home" view renders. */
@@ -56,6 +64,7 @@ interface KioskState {
   setConnected: (v: boolean) => void;
   setHasDriver: (v: boolean) => void;
   setEntered: (v: boolean) => void;
+  setCalibrated: (v: boolean) => void;
   setHandPresent: (v: boolean) => void;
   setHandStatus: (v: KioskState["handStatus"]) => void;
   setPinchTrouble: (v: boolean) => void;
@@ -100,6 +109,7 @@ export const useKioskStore = create<KioskState>((set) => ({
   connected: false,
   hasDriver: false,
   entered: initialEntered,
+  calibrated: false,
   view: initialView,
   homeVariant: initialHomeVariant,
   handPresent: false,
@@ -109,6 +119,7 @@ export const useKioskStore = create<KioskState>((set) => ({
   setConnected: (connected) => set({ connected }),
   setHasDriver: (hasDriver) => set({ hasDriver }),
   setEntered: (entered) => set({ entered }),
+  setCalibrated: (calibrated) => set({ calibrated }),
   setHandPresent: (handPresent) => set({ handPresent }),
   setHandStatus: (handStatus) => set({ handStatus }),
   setPinchTrouble: (pinchTrouble) => set({ pinchTrouble }),

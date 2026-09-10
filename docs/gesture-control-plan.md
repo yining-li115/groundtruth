@@ -70,7 +70,7 @@ final:                               yaw=0  present=false
 | 故障 | 位置 | 确认 |
 |---|---|---|
 | `hands[0]` 无稳定归属 | `mediapipe.ts` `allHands()` | 按 MediaPipe 返回顺序原样透出，未做任何排序或轨迹匹配。旁人的手或访客的第二只手可以在帧之间夺走 index 0 |
-| 硬编码 1280 | `handPointer.ts` `confidence(face, box, palmNorm * 1280)` | 属实，且源码里已有注释标记为审计发现、故意未改 |
+| 硬编码 1280 | `handPointer.ts` `confidence(face, box, palmNorm * 1280)` | 属实。**已修（2026-09）**：改读 `VisionResult.frame` 里摄像头真实解码的帧宽 |
 | 无解码帧仍报 running | `useHandPointer` / `handStatus` | 属实。track 报 `live` 且 `getSettings()` 给出自信的 1280×720，而 `videoWidth` 是 0，循环正确跳过，状态仍是 `running` |
 
 ### 1.3 ✅ 按帧计数的常数清单
@@ -338,6 +338,8 @@ v1 §11 表格里的数值门槛（停止性 p95 ≤ 200ms、跟随延迟 p95 < 
 ## 7 · 实施顺序
 
 v1 §10 的四阶段✅ 采纳，按本版结论重排：
+
+> **进度（2026-09-10）**：阶段 0 的"硬编码 1280"已修；帧计数常数已可由实测帧率换算（`profile.ts` → `framesFor`，由校准推入）。**校准页已落地**（`components/Calibration.tsx`），它顺带解决了本文档没有预见到的一件事——交互盒本身就是写死的猜测，在一米以内会把屏幕下边缘映射到画面之外，这正是"够不到 Home"的根因。§1.1 的 1221ms、§1.2 的手归属、§1.6 的重复帧仍未修。
 
 **阶段 0 — P0 修复（不改任何交互）**
 §1.1 手离开后继续飞、§1.2 三条应用层故障、§1.3 帧计数改毫秒、§1.6 只推理新解码帧。

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { VisionEngine, type Landmark, type VisionResult } from "./mediapipe";
+import { VisionEngine, type FaceResult, type Landmark, type VisionResult } from "./mediapipe";
 import {
   DEFAULT_BOX,
   FaceAnchor,
@@ -166,6 +166,15 @@ export interface PointerState {
   conf: Confidence;
   /** the auto-calibrated box, for overlays */
   box: InteractionBox | null;
+  /**
+   * The steadied face anchor this frame — the ruler everything else is measured in.
+   *
+   * Exposed because a calibration has to record hand positions RELATIVE TO IT: a sweep stored
+   * in raw frame coordinates is a fact about where somebody happened to stand, and a sweep
+   * stored in face widths is a fact about reach, which is the one that survives the next
+   * visitor standing somewhere else.
+   */
+  face: FaceResult | null;
   /** the box is coasting on a remembered face — normally because a hand is in front of it */
   faceHeld: boolean;
   /** every tracked hand's 21 points, for drawing a skeleton */
@@ -246,6 +255,7 @@ function blankState(): PointerState {
     dwellFired: false,
     conf: { value: 0, reason: "no-face" },
     box: null,
+    face: null,
     faceHeld: false,
     hands: [],
     ratio: Number.NaN,
@@ -313,10 +323,30 @@ export class HandPointer {
     this.pinch = new PinchDetector(this.cfg.pinchOn, this.cfg.pinchOff);
   }
 
-  /** Live-tunable so a slider changes the feel without restarting the camera. */
-  configure(cfg: Partial<PointerConfig>): void {
-    this.cfg = { ...this.cfg, ...cfg };
+  /**
+   * Live-tunable so a slider — or a calibration — changes the feel without restarting the
+   * camera.
+   *
+   * The thresholds have to be pushed INTO the detector, not just stored: `PinchDetector` is
+   * built once in the constructor, so a merged config alone would leave the fitted numbers
+   * sitting in `this.cfg` while the classifier went on using the shipped ones. That is the
+   * quietest possible way for a calibration to appear to work and change nothing.
+   */
+  configure(cfg: Partial<PointerConfig> & { frames?: { grace?: number; settle?: number; fistOn?: number; fistOff?: number } }): void {
+    const { frames, ...rest } = cfg;
+    this.cfg = { ...this.cfg, ...rest };
     if (cfg.oneEuro) this.smooth.configure(cfg.oneEuro);
+    if (cfg.pinchOn !== undefined || cfg.pinchOff !== undefined || frames) {
+      this.pinch.configure({
+        on: cfg.pinchOn,
+        off: cfg.pinchOff,
+        graceFrames: frames?.grace,
+        settleFrames: frames?.settle,
+      });
+    }
+    if (frames?.fistOn !== undefined || frames?.fistOff !== undefined) {
+      this.fist.configure({ onFrames: frames.fistOn, offFrames: frames.fistOff });
+    }
   }
 
   get config(): PointerConfig {
@@ -372,17 +402,18 @@ export class HandPointer {
     const ratio = handRatio(hand);
 
     s.box = box;
+    s.face = face;
     s.faceHeld = this.face.held;
     s.hands = res.hands.map((h) => h.landmarks);
     s.ratio = ratio;
-    // AUDIT FINDING (do not silently fix — see docs/vision-audit.md §2): the 1280 here is a
-    // HARD-CODED ASSUMPTION about the camera, not a measurement. `getUserMedia` asks for an
-    // *ideal* 1280×720 and the browser may hand back 640×480 without complaint, in which case
-    // every palm-pixel figure this confidence is judged on is twice the truth — so "too far"
-    // and "hand too small" can never fire on the very camera that most needs them to. The real
-    // number is now measured into `s.palmPx` below; this line is left exactly as it shipped so
-    // that nothing about the interaction moves before the measurement run.
-    s.conf = confidence(face, box, hand ? palmNorm * 1280 : Number.NaN);
+    // Audit finding F1, now fixed (docs/vision-audit.md §3.3). This used to read
+    // `palmNorm * 1280` — a hard-coded assumption about the camera rather than a measurement.
+    // `getUserMedia` asks for an *ideal* 1280x720 and a browser may hand back 640x480 without
+    // complaint, in which case every palm-pixel figure the "too far" and "hand too small"
+    // verdicts are judged on was exactly twice the truth, so neither could ever fire on the one
+    // camera that most needed them. The frame's real width now comes through `VisionResult`.
+    const trueFrameW = res.frame?.w && res.frame.w > 0 ? res.frame.w : 1280;
+    s.conf = confidence(face, box, hand ? palmNorm * trueFrameW : Number.NaN);
 
     // --- audit instrumentation: derived only, decides nothing -----------------------------
     const frameW = res.frame?.w ?? Number.NaN;
@@ -653,10 +684,17 @@ class FistLatch {
   count = 0;
 
   constructor(
-    private readonly onFrames = 2,
-    private readonly offFrames = 3,
+    private onFrames = 2,
+    private offFrames = 3,
     private readonly minScore = 0.5,
   ) {}
+
+  /** Frame counts mean different amounts of TIME at different frame rates; a calibration
+   *  measures the rate and re-derives them (`profile.ts` → `framesFor`). */
+  configure(cfg: { onFrames?: number; offFrames?: number }): void {
+    if (cfg.onFrames !== undefined) this.onFrames = Math.max(1, Math.round(cfg.onFrames));
+    if (cfg.offFrames !== undefined) this.offFrames = Math.max(1, Math.round(cfg.offFrames));
+  }
 
   update(label: string | null, score: number): boolean {
     const isFist = label === "Closed_Fist" && score >= this.minScore;
@@ -701,6 +739,22 @@ function handRatio(hand: { world: Landmark[]; landmarks: Landmark[] } | null): n
 export type PointerStatus = "idle" | "loading" | "running" | "error";
 
 /**
+ * The one live pointer, reachable without prop-drilling.
+ *
+ * There is exactly one camera and exactly one instance of this (CLAUDE.md §5 rule 4), so a
+ * second consumer — the calibration screen, which has to read the same palm and the same face
+ * anchor the pointer is reading, and then hand back the numbers it measured — does not need a
+ * second pipeline or a React context threaded through the tree. Same pattern as `flightInput`
+ * and `cursorPosition`: a plain module singleton the loops read.
+ *
+ * Null until the hook mounts, and again after it unmounts.
+ */
+let live: HandPointer | null = null;
+export function activePointer(): HandPointer | null {
+  return live;
+}
+
+/**
  * Camera + models + the pointer loop, as a hook. The state is handed back as a ref that the
  * loop mutates in place; React re-renders only for `present` and `status`, because a pointer
  * that re-rendered the tree sixty times a second would be its own performance problem.
@@ -715,6 +769,7 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
   const lazyRef = useRef<HandPointer | null>(null);
   if (!lazyRef.current) lazyRef.current = new HandPointer(cfg);
   const pointerRef = lazyRef as { current: HandPointer };
+  live = pointerRef.current;
 
   useEffect(() => {
     if (!enabled) return;

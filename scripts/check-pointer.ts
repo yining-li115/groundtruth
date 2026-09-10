@@ -21,6 +21,9 @@ import type { FaceResult, HandResult, Landmark, VisionResult } from "../apps/kio
 import { flightInput, steer, stopFlight } from "../apps/kiosk/src/lib/vision/flightInput";
 import { fallbackBox } from "../apps/kiosk/src/lib/vision/calibration";
 import { dragScrollVelocity } from "../apps/kiosk/src/lib/scrollGesture";
+import { fitReach, shrinkBox, isUsableBox, type ReachSample } from "../apps/kiosk/src/lib/vision/reachFit";
+import { fitJitter, fitPinch, framesFor } from "../apps/kiosk/src/lib/vision/profile";
+import { interactionBox } from "../apps/kiosk/src/lib/vision/calibration";
 import { PinchDetector } from "../apps/kiosk/src/lib/vision/calibration";
 import { PRESS_DEBOUNCE_MS } from "../apps/kiosk/src/lib/vision/handPointer";
 import { readFileSync } from "node:fs";
@@ -563,6 +566,163 @@ function countDwells(
 
 function runFist(p: HandPointer, clock: { t: number }, score: number): boolean {
   return countPresses(p, clock, 300, () => frame(hand(0.5, 0.7, 1.44, "Closed_Fist", score))) > 0;
+}
+
+{
+  console.log("\ncalibration: the reach fit");
+
+  /**
+   * A synthetic sweep. `reach` is how far the hand goes in face widths; `frameClip` optionally
+   * cuts the recording at a frame edge, which is what really happens — the camera stops
+   * returning a hand, so those frames are never recorded at all.
+   */
+  const sweep = (opts: {
+    reach: number;
+    faceW?: number;
+    faceCy?: number;
+    drop?: number;
+    shift?: number;
+    n?: number;
+    clipBottomAt?: number;
+  }): ReachSample[] => {
+    const faceW = opts.faceW ?? 0.1;
+    const faceCy = opts.faceCy ?? 0.35;
+    const drop = opts.drop ?? 2.6;
+    const shift = opts.shift ?? 0;
+    const out: ReachSample[] = [];
+    const n = opts.n ?? 300;
+    for (let i = 0; i < n; i += 1) {
+      const a = (i / n) * Math.PI * 2;
+      // an ellipse in face-width units around the chest point
+      const u = shift + Math.cos(a) * opts.reach;
+      const v = drop * ASPECT + Math.sin(a) * opts.reach * 0.66;
+      const x = 0.5 + u * faceW;
+      const y = faceCy + v * faceW;
+      if (opts.clipBottomAt !== undefined && y > opts.clipBottomAt) continue; // hand left the shot
+      out.push({ u, v, x, y, faceW });
+    }
+    return out;
+  };
+
+  {
+    // Far enough back that a full sweep genuinely fits in shot — the case the shipped default
+    // was written for, and the only one where it is right.
+    const fit = fitReach(sweep({ reach: 2.2, faceW: 0.075, faceCy: 0.3 }), ASPECT);
+    ok("a clean sweep produces a box", !!fit);
+    ok("...whose width is the reach it saw", !!fit && near(fit.box.widthFaces, 4.4, 0.25),
+      String(fit?.box.widthFaces));
+    ok("...and which nothing had to clip", !!fit && !Object.values(fit.clippedBy).some(Boolean),
+      JSON.stringify(fit?.clippedBy));
+    ok("...and which is a box we would ship", !!fit && isUsableBox(fit.box));
+  }
+
+  {
+    // The real failure, reproduced: standing close, the sweep runs off the bottom of the frame.
+    // Those frames do not exist, so a naive fit would still hand the screen's bottom edge to the
+    // last row of pixels the camera managed to see.
+    const clipped = sweep({ reach: 2.2, faceW: 0.16, faceCy: 0.22, drop: 2.0, clipBottomAt: 0.98 });
+    const fit = fitReach(clipped, ASPECT);
+    ok("a sweep cut off by the frame still fits", !!fit);
+    ok("...and says the CAMERA was the limit, not the arm", fit?.clippedBy.bottom === true);
+    if (fit) {
+      const box = interactionBox(
+        { cx: 0.5, cy: 0.22, w: 0.16, h: 0.2, score: 1 },
+        ASPECT,
+        fit.box,
+      );
+      ok(
+        "...and the fitted box keeps clear of the frame edge",
+        !!box && box.y1 <= 0.96,
+        `bottom at ${box?.y1.toFixed(3)}`,
+      );
+      ok("...where the shipped default did not", (() => {
+        const d = interactionBox({ cx: 0.5, cy: 0.22, w: 0.16, h: 0.2, score: 1 }, ASPECT);
+        return !!d && d.y1 > 0.99;
+      })(), "the default box is pinned to the frame's bottom edge at this distance");
+    }
+  }
+
+  {
+    // Reach is not symmetric — people favour a hand, and a camera is rarely on the centre line.
+    const fit = fitReach(sweep({ reach: 2.0, shift: 1.1 }), ASPECT);
+    ok("an off-centre sweep is not forced back to the middle",
+      !!fit && near(fit.box.shiftFaces ?? 0, 1.1, 0.25), String(fit?.box.shiftFaces));
+  }
+
+  ok("a sweep too short to mean anything is refused", fitReach(sweep({ reach: 2.2, n: 20 }), ASPECT) === null);
+  ok("a hand that never moved is refused", fitReach(sweep({ reach: 0.05 }), ASPECT) === null);
+  {
+    // A sweep that leaves the picture on every side. There is no refusing this one — the frames
+    // outside the shot were never recorded — so the guard has to bring it back to what the
+    // camera could see rather than believe a reach of twelve face widths.
+    const fit = fitReach(sweep({ reach: 12 }), ASPECT);
+    ok("a sweep that runs off the frame is pulled back to what the camera saw",
+      !!fit && fit.box.widthFaces <= 9.01 && fit.clippedBy.left && fit.clippedBy.right,
+      `${fit?.box.widthFaces.toFixed(2)} faces`);
+    ok("...and is still a box we would ship", !!fit && isUsableBox(fit.box));
+  }
+  {
+    const fit = fitReach(sweep({ reach: 2.2 }), ASPECT)!;
+    const small = shrinkBox(fit.box, 0.88);
+    ok("shrinking gives up extent and keeps the centre",
+      near(small.widthFaces, fit.box.widthFaces * 0.88, 1e-6) &&
+        small.dropFaces === fit.box.dropFaces &&
+        small.shiftFaces === fit.box.shiftFaces);
+  }
+}
+
+{
+  console.log("\ncalibration: the pinch fit");
+  const cloud = (mid: number, spread: number, n: number) =>
+    Array.from({ length: n }, (_, i) => mid + Math.sin(i * 12.9898) * spread);
+
+  {
+    // A hand this camera CAN read: the two clouds are far apart.
+    const fit = fitPinch(cloud(1.44, 0.02, 60), [...cloud(0.3, 0.04, 60), ...cloud(1.4, 0.03, 60)]);
+    ok("a separable hand is usable", fit.usable);
+    ok("...with the latch inside the gap, not inside a cloud",
+      fit.on > 0.34 && fit.on < 1.4, `on ${fit.on.toFixed(3)}`);
+    ok("...and release above latch, so it has hysteresis", fit.off > fit.on);
+  }
+
+  {
+    // The archive's actual failure: a pinch held for six seconds never drops below ~0.70,
+    // so it overlaps the open hand and there is nowhere honest to put a threshold.
+    const fit = fitPinch(cloud(0.82, 0.03, 60), cloud(0.76, 0.04, 60));
+    ok("an unreadable pinch is reported as unusable, not papered over", !fit.usable);
+    ok("...and falls back to the shipped numbers rather than inventing any",
+      near(fit.on, 0.74, 1e-9) && near(fit.off, 0.88, 1e-9));
+  }
+
+  ok("too few frames is not a fit", !fitPinch([1.4, 1.4], [0.3, 0.3]).usable);
+}
+
+{
+  console.log("\ncalibration: the noise floor");
+  const still = (amp: number, n = 120) =>
+    Array.from({ length: n }, (_, i) => ({
+      x: 0.5 + Math.sin(i * 12.9898) * amp,
+      y: 0.5 + Math.cos(i * 78.233) * amp,
+      t: 1000 + i * 33,
+    }));
+
+  const quiet = fitJitter(still(0.0004), 10);
+  const noisy = fitJitter(still(0.08), 10);
+  ok("a quiet camera keeps a responsive cutoff", quiet.minCutoff >= 1.0, String(quiet.minCutoff));
+  ok("a noisy one is filtered harder", noisy.minCutoff < quiet.minCutoff,
+    `${noisy.minCutoff} vs ${quiet.minCutoff}`);
+  ok("the dwell radius follows the measured drift, not a constant",
+    noisy.dwellRadius > quiet.dwellRadius,
+    `${noisy.dwellRadius.toFixed(3)} vs ${quiet.dwellRadius.toFixed(3)}`);
+  ok("a recording too short to mean anything keeps the defaults",
+    fitJitter(still(0.001, 5), 10).minCutoff === 0.4);
+}
+
+{
+  console.log("\ncalibration: frame counts are a duration, not a number");
+  ok("265ms is 8 frames at 30fps", framesFor(265, 30) === 8);
+  ok("...and 4 at 15fps, which is the whole point", framesFor(265, 15) === 4);
+  ok("a nonsense frame rate falls back to 30", framesFor(265, 0) === 8);
 }
 
 console.log(`\n${checks - failures}/${checks} passed\n`);

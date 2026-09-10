@@ -61,8 +61,19 @@ const DRAG_START = 0.025;
 const NEAR_MISS_DEPTH = 0.55;
 /** Two near-misses inside this window mean the pinch is not going to work for this visitor. */
 const NEAR_MISS_WINDOW_MS = 30_000;
-/** No hand for this long returns the kiosk to its idle showreel. */
-const IDLE_RETURN_MS = 45_000;
+const PARAMS = typeof window === "undefined" ? null : new URLSearchParams(location.search);
+/**
+ * No hand for this long returns the kiosk to its idle showreel.
+ *
+ * A visitor who has walked away must not leave their half-read page standing there for the next
+ * one to inherit — but this is also the timer that decides how long somebody may drop their arm
+ * to rest, or step out of shot to let a colleague look, without losing where they were. The
+ * right number is a property of the corridor, so it is answerable at the wall: `?idle=20`.
+ */
+const IDLE_RETURN_MS = (() => {
+  const v = Number(PARAMS?.get("idle"));
+  return Number.isFinite(v) && v > 0 ? v * 1000 : 45_000;
+})();
 /** Elements a hover effect should be applied to, whether or not they opted in. */
 const HOVERABLE = '[data-hover], button, a, [role="button"], input, label';
 
@@ -73,7 +84,6 @@ const HOVERABLE = '[data-hover], button, a, [role="button"], input, label';
  * Which posture to trust is a hardware question, not a taste one — it depends on the camera
  * and how far away the visitor stands — so it has to be answerable at the wall.
  */
-const PARAMS = typeof window === "undefined" ? null : new URLSearchParams(location.search);
 const CLICK_GESTURE = (() => {
   const v = PARAMS?.get("click");
   return v === "pinch" || v === "fist" || v === "either" ? v : undefined;
