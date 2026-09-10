@@ -176,6 +176,20 @@ const HAND_RELEASE = 1.2; // per-second decay back to the tour's framing once th
  * `?adapt=0` pins both for A/B comparisons.
  */
 const ADAPT = PARAMS?.get("adapt") !== "0";
+/**
+ * `?adaptearly=1` — put the pre-fix behaviour back for one reload, so the sky's loading flash
+ * can be A/B'd on the machine that actually shows it.
+ *
+ * This exists because the diagnosis could NOT be reproduced offline: headless Chrome draws an
+ * empty sky through SwiftShader at full speed and decodes the asset on a worker, so the loop
+ * never measures itself as slow and the adaptor never fires — even forced to devicePixelRatio 2.
+ * The reasoning is sound (a dpr step calls setPixelRatio + setSize, which reallocates the
+ * drawing buffer cleared, and the block runs after the frame's render, so one blank frame gets
+ * presented) and the arithmetic fits the report — 1.5 down to the 1.0 floor in 0.15 steps is
+ * three or four ticks at one per 500ms — but fits is not proves. With this flag the flash
+ * should come back; without it, it should not.
+ */
+const ADAPT_EARLY = PARAMS?.get("adaptearly") === "1";
 const TARGET_FPS = num("fps", 55);
 const SCALE_MIN = 0.6; // never subsample below this — below it, holes appear
 const DPR_MIN = 1.0; // and never render softer than this before touching the splat count
@@ -525,6 +539,20 @@ export function CampusFlight({
 
     const controls = new SparkControls({ canvas: renderer.domElement });
 
+    /**
+     * Adaptive quality must not act on the LOADING frame rate.
+     *
+     * While the asset is being fetched and decoded the loop is slow for a reason that has
+     * nothing to do with how expensive the picture is to draw — and the adaptor, measuring
+     * every 500ms, read that as "too slow" and dropped the resolution three times in a row.
+     * Each drop calls `setPixelRatio` + `setSize`, which reallocates the drawing buffer and
+     * clears it, so the sky (the only thing on screen at that point) blinked to black once per
+     * step. Three loading ticks, three flashes, and then it climbed back once the model
+     * arrived. It was measuring the download and charging the picture for it.
+     */
+    let ready = false;
+    let adaptFrom = Number.POSITIVE_INFINITY;
+
     const t0 = performance.now();
     splats.initialized
       .then(() => {
@@ -556,6 +584,14 @@ export function CampusFlight({
           camera.lookAt(c);
         }
         homeRef.current = { pos: camera.position.clone(), quat: camera.quaternion.clone() };
+        // ...and even then, not immediately: the first second after the splats land is spent
+        // building LoD trees and warming shaders, which is also not a frame cost worth reacting
+        // to. Throw away the measurement in flight, too, or the first honest tick is polluted
+        // by the frames that came before it.
+        ready = true;
+        adaptFrom = performance.now() + 1500;
+        frames = 0;
+        fpsAt = performance.now();
         setStatus(
           `${asset.label} · LoD ${LOD_PARAM ?? "on"} · ${((performance.now() - t0) / 1000).toFixed(1)}s · ` +
             `focal ${FOCAL_ADJUSTMENT} · dpr ${DPR_CAP} · maxr ${MAX_PIXEL_RADIUS} · ` +
@@ -771,7 +807,7 @@ export function CampusFlight({
       if (now - fpsAt >= 500) {
         const measured = Math.round((frames * 1000) / (now - fpsAt));
         setFps(measured);
-        if (ADAPT) {
+        if (ADAPT && (ADAPT_EARLY || (ready && now >= adaptFrom))) {
           // Nudge, don't jump: a big correction overshoots and the detail visibly pumps.
           const slow = measured < TARGET_FPS - 5;
           const spare = measured > TARGET_FPS + 8;
@@ -787,6 +823,10 @@ export function CampusFlight({
           if (Math.abs(renderer.getPixelRatio() - curDpr) > 0.01) {
             renderer.setPixelRatio(curDpr);
             renderer.setSize(host.clientWidth, host.clientHeight);
+            // Refill it before the browser sees it. A resize reallocates the drawing buffer
+            // cleared, and this block runs AFTER the frame's render — so without this the next
+            // thing presented is one blank frame, which is a black flash on a dark scene.
+            renderer.render(scene, camera);
           }
           setScale(spark.lodSplatScale ?? 1);
           setDpr(curDpr);
@@ -807,6 +847,7 @@ export function CampusFlight({
       camera.aspect = host.clientWidth / host.clientHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(host.clientWidth, host.clientHeight);
+      renderer.render(scene, camera); // same reason as the dpr change above
     };
     window.addEventListener("resize", onResize);
 
