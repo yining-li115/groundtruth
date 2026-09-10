@@ -173,9 +173,23 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       return;
     }
     let cancelled = false;
-    // The camera has to be up before it can be identified, and `useHandPointer` starts it a
-    // moment after mount. Poll briefly rather than racing it.
-    const started = performance.now();
+    let timer = 0;
+    /**
+     * Wait for the camera to RESOLVE, not for a stopwatch to run out.
+     *
+     * A camera cannot be identified until the browser has granted access to it, and on a fresh
+     * machine over HTTPS that means somebody has to answer a permission prompt. This used to
+     * give up after twelve seconds — so anybody who read the prompt, or whose prompt was behind
+     * another window, was silently dropped past the setup and into the site with the shipped
+     * defaults. Nothing was stored, so it would ask again on the next load; on a wall that runs
+     * for weeks, "the next load" is not a plan.
+     *
+     * Waiting costs nothing, which is the part that makes this obvious in hindsight: while this
+     * is unresolved the component renders NOTHING, so the showreel is already playing
+     * underneath. There is no held-hostage screen to rescue anyone from. The only thing that
+     * legitimately ends the wait is the camera actually failing — no device, or access refused —
+     * and that is a signal, not a duration.
+     */
     const tick = () => {
       if (cancelled) return;
       const { deviceId, label } = cameraIdentity();
@@ -188,17 +202,18 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         setPhase("seek");
         return;
       }
-      // No camera at all is not a reason to hold the screen hostage: the wall should fall back
-      // to playing its showreel, which is a perfectly respectable thing for it to be doing.
-      if (status === "error" || performance.now() - started > 12000) {
+      // No camera at all is not a reason to hold the screen hostage: the wall falls back to
+      // playing its showreel, which is a perfectly respectable thing for it to be doing.
+      if (status === "error") {
         onDone();
         return;
       }
-      window.setTimeout(tick, 200);
+      timer = window.setTimeout(tick, 200);
     };
     tick();
     return () => {
       cancelled = true;
+      if (timer) window.clearTimeout(timer);
     };
   }, [onDone]);
 
