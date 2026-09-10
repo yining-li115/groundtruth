@@ -6,6 +6,7 @@ import { showreel } from "../../lib/content";
 import { useHandFlight } from "../../lib/vision/useHandFlight";
 import { flightInput } from "../../lib/vision/flightInput";
 import { HandSkeleton } from "../../components/HandSkeleton";
+import { SKY_ENABLED, createSkyDome, type SkyDome } from "./sky";
 import autoTour from "./tour.json";
 import roamVolume from "./roam.json";
 
@@ -110,6 +111,38 @@ const CONE_FOV = num("cone", 120);
  * what the perf-budgeted version costs in sharpness.
  */
 const DPR_CAP = num("dpr", 1.5);
+/**
+ * `?look=<yawDeg>,<pitchDeg>` — nudge the opening pose before anything else runs.
+ *
+ * Framing questions ("is there sky up there, and does it meet the rooflines properly?") can
+ * only be answered by looking, and every stop in the tour was composed to be completely filled
+ * by the model — so the poses that expose the sky are exactly the ones nothing lands on by
+ * itself. Driving the free-fly controls from a headless screenshot is not possible; a URL is.
+ * Purely a viewing aid: it moves nothing else, and the tour plays on from wherever it puts you.
+ */
+const LOOK_OFFSET = ((): { yaw: number; pitch: number } | null => {
+  const raw = PARAMS?.get("look");
+  if (!raw) return null;
+  const [y, p] = raw.split(",").map(Number);
+  if (!Number.isFinite(y ?? NaN)) return null;
+  return { yaw: y ?? 0, pitch: Number.isFinite(p ?? NaN) ? (p ?? 0) : 0 };
+})();
+
+function applyLookOffset(camera: THREE.Camera): void {
+  if (!LOOK_OFFSET) return;
+  const yaw = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(0, 1, 0),
+    THREE.MathUtils.degToRad(LOOK_OFFSET.yaw),
+  );
+  const pitch = new THREE.Quaternion().setFromAxisAngle(
+    new THREE.Vector3(1, 0, 0),
+    THREE.MathUtils.degToRad(LOOK_OFFSET.pitch),
+  );
+  // world yaw first, then pitch in the camera's own frame — the same order the hand control
+  // uses, so what you see here is what a visitor could reach.
+  camera.quaternion.premultiply(yaw).multiply(pitch);
+}
+
 /** `?hud=1` shows the perf readout even on the unattended screen */
 const SHOW_HUD = PARAMS?.get("hud") === "1";
 /**
@@ -475,6 +508,15 @@ export function CampusFlight({
     });
     scene.add(spark);
 
+    // Sky first, so the campus is standing under something from the very first frame rather
+    // than in a black void. It costs one draw of a box and no per-frame work; see `sky.ts` for
+    // why it is analytic rather than a picture.
+    let skyDome: SkyDome | null = null;
+    if (SKY_ENABLED) {
+      skyDome = createSkyDome();
+      scene.add(skyDome.object);
+    }
+
     const asset = URLS[ASSET];
     const splats = new SplatMesh({ url: asset.url, ...LOD_OPT });
     // stored Y-down → flip so the world is Y-up (see the orientation note above)
@@ -496,6 +538,7 @@ export function CampusFlight({
           camera.quaternion.set(...opening.quat);
           camera.fov = opening.fov ?? DEFAULT_FOV;
           camera.updateProjectionMatrix();
+          applyLookOffset(camera);
         } else {
           // Under LoD the splat source doesn't enumerate, so getBoundingBox() hands back an
           // empty (inverted) box — fall back to the measured asset extents.
@@ -719,6 +762,9 @@ export function CampusFlight({
         camera.position.copy(basePos).add(manual.offset);
       }
 
+      // Walks the sun about a quarter of a degree a minute; the call is a clock check.
+      skyDome?.update(now);
+
       renderer.render(scene, camera);
 
       frames += 1;
@@ -769,6 +815,7 @@ export function CampusFlight({
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       splats.dispose?.();
+      skyDome?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
