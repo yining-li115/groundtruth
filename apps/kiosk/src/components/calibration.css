@@ -69,21 +69,46 @@
   min-height: 3em;
 }
 
-/* Progress as a filled rule rather than a spinner: every step here has a known length, and a
-   spinner would claim otherwise. */
+/*
+ * Progress, and it is NOT a countdown — it is how much of what the step needs has happened. A
+ * spinner, or a clock, would both be claiming the step ends on its own schedule; this one ends
+ * when the visitor has done the thing.
+ *
+ * The lead-in is drawn differently on purpose. A bar that has not started moving because it is
+ * still waiting, and a bar that has not started moving because nothing is being detected, look
+ * identical — and the first version of this screen shipped that confusion as its main bug.
+ */
 .cal-bar {
+  position: relative;
   width: min(34rem, 60vw);
-  height: 3px;
+  height: 4px;
   border-radius: 999px;
   background: var(--gt-gray-80);
-  overflow: hidden;
+  opacity: 0.4;
+  transition: opacity 0.3s ease-out;
+}
+.cal-bar.is-live {
+  opacity: 1;
 }
 .cal-bar__fill {
   height: 100%;
   width: 100%;
+  border-radius: 999px;
   transform-origin: 0 50%;
   transform: scaleX(0);
   background: var(--gt-brand-electric);
+}
+.cal-bar__label {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 0;
+  right: 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: clamp(0.65rem, 0.75vmin, 0.9rem);
+  font-weight: 700;
+  color: var(--gt-gray-50);
 }
 
 /* The corner test. Big, because the whole point of the test is the corners being reachable —
@@ -112,8 +137,14 @@
  * a badly broken one — can still reach. A skip button in a corner is a joke at the expense of
  * the person who needs it.
  */
-.cal-skip {
-  margin-top: clamp(0.5rem, 2vh, 2rem);
+.cal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: clamp(1.5rem, 3vh, 3rem);
+}
+.cal-btn {
   padding: clamp(0.9rem, 1.3vmin, 1.8rem) clamp(2rem, 3vmin, 4rem);
   border: 1px solid var(--gt-gray-80);
   border-radius: 999px;
@@ -125,9 +156,9 @@
   cursor: pointer;
   transition: color 0.2s ease-out, border-color 0.2s ease-out;
 }
-.cal-skip:hover,
-.cal-skip.gt-hover,
-.cal-skip.is-hover {
+.cal-btn:hover,
+.cal-btn.gt-hover,
+.cal-btn.is-hover {
   color: var(--gt-brand-white);
   border-color: var(--gt-brand-white);
 }
@@ -162,7 +193,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cal-corner,
-  .cal-skip {
+  .cal-btn,
+  .cal-bar {
     transition: none;
   }
 }

@@ -55,11 +55,36 @@ type Phase =
   | "reach" // verify the corners with the calibrated pointer
   | "done";
 
-const SWEEP_MS = 7000;
-const STILL_MS = 2500;
-const OPEN_MS = 2000;
-const CLOSE_MS = 7000;
-const REACH_MS = 12000;
+/**
+ * NOTHING HERE IS A COUNTDOWN, and the first version's were the bug.
+ *
+ * Each step used to run a fixed clock that started the instant a hand was seen — which is the
+ * instant BEFORE the visitor has read what to do. The progress bar filled while somebody was
+ * still looking at the sentence telling them to sweep, and the step ended having recorded a
+ * hand held politely still. A measurement that runs on a timer measures the reading speed of
+ * whoever is standing there.
+ *
+ * So every step now waits out a lead-in first (long enough to read one short line), then
+ * records until the THING IT NEEDS has happened — enough of the reach covered, enough
+ * contiguous stillness, enough pinches. The bar shows that, not elapsed time, so it stops
+ * being a deadline and starts being feedback. The caps below exist only so a step cannot
+ * trap someone forever; reaching one is a result, not a failure.
+ */
+const LEAD_IN_MS = 1600;
+/** how much of the reach has to be covered before the sweep is a measurement (see `coverage`) */
+const SWEEP_CAP_MS = 30_000;
+/** contiguous milliseconds of a genuinely still hand */
+const STILL_NEEDED_MS = 2200;
+const STILL_CAP_MS = 15_000;
+/** contiguous milliseconds of a genuinely open hand */
+const OPEN_NEEDED_MS = 1600;
+const OPEN_CAP_MS = 12_000;
+/** how many open→closed→open cycles make a cloud worth fitting */
+const PINCH_CYCLES = 4;
+const CLOSE_CAP_MS = 22_000;
+const REACH_MS = 15_000;
+/** RMS wander, in screen fractions, below which a hand counts as held still */
+const STILL_TOLERANCE = 0.02;
 /** How far from a corner target the cursor counts as having arrived, in screen fractions. */
 const REACH_RADIUS = 0.09;
 /** Corner targets, inset from the very edge — the last few percent belong to nothing. */
@@ -92,6 +117,10 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
   const [note, setNote] = useState<string>("");
   const [reached, setReached] = useState<string[]>([]);
+  /** false during a step's lead-in — the beat that exists so the instruction can be read
+   *  before anything is recorded. Shown, because a bar that is not moving and a bar that is
+   *  not listening look identical otherwise. */
+  const [recording, setRecording] = useState(false);
   const [result, setResult] = useState<CalibrationProfile | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -106,6 +135,16 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     frame: { w: 0, h: 0 },
     palmPx: 0,
     lastFrameCount: -1,
+    /** the lead-in is over and samples are being kept */
+    recording: false,
+    /** contiguous stillness / openness accumulated so far, in ms */
+    held: 0,
+    /** the last few mapped positions, for deciding whether the hand is actually still */
+    recent: [] as Array<{ x: number; y: number }>,
+    /** pinch-cycle detection: the widest the hand has read, and where we are in a cycle */
+    ratioMax: 0,
+    closed: false,
+    cycles: 0,
     box: null as BoxConfig | null,
     clippedBy: { left: false, right: false, top: false, bottom: false },
     retries: 0,
@@ -171,8 +210,15 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     let current: Phase = phase;
 
     const advance = (next: Phase) => {
+      const r = rec.current;
       current = next;
       phaseStart = performance.now();
+      r.recording = false;
+      r.held = 0;
+      r.recent = [];
+      r.ratioMax = 0;
+      r.closed = false;
+      r.cycles = 0;
       setProgress(0);
       setPhase(next);
     };
@@ -207,7 +253,9 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         }
 
         case "sweep": {
-          if (fresh && tracked && palm && face) {
+          const elapsed = now - phaseStart;
+          r.recording = elapsed >= LEAD_IN_MS;
+          if (r.recording && fresh && tracked && palm && face) {
             r.sweep.push({
               u: (palm.x - face.cx) / face.w,
               v: (palm.y - face.cy) / face.w,
@@ -216,16 +264,25 @@ export function Calibration({ onDone }: { onDone: () => void }) {
               faceW: face.w,
             });
           }
-          const t = (now - phaseStart) / SWEEP_MS;
-          setProgress(Math.min(1, t));
-          if (t >= 1) {
+          const cov = coverage(r.sweep);
+          setProgress(r.recording ? cov : 0);
+          setNote(
+            !r.recording
+              ? ""
+              : !tracked
+                ? "Keep your hand where the camera can see it."
+                : cov > 0.75
+                  ? "Almost — keep going all the way round."
+                  : "",
+          );
+          if ((cov >= 1 && r.sweep.length >= MIN_SAMPLES) || elapsed > SWEEP_CAP_MS) {
             const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
             const fit = fitReach(r.sweep, aspect);
             if (!fit) {
               setNote(
                 r.sweep.length < MIN_SAMPLES
-                  ? "The hand was not tracked for long enough — try again, a little closer."
-                  : "That sweep was too small to measure. Try again, reaching further.",
+                  ? "The hand kept dropping out of view — try again, a little closer to the camera."
+                  : "That did not cover enough ground to measure. Try again, reaching further out.",
               );
               r.sweep = [];
               advance("seek");
@@ -244,31 +301,64 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         }
 
         case "still": {
-          if (fresh && palm && s.box) {
+          const elapsed = now - phaseStart;
+          r.recording = elapsed >= LEAD_IN_MS;
+          if (r.recording && fresh && palm && s.box) {
             // The RAW mapping, deliberately: `liveX/liveY` have already been through the 1€
             // filter, and measuring the noise after filtering it is measuring the filter.
             const m = mapToBox(s.box, palm);
-            r.still.push({ x: m.u, y: m.v, t: now });
+            r.recent.push({ x: m.u, y: m.v });
+            if (r.recent.length > 12) r.recent.shift();
+            // Only STILL frames count, and a moving hand resets the run. Otherwise this reads
+            // whatever noise a drifting arm happens to add and calls it the sensor's.
+            if (spread(r.recent) < STILL_TOLERANCE) {
+              r.held += 1000 / Math.max(10, r.fps);
+              r.still.push({ x: m.u, y: m.v, t: now });
+            } else {
+              r.held = 0;
+              r.still = [];
+            }
           }
-          const t = (now - phaseStart) / STILL_MS;
-          setProgress(Math.min(1, t));
-          if (t >= 1) advance("open");
+          setProgress(r.recording ? Math.min(1, r.held / STILL_NEEDED_MS) : 0);
+          setNote(r.recording && r.held === 0 && r.recent.length > 6 ? "Hold it steady…" : "");
+          if (r.held >= STILL_NEEDED_MS || elapsed > STILL_CAP_MS) advance("open");
           break;
         }
 
         case "open": {
-          if (fresh && Number.isFinite(s.ratio)) r.open.push(s.ratio);
-          const t = (now - phaseStart) / OPEN_MS;
-          setProgress(Math.min(1, t));
-          if (t >= 1) advance("close");
+          const elapsed = now - phaseStart;
+          r.recording = elapsed >= LEAD_IN_MS;
+          if (r.recording && fresh && Number.isFinite(s.ratio)) {
+            r.open.push(s.ratio);
+            r.held += 1000 / Math.max(10, r.fps);
+          }
+          setProgress(r.recording ? Math.min(1, r.held / OPEN_NEEDED_MS) : 0);
+          if (r.held >= OPEN_NEEDED_MS || elapsed > OPEN_CAP_MS) advance("close");
           break;
         }
 
         case "close": {
-          if (fresh && Number.isFinite(s.ratio)) r.close.push(s.ratio);
-          const t = (now - phaseStart) / CLOSE_MS;
-          setProgress(Math.min(1, t));
-          if (t >= 1) {
+          const elapsed = now - phaseStart;
+          r.recording = elapsed >= LEAD_IN_MS;
+          if (r.recording && fresh && Number.isFinite(s.ratio)) {
+            r.close.push(s.ratio);
+            // Count actual open→closed→open cycles rather than seconds. Four deliberate
+            // pinches is a cloud; four seconds of a hand that never closed is not, and the
+            // difference matters most for exactly the visitor whose pinch does not read.
+            r.ratioMax = Math.max(r.ratioMax, s.ratio);
+            if (!r.closed && s.ratio < r.ratioMax - 0.25) r.closed = true;
+            else if (r.closed && s.ratio > r.ratioMax - 0.1) {
+              r.closed = false;
+              r.cycles += 1;
+            }
+          }
+          setProgress(r.recording ? Math.min(1, r.cycles / PINCH_CYCLES) : 0);
+          setNote(
+            r.recording && elapsed > LEAD_IN_MS + 8000 && r.cycles === 0
+              ? "Nothing is registering — that is a result too. A fist will be used instead."
+              : "",
+          );
+          if (r.cycles >= PINCH_CYCLES || elapsed > CLOSE_CAP_MS) {
             const built = build(r);
             applyProfile(built, false);
             setResult(built);
@@ -285,8 +375,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
             const next = hit.filter((id) => !prev.includes(id));
             return next.length ? [...prev, ...next] : prev;
           });
-          const t = (now - phaseStart) / REACH_MS;
-          setProgress(Math.min(1, t));
+          setProgress(Math.min(1, (now - phaseStart) / REACH_MS));
           break;
         }
 
@@ -294,6 +383,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
           break;
       }
 
+      setRecording(r.recording);
       drawPreview(canvasRef.current, r, s.box, current);
     };
     raf = requestAnimationFrame(loop);
@@ -327,6 +417,30 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     finish(build(r));
   }, [phase, reached, progress, finish]);
 
+  /** Wipe every recording and go back to the beginning. */
+  const restart = useCallback(() => {
+    rec.current = {
+      ...rec.current,
+      sweep: [],
+      still: [],
+      open: [],
+      close: [],
+      recording: false,
+      held: 0,
+      recent: [],
+      ratioMax: 0,
+      closed: false,
+      cycles: 0,
+      box: null,
+      retries: 0,
+    };
+    setReached([]);
+    setResult(null);
+    setNote("");
+    setProgress(0);
+    setPhase("seek");
+  }, []);
+
   if (phase === "resolving") return null;
 
   const copy = COPY[phase];
@@ -341,9 +455,10 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         <h1 className="cal-title">{copy.title}</h1>
         <p className="cal-hint">{note || copy.hint}</p>
 
-        {phase !== "done" && phase !== "reach" && (
-          <div className="cal-bar">
+        {phase !== "done" && phase !== "reach" && phase !== "seek" && (
+          <div className={`cal-bar ${recording ? "is-live" : ""}`}>
             <div className="cal-bar__fill" style={{ transform: `scaleX(${progress})` }} />
+            <span className="cal-bar__label">{recording ? "measuring" : "get ready…"}</span>
           </div>
         )}
 
@@ -361,12 +476,59 @@ export function Calibration({ onDone }: { onDone: () => void }) {
 
       {phase !== "done" && (
         // Centre of the screen, because it is the one place every mapping can reach — including
-        // a badly wrong one, which is exactly the situation somebody would be skipping from.
-        <button type="button" data-hover className="cal-skip" onClick={() => finish(null)}>
-          Skip — use the default settings
-        </button>
+        // a badly wrong one, which is exactly the situation somebody would be leaving from.
+        <div className="cal-actions">
+          <button type="button" data-hover className="cal-btn" onClick={restart}>
+            Start over
+          </button>
+          <button type="button" data-hover className="cal-btn" onClick={() => finish(null)}>
+            Skip — use the default settings
+          </button>
+        </div>
       )}
     </div>
+  );
+}
+
+/**
+ * How much of a reach a sweep has actually covered, 0..1 — the sweep step's progress bar, and
+ * its finish line.
+ *
+ * Three conditions, and the score is the WORST of them, because a sweep that satisfies two is
+ * not two thirds of a measurement. Going far in one direction says nothing about the other;
+ * going far in both while tracing a diagonal line leaves the corners of the box unmeasured, and
+ * the corners are the entire question. So: width, height, and having actually been all the way
+ * round.
+ */
+function coverage(sweep: ReachSample[]): number {
+  if (sweep.length < 20) return 0;
+  const us = sweep.map((s) => s.u);
+  const vs = sweep.map((s) => s.v);
+  const span = (a: number[]) => Math.max(...a) - Math.min(...a);
+  const cu = (Math.max(...us) + Math.min(...us)) / 2;
+  const cv = (Math.max(...vs) + Math.min(...vs)) / 2;
+  // Twelve sectors around the middle of the sweep; a sector counts once anything lands in it.
+  const bins = new Set<number>();
+  for (const s of sweep) {
+    const a = Math.atan2(s.v - cv, s.u - cu);
+    bins.add(Math.floor(((a + Math.PI) / (2 * Math.PI)) * 12) % 12);
+  }
+  // Targets are deliberately under a full reach (~4.4 x 2.9 face widths measured): the bar has
+  // to be reachable by somebody being careful, not only by somebody flinging an arm.
+  return Math.min(
+    bins.size / 12,
+    Math.min(1, span(us) / 2.6),
+    Math.min(1, span(vs) / 1.7),
+  );
+}
+
+/** RMS spread of a short run of positions — "is this hand actually still?" */
+function spread(points: Array<{ x: number; y: number }>): number {
+  if (points.length < 4) return Number.POSITIVE_INFINITY;
+  const mx = points.reduce((a, p) => a + p.x, 0) / points.length;
+  const my = points.reduce((a, p) => a + p.y, 0) / points.length;
+  return Math.sqrt(
+    points.reduce((a, p) => a + (p.x - mx) ** 2 + (p.y - my) ** 2, 0) / points.length,
   );
 }
 
@@ -473,12 +635,12 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   sweep: {
     step: "1 of 4",
     title: "Draw the biggest circle you can",
-    hint: "Keep your hand up and sweep it around — as far out, up and down as is comfortable.",
+    hint: "Take your time. Sweep all the way round — as far out, up and down as is comfortable. It ends when enough of your reach has been covered, not after a countdown.",
   },
   still: {
     step: "2 of 4",
     title: "Now hold it still",
-    hint: "Just for a moment. This measures how much the picture shakes when you do not.",
+    hint: "Hold your hand steady for a couple of seconds. This measures how much the picture shakes when you do not.",
   },
   open: {
     step: "3 of 4",
@@ -487,8 +649,8 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   },
   close: {
     step: "3 of 4",
-    title: "Pinch, and open again — a few times",
-    hint: "Slowly. Touch your thumb and finger together, then open the hand right up.",
+    title: "Pinch, and open again — four times",
+    hint: "Slowly. Touch your thumb and finger together, then open the hand right up. If nothing registers, that is a finding, and a fist will be used instead.",
   },
   reach: {
     step: "4 of 4",
