@@ -168,7 +168,7 @@ async function main() {
     await sleep(2500);
     ok(
       "clicking it enters the site",
-      (await evaluate(`!!document.querySelector('[data-kiosk-menu], .bc-back, main')`)) === true,
+      (await evaluate(`!!document.querySelector('[data-kiosk-menu], .bc-home, main')`)) === true,
     );
 
     // ---------------------------------------------------------------- home
@@ -203,7 +203,7 @@ async function main() {
     await sleep(2500);
     ok(
       "clicking a row opens that section",
-      (await evaluate(`!!document.querySelector('.bc-back')`)) === true,
+      (await evaluate(`!!document.querySelector('.bc-home')`)) === true,
     );
 
     // ---------------------------------------------------------------- sections
@@ -214,7 +214,7 @@ async function main() {
       await evaluate(`document.querySelector('.sf-enter__btn')?.click()`);
       await sleep(2000);
 
-      const back = await evaluate(`!!document.querySelector('.bc-back')`);
+      const back = await evaluate(`!!document.querySelector('.bc-home')`);
       // Not "has an h1": the sections were built with different layouts and some title
       // themselves in other ways. What matters is that real content arrived.
       const chars = await evaluate(`(document.body.innerText ?? '').trim().length`);
@@ -222,12 +222,16 @@ async function main() {
       ok(`${view}: has a reachable way back`, back === true);
       ok(`${view}: no page errors`, problems.length === 0, problems[0]);
 
-      // The Home button must be present AND actually clickable. "Is it in the DOM" would
+      // The Home control must be present AND actually clickable. "Is it in the DOM" would
       // not have caught either of the two overlaps found here: a debug button pinned to the
       // same corner, and a section's own filter bar running straight through it.
+      //
+      // It is now a clipped quarter-ellipse rather than a pill, so this probes the centre of
+      // its bounding box — which is inside the clip (0.5² + 0.5² < 1) and therefore a point
+      // `elementFromPoint` will only return if nothing is painted over it.
       const reachable = await evaluate(
         `(() => {
-           const b = document.querySelector('.bc-back');
+           const b = document.querySelector('.bc-home');
            if (!b) return 'missing';
            const r = b.getBoundingClientRect();
            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
@@ -242,11 +246,12 @@ async function main() {
 
       if (back) {
         const size = await evaluate(
-          `(() => { const r = document.querySelector('.bc-back').getBoundingClientRect();
+          `(() => { const r = document.querySelector('.bc-home').getBoundingClientRect();
              return Math.round(Math.min(r.width, r.height)); })()`,
         );
         // Apple's floor for a target aimed by eye is 60pt; a hand from metres away is no more
-        // precise. Anything smaller here would be a target this pointer cannot reliably hit.
+        // precise. The corner region is far past that — this is the floor, not the target, and
+        // it exists so that shrinking it back to a button would fail loudly.
         ok(`${view}: the way back is big enough to hit (${size}px)`, size >= 44, `${size}px`);
       }
     }

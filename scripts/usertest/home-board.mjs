@@ -194,7 +194,7 @@ async function main() {
       }
       // Back home, through the control every page carries.
       const back = await k.evaluate(`(() => {
-        const b = document.querySelector('.bc-back');
+        const b = document.querySelector('.bc-home');
         if (!b) return null;
         const r = b.getBoundingClientRect();
         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
@@ -221,7 +221,7 @@ async function main() {
       if (got !== ROWS[1]) note("FAIL", `a fist on row 2 opened '${got}'`);
       else note("INFO", `a fist opens a row too (row 2 → ${ROWS[1]})`);
       const back = await k.evaluate(`(() => {
-        const b = document.querySelector('.bc-back');
+        const b = document.querySelector('.bc-home');
         if (!b) return null;
         const r = b.getBoundingClientRect();
         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };

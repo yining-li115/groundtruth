@@ -132,9 +132,30 @@
 }
 
 /* ── Prev / next buttons with the animated corner brackets ── */
+/*
+ * BOTTOM CENTRE, not the bottom of the left column where the reference put them.
+ *
+ * The kiosk's chrome rule is about height, not left/right: leaving the page sits bottom-left,
+ * moving around inside it sits bottom-centre. This pair was the one thing still breaking that
+ * rule, and it stopped being survivable when the exit became a corner the page dissolves into
+ * — two controls in the same corner, one of which erases whatever it covers.
+ *
+ * The column keeps the exact slot they used to occupy (the spacer below), so the counter and
+ * the blurb do not move a pixel.
+ */
 .rsl-nav-row {
+  position: fixed;
+  left: 50%;
+  bottom: 2.2rem;
+  transform: translateX(-50%);
+  z-index: 20;
   display: flex;
   gap: 2em;
+}
+.rsl-overlay-inner::after {
+  content: "";
+  display: block;
+  height: 4em;
 }
 .rsl-button {
   position: relative;
