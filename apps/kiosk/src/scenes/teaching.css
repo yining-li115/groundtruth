@@ -26,7 +26,13 @@
 .tch-head,
 .tch-row {
   display: grid;
-  grid-template-columns: 130px minmax(0, 1fr) 5rem 5rem;
+  /* rem, not px, and the root is fluid (packages/tokens/tokens.css) — so the column grows
+     with the type it has to hold. At 130px it fitted a ten-digit course number at a laptop's
+     18px monospace and nothing else: the moment the display scaled the type, the numbers ran
+     straight into the title column. Same width as before on a laptop, twice it on the wall.
+     Deliberately NOT `ch`: the header and the rows are set at different sizes, and a ch-based
+     track would resolve differently in each and stop the two grids lining up. */
+  grid-template-columns: 8.125rem minmax(0, 1fr) 5rem 5rem;
   gap: 2rem;
   align-items: baseline;
 }

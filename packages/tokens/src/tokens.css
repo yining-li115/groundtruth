@@ -85,10 +85,40 @@
   --gt-button-outline-border: var(--gt-border);
 }
 
-/* Apply the UI typeface globally. tokens.css is imported AFTER Tailwind, so this wins
-   over Tailwind's preflight default font-family. */
+/*
+ * Apply the UI typeface globally. tokens.css is imported AFTER Tailwind, so this wins
+ * over Tailwind's preflight default font-family.
+ *
+ * ---------------------------------------------------------------------------------------
+ * AND THE ROOT SIZE SCALES WITH THE DISPLAY. This is the one line that makes the whole
+ * interface adapt, and it is worth understanding why it has to live here.
+ *
+ * `rem` is not a responsive unit — it is a fixed pixel size in disguise. The root is 16px, so
+ * `1.15rem` is 18px on a laptop and 18px on a four-metre wall two metres from the reader. The
+ * kiosk has 76 type sizes written in rem and another 34 whose `clamp()` CEILING is in rem, and
+ * every one of them was silently pinned to a laptop. Measured on the teaching table at 3840
+ * wide: 18px rows, on a display meant to be read from a corridor.
+ *
+ * Chasing those 110 declarations one at a time is the wrong repair twice over: it is brittle,
+ * and the next component anyone writes reintroduces the bug. Scaling the ROOT makes every rem
+ * in the codebase proportional at once — type, spacing, gaps, radii, Tailwind's own scale,
+ * and every `ch` measure with it — and nobody has to remember anything.
+ *
+ * The curve is deliberately conservative:
+ *
+ *   1600x900   vmin  9.0 → 13.3px → floor 16px   unchanged
+ *   1920x1080  vmin 10.8 → 16.0px               unchanged
+ *   2560x1440  vmin 14.4 → 21.3px               1.33x
+ *   3840x2160  vmin 21.6 → 32.0px               2x  (the wall)
+ *
+ * So nothing moves on any ordinary screen — a laptop preview is pixel-for-pixel what it was —
+ * and only a genuinely large display grows. `vmin` rather than `vw` on purpose: an ultra-wide
+ * panel is not further away, and sizing type off width alone would inflate it for no reason.
+ * The 32px ceiling stops an enormous display from turning the site into a poster.
+ */
 html {
   font-family: var(--font-sans);
+  font-size: clamp(16px, 1.481vmin, 32px);
 }
 
 /* ---- theme.dark — OPTIONAL kiosk idle backdrop only (design-system §5).

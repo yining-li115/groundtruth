@@ -123,7 +123,43 @@ wired up as the `--font-sans` token; everything inherits it by default.
 - Numerals for tickers/stats: tabular figures (use where available).
 - License: TUM-licensed identity font; keep its use within TUM/PF contexts.
 
-Scale (define as tokens, don't hardcode px in components):
+### The root scales with the display — RESOLVED (Sep 2026)
+
+```css
+html { font-size: clamp(16px, 1.481vmin, 32px); }   /* packages/tokens/src/tokens.css */
+```
+
+**`rem` is not a responsive unit.** It is a fixed pixel size in disguise: the root is 16px, so
+`1.15rem` is 18px on a laptop and 18px on a four-metre wall two metres from the reader. The
+kiosk had 76 type sizes written in rem and another 34 whose `clamp()` **ceiling** was in rem,
+and every one of them was silently pinned to whatever screen it was authored on. Measured on
+the teaching table at 3840 wide: 18px rows, on the display the whole project exists for.
+
+Fixing 110 declarations one at a time is the wrong repair twice over — brittle, and the next
+component reintroduces it. Scaling the **root** makes every rem proportional at once: type,
+spacing, gaps, radii, Tailwind's own scale, and every `ch` measure with them.
+
+| viewport | root | vs today |
+|---|---|---|
+| 1600×900 | 16px (floor) | unchanged |
+| 1920×1080 | 16px | unchanged |
+| 2560×1440 | 21.3px | 1.33× |
+| 3840×2160 | 32px (ceiling) | **2×** |
+
+Nothing moves on an ordinary screen — verified byte-identical at 1600×900 across four
+sections — and only a genuinely large display grows. `vmin` rather than `vw` on purpose: an
+ultra-wide panel is not further away, so sizing off width alone would inflate for no reason.
+
+**The rule this creates:** *no layout or type dimension in px.* Use `rem` and it adapts for
+free; a px value is a decision that the wall must look like a laptop. Hairlines (`1px` borders)
+and genuine device pixels are the only exception. The five that were found and converted:
+the teaching table's `130px` course column (which the scaled type ran straight out of), two
+`28px` nav arrows, the `48px` hand cursor (a speck on a 4K display, on the one screen where the
+visitor is furthest from it), and a `4px` progress rule.
+
+### Scale
+
+Define as tokens, don't hardcode px in components:
 - Display (kiosk hero): large, set per-scene.
 - h1 / h2 / h3 / body / caption — standard modular scale.
 

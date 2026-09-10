@@ -18,9 +18,12 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
+  /* rem, and the root is fluid — the cursor has to be the same fraction of the wall as it is
+     of a laptop. At a fixed 48px it was a speck on a 4K display, on the one screen where the
+     visitor is furthest from it and needs it most. */
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
   pointer-events: none;
   z-index: 9999;
   opacity: 0;
