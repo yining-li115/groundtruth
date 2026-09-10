@@ -10,8 +10,9 @@ import "./publications.css";
 /**
  * Publications — the group's PhD papers. A full-screen, left-aligned menu (adapted from the
  * Codrops RapidImageHoverMenuEffects demo 5: hover reveals number + venue tag), and a click
- * opens a ContentLayoutTransition-style detail (left: title/authors/abstract/link; right: the
- * paper's figures via swipe + dots). Data is content (content/publications.json, CLAUDE.md
+ * opens a text-only detail built like the student-project one (`ProjectsSection`): a single
+ * centred column with the abstract as its body, and no figures. Data is content
+ * (content/publications.json, CLAUDE.md
  * rule 3). Dark via [data-theme="dark"] — a deliberate exception to the light-first site
  * (design-system §5); the rest of the kiosk stays light. `?open=<id>` deep-links a paper.
  *
@@ -30,55 +31,6 @@ export function PublicationsSection() {
     const next = publications[selectedIndex + dir];
     if (next) setSelected(next);
   };
-
-  // Which figure of the current paper is shown (dot- or swipe-navigated, kept in sync).
-  const [imgIndex, setImgIndex] = useState(0);
-  useEffect(() => {
-    setImgIndex(0);
-    // The dots are state, the carousel is a scroll position — resetting only the first left
-    // the new paper showing the old one's second figure, with dot 1 lit under figure 2.
-    if (mediaRef.current) mediaRef.current.scrollLeft = 0;
-  }, [selected]);
-  const images = selected?.images ?? [];
-  const mediaRef = useRef<HTMLDivElement>(null);
-  const onMediaScroll = () => {
-    const el = mediaRef.current;
-    if (el) setImgIndex(Math.round(el.scrollLeft / el.clientWidth));
-  };
-  const scrollToImage = (i: number) => {
-    const el = mediaRef.current;
-    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-  };
-
-  // Auto-fit the detail title to the column: largest size that still wraps within the
-  // width and stays under a max height, so titles of any length fill the space cleanly.
-  // The budget is deliberately under a third of the screen — at 46vh a four-line title ate
-  // half the wall and pushed the abstract into a strip nobody reads from two metres away.
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    const el = titleRef.current;
-    if (!el) return;
-    const fit = () => {
-      const maxH = window.innerHeight * 0.3;
-      let lo = 22;
-      let hi = 96;
-      let best = 22;
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1;
-        el.style.fontSize = `${mid}px`;
-        if (el.scrollHeight <= maxH && el.scrollWidth <= el.clientWidth + 1) {
-          best = mid;
-          lo = mid + 1;
-        } else {
-          hi = mid - 1;
-        }
-      }
-      el.style.fontSize = `${best}px`;
-    };
-    fit();
-    window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
-  }, [selected]);
 
   // Initial reveal: each title slides up from behind its clipping row (demo 5's showMenuItems).
   useEffect(() => {
@@ -149,43 +101,63 @@ export function PublicationsSection() {
         ))}
       </nav>
 
-      {/* Detail view for the clicked paper. */}
+      {/* Text-only detail for the clicked paper — the same shape as the student-project
+          detail (`ProjectsSection`): one centred column, the abstract as the body, and the
+          bibliographic facts as meta blocks underneath.
+
+          The figures are GONE. A paper's own figures are made to be read at A4 with a caption
+          beside them; parked in a column on a wall, at a distance where the body type has to
+          be set at 1.45rem to be legible at all, they were decoration that cost half the
+          screen — and the half they cost was the abstract's, which is the only part of a paper
+          a passer-by can actually take away. */}
       <AnimatePresence>
         {selected && (
           <motion.div
             key="pub-detail"
             className="pub-detail"
+            /* Lenis owns the document wheel. Without this it swallows the gesture and scrolls
+               the page — which, on a fixed full-screen detail, means nothing moves and an
+               abstract longer than the viewport cannot be read to the end. */
+            data-lenis-prevent
             initial={{ opacity: 0, y: 32 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 32 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            <button
-              type="button"
-              data-hover
-              className="pub-detail-back"
-              onClick={() => setSelected(null)}
-            >
-              ← Back
-            </button>
-
-            {/* Lenis owns the document wheel, and this detail is a fixed full-screen
-                layout with nothing for the page itself to scroll — so without
-                `data-lenis-prevent` the wheel is swallowed and a long abstract (measured:
-                1241px of content in a 757px column) simply cannot be reached. */}
-            <div className="pub-detail-text" data-lenis-prevent>
+            {/* No page-level Back, for the same reason the student-project detail has none:
+                the Home corner is the one way out of a section, and a second exit beside it is
+                a control competing with the control. Prev/next below still moves between
+                papers. */}
+            <div className="pub-detail-inner">
               <span className="pub-detail-type">{selected.type}</span>
-              <h2 className="pub-detail-title" ref={titleRef}>
-                {selected.title}
-              </h2>
+              <h2 className="pub-detail-title">{selected.title}</h2>
               <p className="pub-detail-authors">{selected.authors.join(", ")}</p>
-              <p className="pub-detail-venue">
-                {selected.venue} · {selected.year}
-              </p>
               <p className="pub-detail-abstract">{selected.abstract}</p>
+
+              <div className="pub-detail-meta">
+                <div className="pub-meta-block">
+                  <span className="pub-meta-label">Venue</span>
+                  <span className="pub-meta-value">{selected.venue}</span>
+                </div>
+                <div className="pub-meta-block">
+                  <span className="pub-meta-label">Year</span>
+                  <span className="pub-meta-value">{selected.year}</span>
+                </div>
+                {selected.url && (
+                  <div className="pub-meta-block">
+                    <span className="pub-meta-label">Read it at</span>
+                    {/* Not a link: nobody taps a URL on a wall behind glass, they read it and
+                        write it down. Stripped of its scheme for the same reason. */}
+                    <span className="pub-meta-value pub-meta-url">
+                      {selected.url.replace(/^https?:\/\//, "")}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="pub-detail-right">
+            {/* Prev / next through the list. */}
+            <div className="pub-detail-nav">
               <button
                 type="button"
                 data-hover
@@ -194,34 +166,14 @@ export function PublicationsSection() {
                 disabled={selectedIndex <= 0}
                 onClick={() => goToPaper(-1)}
               >
-                <svg viewBox="0 0 24 28" aria-hidden="true">
-                  <path d="M12 3v21" />
-                  <path d="M5 17l7 7 7-7" />
+                <svg viewBox="0 0 28 24" aria-hidden="true">
+                  <path d="M24 12H3" />
+                  <path d="M11 5L4 12l7 7" />
                 </svg>
               </button>
-
-              {/* One figure at a time — swipe horizontally OR use the dots below. */}
-              <div className="pub-detail-media" ref={mediaRef} onScroll={onMediaScroll}>
-                {images.map((src) => (
-                  <img key={src} className="pub-detail-img" src={src} alt="" />
-                ))}
-              </div>
-
-              {images.length > 1 && (
-                <div className="pub-detail-dots">
-                  {images.map((src, i) => (
-                    <button
-                      key={src}
-                      type="button"
-                      data-hover
-                      className={`pub-dot${i === imgIndex ? " is-active" : ""}`}
-                      aria-label={`Figure ${i + 1}`}
-                      onClick={() => scrollToImage(i)}
-                    />
-                  ))}
-                </div>
-              )}
-
+              <span className="pub-nav-count">
+                {selectedIndex + 1} / {publications.length}
+              </span>
               <button
                 type="button"
                 data-hover
@@ -230,9 +182,9 @@ export function PublicationsSection() {
                 disabled={selectedIndex >= publications.length - 1}
                 onClick={() => goToPaper(1)}
               >
-                <svg viewBox="0 0 24 28" aria-hidden="true">
-                  <path d="M12 3v21" />
-                  <path d="M5 17l7 7 7-7" />
+                <svg viewBox="0 0 28 24" aria-hidden="true">
+                  <path d="M4 12h21" />
+                  <path d="M17 5l7 7-7 7" />
                 </svg>
               </button>
             </div>

@@ -182,119 +182,150 @@
   transform: rotate(22.5deg) scale3d(1, 1, 1);
 }
 
-/* ---- detail view (click a project) — ContentLayoutTransition content layout ----
-   Left column: big accent title + strong authors + narrow abstract; right column: the
-   paper's figures, stacked and scrollable. "Back" up top. */
+/* ---- text-only detail (click a paper) ----
+   Built to the same plan as the student-project detail (`projects.css` .sp-detail): one
+   centred column, the abstract as the body, the bibliography as meta blocks. No figures —
+   see the note in PublicationsSection.tsx for why they went. */
 .publications .pub-detail {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  grid-template-columns: 1fr 48vw;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  /* `safe` matters: plain `center` on an overflowing flex column pushes the first line ABOVE
+     the scroll origin, where no scrolling can reach it. A long abstract would otherwise open
+     with its own title already cut off the top. */
+  justify-content: safe center;
   background: var(--gt-bg);
-  overflow: hidden;
-}
-.publications .pub-detail-text {
-  justify-self: stretch;
-  max-height: 100vh;
   overflow-y: auto;
-  padding: 8rem 3vw 4rem 5vw;
+  padding: 7rem 8vw 8.5rem;
 }
-/* Right column: up arrow (prev paper) · one figure · dots · down arrow (next paper). */
-.publications .pub-detail-right {
-  height: 100vh;
+/* Centred, not left-hugged: at 8vw padding on a 2000px wall the text sat in the leftmost
+   quarter with two thirds of the screen empty beside it. A poster read from across a corridor
+   is centred as a whole, and every child then gets its own measure and is re-centred. */
+.publications .pub-detail-inner {
+  max-width: 96ch;
+  margin-inline: auto;
+  width: 100%;
+  text-align: center;
+}
+.publications .pub-detail-type {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: clamp(0.85rem, 0.8vw, 1.1rem);
+  font-weight: 700;
+  color: var(--gt-accent);
+}
+/* The title gets its OWN measure, not the body's. Sharing the body column meant a 4vw title
+   broke every few words; `ch` here is relative to the title's own size, so 20ch is roughly
+   twice the body width and a long paper title lands in three lines instead of six.
+   (This replaces a JS binary-search auto-fit — the same result, and it cannot disagree with
+   the layout it is measuring.) */
+.publications .pub-detail-title {
+  margin: 0.9rem auto 0;
+  /* 26ch, not the student-project detail's 20ch: a paper title is routinely 70–90 characters
+     ("Active Aerial Search in Forests: Multi-UAV Next-Best-View Planning with Prior Scene
+     Data"), and at 20ch that lands in five lines that eat half the wall before the abstract
+     starts. Wider measure, smaller type: three lines, and the body still gets the centre. */
+  max-width: 26ch;
+  font-size: clamp(1.8rem, 2.8vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--gt-text-primary);
+}
+/* Body sizes are read from across a corridor, not from a desk (CLAUDE.md rule 7): they scale
+   with the viewport, and the measure is in `ch` so the line length holds as the type grows. */
+.publications .pub-detail-authors {
+  margin: 1.8rem auto 0;
+  max-width: 46ch;
+  font-size: clamp(1.05rem, 1.05vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.45;
+  text-wrap: balance;
+  color: var(--gt-text-primary);
+}
+/* The abstract is the page. It is the one part of a paper a passer-by can carry away, so it
+   gets the centre of the screen and the full measure. */
+.publications .pub-detail-abstract {
+  margin: 1.8rem auto 0;
+  max-width: 62ch;
+  font-size: clamp(1rem, 1.05vw, 1.45rem);
+  line-height: 1.7;
+  color: var(--gt-text-secondary);
+}
+.publications .pub-detail-meta {
+  margin-top: 2.8rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5rem 4rem;
+}
+.publications .pub-meta-block {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.1rem;
-  padding: 1.4rem 2rem;
-}
-.publications .pub-detail-media {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  /* `proximity`, not `mandatory`. A hand scrolls by adding a few pixels every frame, and a
-     mandatory snap pulled every one of them straight back — 40 frames of +18px left scrollLeft
-     at exactly 0, so the figures could not be reached by gesture at all. */
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-}
-.publications .pub-detail-media::-webkit-scrollbar {
-  display: none;
-}
-.publications .pub-detail-img {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  scroll-snap-align: center;
-}
-.publications .pub-detail-dots {
-  flex: none;
-  display: flex;
-  align-items: center;
   gap: 0.55rem;
 }
-/* Was 9x9px with 6px gaps — a target this pointer misses with 6px of aim error, and the only
-   route to any figure past the first. */
-.publications .pub-dot {
-  width: 26px;
-  height: 26px;
-  border: 8px solid transparent;
-  background-clip: content-box;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  background: color-mix(in srgb, var(--gt-text-primary), transparent 70%);
-  transition: background 0.2s ease, transform 0.2s ease;
+.publications .pub-meta-label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: clamp(0.72rem, 0.7vw, 0.95rem);
+  font-weight: 700;
+  color: var(--gt-text-secondary);
 }
-.publications .pub-dot:hover,
-.publications .pub-dot.is-hover {
-  background: var(--gt-text-primary);
+.publications .pub-meta-value {
+  font-size: clamp(1.05rem, 1vw, 1.4rem);
+  font-weight: 700;
+  color: var(--gt-text-primary);
 }
-.publications .pub-dot.is-active {
-  background: var(--gt-accent);
-  transform: scale(1.35);
+.publications .pub-meta-url {
+  color: var(--gt-accent);
+  font-weight: 500;
+  word-break: break-all;
 }
-/*
- * Prev/next moved off the right edge and into a cluster at the bottom centre.
- *
- * The rule across the kiosk: top centre leaves the page, bottom centre moves around inside
- * it. Corners and edges are the most expensive places on a wall for a hand to reach — the
- * pointer is a whole arm — and these two were pinned to the far right, at the extreme of a
- * sweep, which is also where the mapping is least accurate.
- */
-.publications .pub-nav {
+
+/* Bottom CENTRE. The Home corner owns the bottom left, and this is the rule BackControl
+   already states: leaving the page is bottom-left, moving around inside it is bottom-centre —
+   the edge midpoints are the cheapest points on the wall for an arm-steered pointer. */
+/* The abstract is long enough to scroll past this, so the pair carries its own small pool of
+   page colour — the same trick as the Home corner: what is under the control is dissolved,
+   not merely overlapped, so the arrows never sit on top of a half-legible line. */
+.publications .pub-detail-nav::before {
+  content: "";
+  position: absolute;
+  inset: -1.6rem -4rem;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, var(--gt-bg) 45%, transparent 78%);
+}
+.publications .pub-detail-nav {
   position: fixed;
-  bottom: 1.75rem;
+  bottom: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 60;
-  display: grid;
-  place-items: center;
-  width: 4rem;
-  height: 4rem;
-  flex: none;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--gt-surface) 90%, transparent);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--gt-border);
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+.publications .pub-nav-count {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gt-text-secondary);
+  min-width: 4ch;
+  text-align: center;
+}
+.publications .pub-nav {
+  background: none;
+  border: none;
   padding: 0;
   cursor: pointer;
   color: var(--gt-text-primary);
 }
-.publications .pub-nav--prev {
-  left: calc(50% - 5rem);
-}
-.publications .pub-nav--next {
-  left: calc(50% + 1rem);
-}
 .publications .pub-nav svg {
   display: block;
-  height: 26px;
+  height: 28px;
   width: auto;
   fill: none;
   stroke: currentColor;
@@ -304,90 +335,21 @@
   opacity: 0.55;
   transition: opacity 0.3s, transform 0.3s;
 }
-.publications .pub-nav--prev svg {
-  transform: rotate(180deg);
-}
 .publications .pub-nav:hover svg,
 .publications .pub-nav.is-hover svg {
   opacity: 1;
 }
 .publications .pub-nav--prev:hover svg,
 .publications .pub-nav--prev.is-hover svg {
-  transform: rotate(180deg) translateY(-4px);
+  transform: translateX(-4px);
 }
 .publications .pub-nav--next:hover svg,
 .publications .pub-nav--next.is-hover svg {
-  transform: translateY(4px);
+  transform: translateX(4px);
 }
 .publications .pub-nav:disabled {
   opacity: 0;
   pointer-events: none;
-}
-/* Bottom centre with the other in-page controls, and a real target rather than a line of
-   text: this is how a visitor gets out of a paper, and it was a 16px word in the corner. */
-.publications .pub-detail-back {
-  position: fixed;
-  bottom: 1.75rem;
-  left: calc(50% - 16rem);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.85rem 1.6rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--gt-surface) 90%, transparent);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--gt-border);
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--gt-text-primary);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-.publications .pub-detail-back:hover,
-.publications .pub-detail-back.is-hover {
-  color: var(--gt-accent);
-}
-.publications .pub-detail-type {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: clamp(0.85rem, 0.8vw, 1.1rem);
-  font-weight: 700;
-  color: var(--gt-accent);
-}
-.publications .pub-detail-title {
-  margin: 0.9rem 0 0;
-  /* font-size is set by the auto-fit hook (JS); this is just a pre-fit fallback. */
-  font-size: 4vw;
-  font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-  color: var(--gt-accent);
-}
-/* Body sizes below are read from across a corridor, not from a desk (CLAUDE.md rule 7):
-   they scale with the viewport and are clamped so a laptop preview stays sane. The old
-   fixed 0.95rem/460px squeezed the abstract into a narrow strip in a column twice as wide. */
-.publications .pub-detail-authors {
-  margin: 2.2rem 0 0;
-  max-width: 46ch;
-  font-size: clamp(1rem, 0.95vw, 1.3rem);
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--gt-text-primary);
-}
-.publications .pub-detail-venue {
-  margin: 0.5rem 0 0;
-  font-size: clamp(0.9rem, 0.8vw, 1.1rem);
-  color: var(--gt-text-secondary);
-}
-.publications .pub-detail-abstract {
-  margin: 1.8rem 0 0;
-  /* A measure, not a pixel box — stays readable as the type scales up on the wall. */
-  max-width: 60ch;
-  font-size: clamp(1rem, 1.05vw, 1.45rem);
-  line-height: 1.65;
-  color: var(--gt-text-secondary);
 }
 /* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
 .publications .frame__logo {
