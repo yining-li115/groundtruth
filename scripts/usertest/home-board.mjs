@@ -21,7 +21,17 @@
  */
 import { openKiosk, sleep } from "./driver.mjs";
 
-const URL = process.env.KIOSK_URL ?? "http://localhost:5173/?enter=1&calibrate=0";
+/**
+ * KIOSK_URL is a BASE, not a full address, and the query is appended here.
+ *
+ * It used to be the whole URL with the parameters baked into the default, which meant pointing
+ * the run at a production preview (`KIOSK_URL=http://localhost:4173`) silently dropped
+ * `enter=1` and `calibrate=0` — the run landed on the setup screen and reported the home board
+ * missing. A harness that fails for a reason that has nothing to do with the thing under test
+ * is worse than no harness.
+ */
+const BASE = (process.env.KIOSK_URL ?? "http://localhost:5173").replace(/\/+$/, "");
+const URL = `${BASE}/?enter=1&calibrate=0`;
 const ROWS = ["research", "people", "projects", "publications", "teaching"];
 
 const findings = [];
