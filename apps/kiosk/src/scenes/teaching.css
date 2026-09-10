@@ -2,9 +2,10 @@
    grouped by term, with the Codrops "decode" glitch on hover (GlitchText). The table is
    MONOSPACE so the per-character scramble never reshapes the row. Colors are all tokens. */
 
+/* No max-width of its own: the page's measure is owned by `SectionLayout`, in one place, so
+   the title and the table cannot disagree about where the column starts. */
 .tch {
   font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  max-width: 1500px;
 }
 
 .tch-term + .tch-term {
