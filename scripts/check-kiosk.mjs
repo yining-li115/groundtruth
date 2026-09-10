@@ -256,6 +256,35 @@ async function main() {
       }
     }
 
+    // ------------------------------------------------- the corner glow follows the page
+    //
+    // The Home corner is white on the dark sections and brand violet on the light ones, and it
+    // used to decide that once, from the section root, when `view` changed. A DETAIL view can
+    // be a different theme from the section that owns it and does not change `view` at all —
+    // opening a person swapped the page to a dark profile while the glow stayed violet.
+    console.log("\nthe Home corner is painted against the page it is on\n");
+    {
+      await goto(`${BASE}/?view=people&calibrate=0`, 5000);
+      await evaluate(`document.querySelector('.sf-enter__btn')?.click()`);
+      await sleep(2000);
+      const onList = await evaluate(`document.querySelector('.bc-home')?.className ?? 'missing'`);
+      ok("people (light) gets the violet glow", String(onList).includes("bc-home--light"), String(onList));
+
+      const opened = await evaluate(`(() => {
+        const card = document.querySelector('.ppl-card');
+        if (!card) return 'no card';
+        card.click();
+        return 'clicked';
+      })()`);
+      await sleep(1200);
+      const onDetail = await evaluate(`document.querySelector('.bc-home')?.className ?? 'missing'`);
+      ok(
+        "...and a person's dark detail flips it to white",
+        opened === "clicked" && String(onDetail).includes("bc-home--dark"),
+        `${opened} → ${onDetail}`,
+      );
+    }
+
     // ---------------------------------------------------------------- scrolling
     console.log("\nthe pages can actually be scrolled by a drag\n");
     await goto(`${BASE}/?view=people&calibrate=0`, 5000);

@@ -58,16 +58,57 @@ import "./backControl.css";
  * bottom centre because of it, which is the kiosk's own chrome rule anyway.
  */
 
-/** Which theme the current section is painted in, so the glow can be the opposite of it. */
-function useSectionTheme(view: string): "dark" | "light" {
+/**
+ * Which theme is painted UNDER the corner, so the glow can be the opposite of it.
+ *
+ * The first version read `data-theme` off the section root once, whenever `view` changed. That
+ * is wrong twice: a detail view can be a different theme from the section that owns it, and
+ * opening one does not change `view` at all. Selecting a person swaps the whole page to a dark
+ * profile while the store still says "people" — so the light section's violet glow stayed, on
+ * black, looking nothing like the identical control two clicks away on Projects.
+ *
+ * So it asks the page instead of remembering an answer: what `data-theme` scope actually
+ * applies at the point the glow is drawn? That is the same attribute the token file keys off,
+ * so there is still exactly one declaration of what is dark — this just reads it where it
+ * matters rather than where it was expected to be.
+ *
+ * A MutationObserver rather than a poll, because the thing being watched is a React commit:
+ * the detail mounts, the corner is a different colour on the very next frame, and the glow has
+ * to change with it and not a quarter of a second later.
+ */
+function useCornerTheme(view: string): "dark" | "light" {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   useEffect(() => {
-    // The section root is the first child of <main> (App.tsx), and dark sections declare
-    // themselves with data-theme="dark" — the same attribute the token file keys off. Read it
-    // rather than keeping a second list of which sections are dark: a list would be one more
-    // thing to update, and the day it disagreed with the page the chrome would be invisible.
-    const root = document.querySelector("main")?.firstElementChild;
-    setTheme(root?.getAttribute("data-theme") === "dark" ? "dark" : "light");
+    const read = () => {
+      const x = window.innerWidth * 0.05;
+      const y = window.innerHeight * 0.95;
+      // Skip our own region (it sits on top and paints the page's colour by design, so it
+      // would happily report itself) and the page-transition cover (black cells mid-swap, on
+      // a page that may be light either side of it).
+      const under = document
+        .elementsFromPoint(x, y)
+        .find((el) => !el.closest(".bc-home") && !el.closest(".pixel-overlay"));
+      setTheme(under?.closest('[data-theme="dark"]') ? "dark" : "light");
+    };
+    read();
+
+    const main = document.querySelector("main");
+    if (!main) return;
+    let queued = 0;
+    const observer = new MutationObserver(() => {
+      // Coalesce: one commit is many mutation records, and this only has to run once per frame.
+      if (queued) return;
+      queued = requestAnimationFrame(() => {
+        queued = 0;
+        read();
+      });
+    });
+    observer.observe(main, { childList: true, subtree: true, attributes: true,
+      attributeFilter: ["data-theme", "class"] });
+    return () => {
+      observer.disconnect();
+      if (queued) cancelAnimationFrame(queued);
+    };
   }, [view]);
   return theme;
 }
@@ -76,7 +117,7 @@ export function BackControl() {
   const entered = useKioskStore((s) => s.entered);
   const view = useKioskStore((s) => s.view);
   const handPresent = useKioskStore((s) => s.handPresent);
-  const theme = useSectionTheme(view);
+  const theme = useCornerTheme(view);
 
   // Nothing to go back from on the home view, and nothing to offer when nobody is here.
   if (!entered || view === "home") return null;
