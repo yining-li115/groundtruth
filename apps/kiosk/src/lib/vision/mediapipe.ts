@@ -107,6 +107,45 @@ export function extendedFingers(lm: Landmark[]): Fingers {
   return FINGER_JOINTS.map(([tip, joint]) => reach(tip) > reach(joint) * 1.12) as Fingers;
 }
 
+/**
+ * Is this hand closed into a fist, read from its own geometry?
+ *
+ * The canned `Closed_Fist` label is a trained classifier and it is the right first answer —
+ * but on the wall it was the ONLY answer, and it kept not arriving: a visitor would close a
+ * hand, hold it, and nothing happened, because the recogniser had decided "None" at 0.6 and
+ * stayed there for as long as the fist was held. A fist seen from slightly below, or with the
+ * thumb across the fingers, or at the far end of the camera's range, is exactly the kind of
+ * frame a small classifier hedges on. Holding it longer does not help; the frames are all the
+ * same frame.
+ *
+ * So the geometry is read as well. On the WORLD landmarks (metres, hand-centred), not the
+ * screen ones: a finger pointing at the lens projects to almost nothing in 2D and reads as
+ * curled, which is the false positive that makes geometric fists dangerous. In 3D a curled
+ * fingertip is genuinely closer to the wrist than its own middle joint, whichever way the
+ * hand is turned. Four curled fingers is a fist; the thumb is ignored, because where it ends
+ * up in a fist varies by person and it is the least reliably tracked digit anyway.
+ */
+export function fistFromGeometry(world: Landmark[]): boolean {
+  if (world.length < 21) return false;
+  const wrist = world[0]!;
+  const d = (i: number) =>
+    Math.hypot(world[i]!.x - wrist.x, world[i]!.y - wrist.y, world[i]!.z - wrist.z);
+  // Something has to be there: an all-zero skeleton (a synthetic hand, a failed reconstruction)
+  // has every tip at distance 0 and must not read as closed.
+  if (d(5) <= 0) return false;
+  // tip vs PIP, index → pinky. A tip that has not made it past its own second joint is curled.
+  return CURL_JOINTS.every(([tip, pip]) => d(tip) < d(pip) * CURL_RATIO);
+}
+const CURL_JOINTS: ReadonlyArray<readonly [number, number]> = [
+  [8, 6],
+  [12, 10],
+  [16, 14],
+  [20, 18],
+];
+/** How far short of the PIP joint the tip must sit. Below 1 is folded back toward the palm;
+ *  an extended finger is at roughly 1.6, so the margin is wide on both sides. */
+const CURL_RATIO = 1.0;
+
 /** Largest detected face, box normalised to [0,1] of the video frame (raw, un-mirrored). */
 export interface FaceResult {
   cx: number;

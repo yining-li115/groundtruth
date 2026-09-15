@@ -329,6 +329,14 @@ console.log("\nhand pointer — edge cases\n");
   run(p, clock, 400, () => frame(hand(0.5, 0.7, 1.44, "Open_Palm", 0.9)));
   ok("opening releases it", !p.state.pinched);
   ok("a low-confidence label is ignored", !runFist(p, clock, 0.2));
+  // The wall's most common complaint: the hand is closed and held, and the classifier hedges
+  // at "None" for the whole hold. The geometry of a closed hand has to count on its own.
+  run(p, clock, 400, () => frame(hand(0.5, 0.7, 1.44, "Open_Palm", 0.9)));
+  const g = countPresses(p, clock, 700, () => frame(curledHand(0.5, 0.7, true)));
+  ok("a fist the classifier missed still clicks, from its geometry", g === 1, `fired ${g}`);
+  run(p, clock, 400, () => frame(curledHand(0.5, 0.7, false)));
+  ok("straightening the fingers releases it", !p.state.pinched);
+  ok("an open hand with a 'None' label is still not a fist", !countPresses(p, clock, 500, () => frame(curledHand(0.5, 0.7, false))));
 }
 
 {
@@ -562,6 +570,32 @@ function countDwells(
     if (p.update(make(clock.t), ASPECT, clock.t).dwellFired) n += 1;
   }
   return n;
+}
+
+/**
+ * A hand with a real 3D skeleton, so the geometric fist can be exercised: every finger's tip
+ * either folded back inside its middle joint (`closed`) or reaching well past it. The label is
+ * "None" on purpose — this is the frame the classifier gave up on.
+ */
+function curledHand(x: number, y: number, closed: boolean): HandResult {
+  const h = hand(x, y, 1.44, "None", 0.3);
+  const w = h.world;
+  w[0] = { x: 0, y: 0.08, z: 0 }; // wrist, 8cm below the hand centre
+  const fingers: Array<[number, number, number, number]> = [
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
+    [17, 18, 19, 20],
+  ];
+  fingers.forEach(([mcp, pip, dip, tip], i) => {
+    const fx = (i - 1.5) * 0.02;
+    w[mcp] = { x: fx, y: 0, z: 0 };
+    w[pip] = { x: fx, y: -0.03, z: 0 };
+    // curled: the tip comes back toward the palm, well inside the PIP's reach from the wrist
+    w[dip] = closed ? { x: fx, y: -0.02, z: 0.02 } : { x: fx, y: -0.055, z: 0 };
+    w[tip] = closed ? { x: fx, y: 0.0, z: 0.03 } : { x: fx, y: -0.08, z: 0 };
+  });
+  return h;
 }
 
 function runFist(p: HandPointer, clock: { t: number }, score: number): boolean {

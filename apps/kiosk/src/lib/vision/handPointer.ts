@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { VisionEngine, type FaceResult, type Landmark, type VisionResult } from "./mediapipe";
+import {
+  VisionEngine,
+  fistFromGeometry,
+  type FaceResult,
+  type Landmark,
+  type VisionResult,
+} from "./mediapipe";
 import {
   DEFAULT_BOX,
   FaceAnchor,
@@ -450,7 +456,8 @@ export class HandPointer {
     const g = this.cfg.clickGesture;
     const pinching = g !== "fist" && this.pinch.update(ratio);
     const fisting =
-      g !== "pinch" && this.fist.update(hand?.label ?? null, hand?.score ?? 0);
+      g !== "pinch" &&
+      this.fist.update(hand?.label ?? null, hand?.score ?? 0, hand ? fistFromGeometry(hand.world) : false);
     // Keep the pinch calibrator fed even when it isn't driving, so its open reference stays
     // converged and switching gesture mid-session doesn't start from a stale baseline.
     if (g === "fist") this.pinch.update(ratio);
@@ -652,6 +659,11 @@ const DWELL_REFRACTORY_MS = 700;
  * clicks, and stray activations are the failure that makes a touchless screen feel broken
  * rather than imprecise. `pressLookbackMs` is set past this so the aim still comes from
  * before the hand began closing.
+ *
+ * Re-checked Sept 2026 when the fist was made easier to read: the idle recordings start
+ * producing a phantom click at 280ms and are clean again at 300ms, so 350 keeps a margin and
+ * stays. "Held it and nothing happened" was never this number — it was the fist not being
+ * recognised at all (see `FistLatch`).
  */
 export const PRESS_DEBOUNCE_MS = 350;
 /**
@@ -667,15 +679,23 @@ export const PRESS_DEBOUNCE_MS = 350;
 const MAX_HOLD_MS = 3000;
 
 /**
- * Fist detection, off MediaPipe's own gesture classifier.
+ * Fist detection: MediaPipe's own gesture classifier, OR the hand's 3D geometry.
  *
- * Deliberately not geometry: "are the fingers curled" reconstructed from landmark positions
- * fails in exactly the situations a trained classifier handles — a hand seen edge-on, at an
- * angle, or partly self-occluded. The label already comes back with every frame; using it
- * costs nothing.
+ * It used to be the classifier alone, on the argument that geometry fails where a trained
+ * model copes — a hand edge-on, at an angle, partly self-occluded. The wall said otherwise: the
+ * most common report from in front of it was "I made a fist and held it and nothing happened",
+ * and the recording shows why — the label sits at "None" for the whole hold, at a confidence
+ * just under the bar, and the visitor has no way of knowing the hand they are holding shut is
+ * being read as open. A click that needs a second opinion is better than one that needs a
+ * perfect first.
  *
- * Frame counts rather than a score threshold do the hysteresis, because the classifier's
- * confidence flickers frame to frame even when the posture is unambiguous to a human.
+ * So both are read, and either is enough. The geometric read is on the WORLD landmarks, which
+ * is what takes away the classic false positive (a finger pointed at the lens, foreshortened to
+ * nothing) — see `fistFromGeometry`. The score bar on the label came down as well: 0.5 was
+ * refusing frames the model itself ranked as "fist, more likely than not".
+ *
+ * Frame counts rather than a score threshold do the hysteresis, because both signals flicker
+ * frame to frame even when the posture is unambiguous to a human.
  */
 class FistLatch {
   private on = false;
@@ -686,7 +706,7 @@ class FistLatch {
   constructor(
     private onFrames = 2,
     private offFrames = 3,
-    private readonly minScore = 0.5,
+    private readonly minScore = 0.4,
   ) {}
 
   /** Frame counts mean different amounts of TIME at different frame rates; a calibration
@@ -696,8 +716,8 @@ class FistLatch {
     if (cfg.offFrames !== undefined) this.offFrames = Math.max(1, Math.round(cfg.offFrames));
   }
 
-  update(label: string | null, score: number): boolean {
-    const isFist = label === "Closed_Fist" && score >= this.minScore;
+  update(label: string | null, score: number, geometric = false): boolean {
+    const isFist = (label === "Closed_Fist" && score >= this.minScore) || geometric;
     if (isFist) {
       this.closed += 1;
       this.opened = 0;
