@@ -5,6 +5,7 @@ import { GooeyNav, Logo, type GooeyNavItem } from "@groundtruth/ui";
 import type { OpenTopic, OpenTopicType } from "../../../../content/schema";
 import { openTopics, personName } from "../lib/content";
 import { navigate } from "../lib/navigate";
+import { DetailPager } from "../components/DetailPager";
 import { TAG_COLOR } from "./tagColors";
 import "./projects.css";
 
@@ -214,41 +215,23 @@ export function ProjectsSection() {
               </div>
             </div>
 
-            {/* Prev / next within the current filter. */}
-            <div className="sp-detail-nav">
-              <button
-                type="button"
-                data-hover
-                className="sp-nav sp-nav--prev"
-                aria-label="Previous topic"
-                disabled={selectedIndex <= 0}
-                onClick={() => goTo(-1)}
-              >
-                <svg viewBox="0 0 28 24" aria-hidden="true">
-                  <path d="M24 12H3" />
-                  <path d="M11 5L4 12l7 7" />
-                </svg>
-              </button>
-              <span className="sp-nav-count">
-                {selectedIndex + 1} / {filtered.length}
-              </span>
-              <button
-                type="button"
-                data-hover
-                className="sp-nav sp-nav--next"
-                aria-label="Next topic"
-                disabled={selectedIndex >= filtered.length - 1}
-                onClick={() => goTo(1)}
-              >
-                <svg viewBox="0 0 28 24" aria-hidden="true">
-                  <path d="M4 12h21" />
-                  <path d="M17 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Prev / next within the current filter: the side-edge wings (`DetailPager`). Outside
+          the motion.div — it animates `transform`, which would turn the wings' `fixed` into
+          "fixed to the detail" and scroll them away with the text. */}
+      {selected && (
+        <DetailPager
+          index={selectedIndex}
+          total={filtered.length}
+          onPrev={() => goTo(-1)}
+          onNext={() => goTo(1)}
+          prevLabel="Previous topic"
+          nextLabel="Next topic"
+        />
+      )}
 
       {/*
        * The fluid-glass lens is GONE from this page (`components/FluidLens` is kept, unmounted,

@@ -286,71 +286,9 @@
   word-break: break-all;
 }
 
-/* Bottom CENTRE. The Home corner owns the bottom left, and this is the rule BackControl
-   already states: leaving the page is bottom-left, moving around inside it is bottom-centre —
-   the edge midpoints are the cheapest points on the wall for an arm-steered pointer. */
-/* The abstract is long enough to scroll past this, so the pair carries its own small pool of
-   page colour — the same trick as the Home corner: what is under the control is dissolved,
-   not merely overlapped, so the arrows never sit on top of a half-legible line. */
-.publications .pub-detail-nav::before {
-  content: "";
-  position: absolute;
-  inset: -1.6rem -4rem;
-  z-index: -1;
-  background: radial-gradient(ellipse at center, var(--gt-bg) 45%, transparent 78%);
-}
-.publications .pub-detail-nav {
-  position: fixed;
-  bottom: 2.4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 1.4rem;
-}
-.publications .pub-nav-count {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--gt-text-secondary);
-  min-width: 4ch;
-  text-align: center;
-}
-.publications .pub-nav {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--gt-text-primary);
-}
-.publications .pub-nav svg {
-  display: block;
-  height: 1.75rem;
-  width: auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.55;
-  transition: opacity 0.3s, transform 0.3s;
-}
-.publications .pub-nav:hover svg,
-.publications .pub-nav.is-hover svg {
-  opacity: 1;
-}
-.publications .pub-nav--prev:hover svg,
-.publications .pub-nav--prev.is-hover svg {
-  transform: translateX(-4px);
-}
-.publications .pub-nav--next:hover svg,
-.publications .pub-nav--next.is-hover svg {
-  transform: translateX(4px);
-}
-.publications .pub-nav:disabled {
-  opacity: 0;
-  pointer-events: none;
-}
+/* Prev / next moved to the shared `components/DetailPager`: two wings of light on the side
+   edges, sized for a hand. The bottom-centre arrow pair that lived here was the most missed
+   target on the page. */
 /* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
 .publications .frame__logo {
   pointer-events: auto;

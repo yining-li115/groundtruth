@@ -1,0 +1,151 @@
+/* Previous / next wings on a detail page. Tokens only (CLAUDE.md rule 1). */
+
+/*
+ * Geometry. A half-ellipse anchored on the side edge, at mid-height — viewport units, like the
+ * Home corner, so it is the same fraction of the wall as of a laptop. Centred a little above
+ * the true middle: the Home corner climbs 38vh up the left edge, and these must end above it.
+ * Hit area, scrim and glow are all the same clipped shape, so what you can see is what you
+ * can press and nothing else.
+ */
+.dp-wing {
+  position: fixed;
+  top: 45vh;
+  transform: translateY(-50%);
+  width: clamp(8rem, 13vw, 24rem);
+  height: clamp(14rem, 34vh, 38rem);
+  z-index: 60;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--gt-text-primary);
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+.dp-wing--prev {
+  left: 0;
+  clip-path: ellipse(100% 50% at 0% 50%);
+  transform-origin: 0 50%;
+}
+.dp-wing--next {
+  right: 0;
+  clip-path: ellipse(100% 50% at 100% 50%);
+  transform-origin: 100% 50%;
+}
+
+/* The scrim: the page's own colour, opaque at the edge and gone before the clip, so the
+   abstract scrolling underneath is dissolved rather than overlapped. */
+.dp-wing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 50% at var(--dp-edge) 50%,
+    var(--gt-bg) 0%,
+    var(--gt-bg) 28%,
+    color-mix(in srgb, var(--gt-bg) 70%, transparent) 50%,
+    color-mix(in srgb, var(--gt-bg) 32%, transparent) 68%,
+    transparent 84%
+  );
+}
+/* The light: the page's ink colour, so it is white on the dark pages and black on a light one,
+   on the same eased falloff as the Home corner. */
+.dp-wing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 50% at var(--dp-edge) 50%,
+    color-mix(in srgb, currentColor 78%, transparent) 0%,
+    color-mix(in srgb, currentColor 66%, transparent) 12%,
+    color-mix(in srgb, currentColor 48%, transparent) 24%,
+    color-mix(in srgb, currentColor 32%, transparent) 36%,
+    color-mix(in srgb, currentColor 20%, transparent) 48%,
+    color-mix(in srgb, currentColor 11%, transparent) 60%,
+    color-mix(in srgb, currentColor 4%, transparent) 70%,
+    transparent 80%
+  );
+  opacity: 0.6;
+  transition: opacity 0.5s ease-out;
+}
+.dp-wing--prev {
+  --dp-edge: 0%;
+}
+.dp-wing--next {
+  --dp-edge: 100%;
+}
+
+/* The arrow, over the light, near the edge where the glow is brightest. In the ink colour,
+   like the glow itself: a cut-out in the page colour was tried first and at rest, with the
+   glow at half strength, it was a dark arrow on a dim wash — invisible from a corridor. */
+.dp-wing__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: clamp(2.4rem, 3.8vmin, 4.8rem);
+  font-weight: 700;
+  line-height: 1;
+  color: currentColor;
+  transition: transform 0.35s ease-out;
+}
+.dp-wing--prev .dp-wing__arrow {
+  left: clamp(1.2rem, 2.2vw, 3.6rem);
+}
+.dp-wing--next .dp-wing__arrow {
+  right: clamp(1.2rem, 2.2vw, 3.6rem);
+}
+
+/* Under the cursor: the hand pointer paints `gt-hover` / `is-hover`; `:hover` is a dev mouse. */
+.dp-wing.gt-hover::after,
+.dp-wing.is-hover::after,
+.dp-wing:hover::after {
+  opacity: 1;
+}
+.dp-wing.gt-hover,
+.dp-wing.is-hover,
+.dp-wing:hover {
+  transform: translateY(-50%) scale(1.06);
+}
+.dp-wing--prev.gt-hover .dp-wing__arrow,
+.dp-wing--prev.is-hover .dp-wing__arrow,
+.dp-wing--prev:hover .dp-wing__arrow {
+  transform: translateY(-50%) translateX(-0.2em);
+}
+.dp-wing--next.gt-hover .dp-wing__arrow,
+.dp-wing--next.is-hover .dp-wing__arrow,
+.dp-wing--next:hover .dp-wing__arrow {
+  transform: translateY(-50%) translateX(0.2em);
+}
+
+/* Nothing further that way. Dimmed, not removed, and not a target. */
+.dp-wing:disabled {
+  opacity: 0.22;
+  pointer-events: none;
+  cursor: default;
+}
+
+/* The counter: bottom centre, small, never a control. */
+.dp-count {
+  position: fixed;
+  bottom: 2.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gt-text-secondary);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-wing,
+  .dp-wing::after,
+  .dp-wing__arrow {
+    transition: none;
+  }
+  .dp-wing.gt-hover,
+  .dp-wing.is-hover,
+  .dp-wing:hover {
+    transform: translateY(-50%);
+  }
+}

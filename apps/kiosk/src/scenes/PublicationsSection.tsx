@@ -5,6 +5,7 @@ import { Logo } from "@groundtruth/ui";
 import type { Paper } from "../../../../content/schema";
 import { publications } from "../lib/content";
 import { navigate } from "../lib/navigate";
+import { DetailPager } from "../components/DetailPager";
 import "./publications.css";
 
 /**
@@ -76,7 +77,7 @@ export function PublicationsSection() {
             <div className="frame__brand-line">TUM School of Engineering and Design</div>
             <div className="frame__brand-line">Technical University of Munich</div>
           </div>
-          <Logo variant="white" width={64} height={33} />
+          <Logo variant="white" width="4rem" height="2.0625rem" />
         </button>
       </div>
 
@@ -156,41 +157,24 @@ export function PublicationsSection() {
               </div>
             </div>
 
-            {/* Prev / next through the list. */}
-            <div className="pub-detail-nav">
-              <button
-                type="button"
-                data-hover
-                className="pub-nav pub-nav--prev"
-                aria-label="Previous paper"
-                disabled={selectedIndex <= 0}
-                onClick={() => goToPaper(-1)}
-              >
-                <svg viewBox="0 0 28 24" aria-hidden="true">
-                  <path d="M24 12H3" />
-                  <path d="M11 5L4 12l7 7" />
-                </svg>
-              </button>
-              <span className="pub-nav-count">
-                {selectedIndex + 1} / {publications.length}
-              </span>
-              <button
-                type="button"
-                data-hover
-                className="pub-nav pub-nav--next"
-                aria-label="Next paper"
-                disabled={selectedIndex >= publications.length - 1}
-                onClick={() => goToPaper(1)}
-              >
-                <svg viewBox="0 0 28 24" aria-hidden="true">
-                  <path d="M4 12h21" />
-                  <path d="M17 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Prev / next through the list: two wings of light on the side edges (see
+          `DetailPager`). OUTSIDE the motion.div on purpose — it animates `transform`, and a
+          transformed ancestor turns `position: fixed` into "fixed to me", so the wings would
+          slide in with the text and scroll with the abstract. */}
+      {selected && (
+        <DetailPager
+          index={selectedIndex}
+          total={publications.length}
+          onPrev={() => goToPaper(-1)}
+          onNext={() => goToPaper(1)}
+          prevLabel="Previous paper"
+          nextLabel="Next paper"
+        />
+      )}
     </div>
   );
 }
