@@ -460,18 +460,19 @@ console.log("\nhand pointer — edge cases\n");
   // The deadzone now matches the drag threshold, so anything past it is a scroll by
   // definition — a lean that is neither a tap nor a scroll is the outcome nobody can read.
   ok("nor does a wobble too small to be a drag", dragScrollVelocity(0.02) === 0);
-  ok("but anything past the drag threshold does scroll", dragScrollVelocity(0.04) > 0);
-  ok("below the hand scrolls down", dragScrollVelocity(0.2) > 0);
-  ok("above it scrolls up", dragScrollVelocity(-0.2) < 0);
+  ok("but anything past the drag threshold does scroll", dragScrollVelocity(0.04) !== 0);
+  // Touch semantics: the content follows the hand. Pushing up moves the page down.
+  ok("a hand held above the grab scrolls the page down", dragScrollVelocity(-0.2) > 0);
+  ok("below it, the page comes back up", dragScrollVelocity(0.2) < 0);
   ok(
     "and it is symmetric",
     Math.abs(dragScrollVelocity(0.2) + dragScrollVelocity(-0.2)) < 1e-9,
   );
 
-  const slow = dragScrollVelocity(0.1);
-  const fast = dragScrollVelocity(0.25);
+  const slow = dragScrollVelocity(-0.1);
+  const fast = dragScrollVelocity(-0.25);
   ok("further means faster", fast > slow && slow > 0, `${slow.toFixed(0)} → ${fast.toFixed(0)}`);
-  ok("but it is capped", dragScrollVelocity(5) === dragScrollVelocity(0.28));
+  ok("but it is capped", dragScrollVelocity(-5) === dragScrollVelocity(-0.28));
 
   // The failure that forced this design: dragging the page by displacement means the return
   // stroke un-scrolls the outward one exactly, and with a missed release the page just

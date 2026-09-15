@@ -58,7 +58,7 @@ export function GestureHint() {
       </span>
       <span className="gh-sep" />
       <span>
-        <b>Hold it</b>, then move up or down to scroll
+        <b>Hold it</b> and push the page up or down to scroll
       </span>
     </div>
   );

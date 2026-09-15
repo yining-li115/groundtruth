@@ -20,6 +20,13 @@ const SCROLL_MAX_SPEED = 2400;
  * How fast a held hand should scroll the page, given how far it has moved from where it
  * grabbed. Returns pixels per second; positive scrolls the page down.
  *
+ * THE SIGN IS A TOUCHSCREEN'S, NOT A SCROLL WHEEL'S. A hand held ABOVE where it grabbed scrolls
+ * the page DOWN — the content follows the hand, the way a page follows a finger on glass. The
+ * first version had it the other way round (hand down = page down, like a wheel), and it read
+ * as backwards to everyone who tried it: the gesture is "hold the page and push it", and a page
+ * that runs away from the hand pushing it is a page that is not being held. Reviewed on the
+ * wall, Sept 2026: reversed.
+ *
  * VELOCITY, NOT POSITION. Dragging the page directly — the obvious mapping, and the one a
  * touchscreen uses — does not survive being done in mid-air. An arm has perhaps forty
  * centimetres of comfortable travel, so reaching the bottom of a long page means letting go,
@@ -41,6 +48,6 @@ export function dragScrollVelocity(offset: number): number {
   if (mag <= SCROLL_DEADZONE) return 0;
   const t = Math.min(1, (mag - SCROLL_DEADZONE) / (SCROLL_FULL - SCROLL_DEADZONE));
   // Eased rather than linear, so the slow end has real resolution instead of the whole
-  // useful range being crushed against the deadzone.
-  return Math.sign(offset) * t * t * SCROLL_MAX_SPEED;
+  // useful range being crushed against the deadzone. Negated: hand up (offset < 0) → page down.
+  return -Math.sign(offset) * t * t * SCROLL_MAX_SPEED;
 }
