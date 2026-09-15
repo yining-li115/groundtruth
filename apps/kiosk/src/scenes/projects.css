@@ -94,6 +94,42 @@
   left: 50vw;
   z-index: 0;
   pointer-events: none;
+  transition: opacity 0.45s ease-out;
+}
+/*
+ * The moment a row is under the hand, the title steps back.
+ *
+ * The title is scenery — set at 6.5vw behind the list so the page reads as a poster — and
+ * scenery is fine right up until somebody is choosing. Then a topic lit to full white was
+ * sitting on top of a word twice its height in the same white, and on the wall the two read
+ * as one shape. So while any row is hovered (`is-hover` is what the hand pointer paints; the
+ * `:hover` is for a mouse in dev) the title fades most of the way out and a scrim comes up
+ * over it — see `.menu::before` — leaving the chosen row the only bright thing on the page.
+ */
+.projects:has(.menu__item.is-hover) .title,
+.projects:has(.menu__item:hover) .title {
+  opacity: 0.16;
+}
+/* The scrim: the page colour washed over the title's half of the screen, faint at rest and up
+   with the selection. Under the list (z 1), over the title (z 0), never a target. */
+.projects .menu::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 30%,
+    color-mix(in srgb, var(--gt-bg) 78%, transparent) 55%,
+    color-mix(in srgb, var(--gt-bg) 92%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.45s ease-out;
+}
+.projects:has(.menu__item.is-hover) .menu::before,
+.projects:has(.menu__item:hover) .menu::before {
+  opacity: 1;
 }
 .projects .title__main {
   margin: 0;
