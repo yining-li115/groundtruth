@@ -95,7 +95,7 @@ export function ResearchSection() {
           <span>TUM School of Engineering and Design</span>
           <span>Technical University of Munich</span>
         </span>
-        <Logo variant="white" width={64} height={33} />
+        <Logo variant="white" width="4rem" height="2.0625rem" />
       </div>
 
       <div className="rsl-overlay">

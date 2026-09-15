@@ -183,7 +183,7 @@ export function PeopleSection() {
           <span>TUM School of Engineering and Design</span>
           <span>Technical University of Munich</span>
         </span>
-        <Logo variant="black" width={64} height={33} />
+        <Logo variant="black" width="4rem" height="2.0625rem" />
       </div>
 
       <div className="ppl__layout">

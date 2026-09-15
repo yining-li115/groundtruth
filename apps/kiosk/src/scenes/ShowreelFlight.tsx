@@ -50,7 +50,7 @@ export function ShowreelFlight({ onEnter }: { onEnter?: () => void }) {
       {/* Brand, over the flight. White logo on the dark idle backdrop — the one allowed
           recolor (design-system §3). */}
       <div className="pointer-events-none absolute left-10 top-9 flex items-center gap-4">
-        <Logo variant="white" width={86} height={45} />
+        <Logo variant="white" width="5.375rem" height="2.8125rem" />
         <div className="text-xs leading-tight" style={{ color: dark.text.primary }}>
           <div className="whitespace-nowrap font-bold">
             Professorship of Photogrammetry and Remote Sensing

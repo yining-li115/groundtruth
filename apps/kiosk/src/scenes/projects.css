@@ -21,15 +21,25 @@
   overflow-x: hidden;
 }
 
-/* ---- frame (top-left chair + university) ---- */
+/* ---- frame: the top strip — brand block left, filter tabs centred, as ONE grid ---- */
+/*
+ * `minmax(max-content, 1fr) auto minmax(0, 1fr)`: the outer columns are equal while the brand
+ * block fits in one, which centres the tabs on the screen; when it does not fit, the first
+ * column grows to hold it and the tabs move right. They can be off-centre. They cannot be
+ * covered. Two independent fixed elements (the previous layout) could.
+ */
 .projects .frame {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  padding: 2rem 2.5rem;
+  padding: 1.6rem 2.5rem;
   z-index: 1000;
   pointer-events: none;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 2rem;
 }
 .projects .frame__logo {
   display: flex;
@@ -55,15 +65,10 @@
   color: var(--gt-text-primary);
 }
 
-/* ---- filter tabs (GooeyNav), fixed top-centre ---- */
-.projects /* Enlarged for a hand: at 35px tall with 19px gaps, a full 8x6 grid sweep hit zero of
-   forty-eight positions on these. They worked only when aimed at dead centre. */
+/* ---- filter tabs (GooeyNav), the middle cell of the frame grid ---- */
 .projects-filter {
-  position: fixed;
-  top: 1.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1001;
+  justify-self: center;
+  pointer-events: auto;
   transition: opacity 0.3s ease;
 }
 /* Hide the filter while a topic detail is open (its "← Back" sits where the tabs are). */

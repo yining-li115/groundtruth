@@ -104,21 +104,30 @@
  * in the codebase proportional at once — type, spacing, gaps, radii, Tailwind's own scale,
  * and every `ch` measure with it — and nobody has to remember anything.
  *
- * The curve is deliberately conservative:
+ * The curve:
  *
- *   1600x900   vmin  9.0 → 13.3px → floor 16px   unchanged
- *   1920x1080  vmin 10.8 → 16.0px               unchanged
- *   2560x1440  vmin 14.4 → 21.3px               1.33x
- *   3840x2160  vmin 21.6 → 32.0px               2x  (the wall)
+ *   1440x900   vmin  9.0 → 13.3px
+ *   1920x1080  vmin 10.8 → 16.0px
+ *   2560x1440  vmin 14.4 → 21.3px
+ *   3840x2160  vmin 21.6 → 32.0px   (the wall)
  *
- * So nothing moves on any ordinary screen — a laptop preview is pixel-for-pixel what it was —
- * and only a genuinely large display grows. `vmin` rather than `vw` on purpose: an ultra-wide
- * panel is not further away, and sizing type off width alone would inflate it for no reason.
- * The 32px ceiling stops an enormous display from turning the site into a poster.
+ * NO FLOOR AT 16PX ANY MORE. The first version clamped the low end at 16px so that "nothing
+ * moves on an ordinary screen" — and that is exactly what broke the one promise the rule was
+ * making. On a 900-tall laptop the root should be 13.3px; pinned to 16 it was 20% larger than
+ * proportional, so every rem on that laptop took up 20% more of the screen than it does on the
+ * wall, and things that clear each other on the wall collided on the laptop (the Projects
+ * filter tabs ran under the brand block — Sept 2026 review). A preview that is not
+ * proportional is not a preview. The floor is now only a sanity rail against absurd viewports.
+ *
+ * `vmin` rather than `vw` on purpose: an ultra-wide panel is not further away, and sizing type
+ * off width alone would inflate it for no reason. The 32px ceiling stops an enormous display
+ * from turning the site into a poster. What this cannot do is make a 16:10 laptop and a 16:9
+ * wall identical — the widths still differ by a tenth — so any two things that must never touch
+ * are laid out so they cannot (a grid, not two absolute positions).
  */
 html {
   font-family: var(--font-sans);
-  font-size: clamp(16px, 1.481vmin, 32px);
+  font-size: clamp(9px, 1.481vmin, 32px);
 }
 
 /* ---- theme.dark — OPTIONAL kiosk idle backdrop only (design-system §5).

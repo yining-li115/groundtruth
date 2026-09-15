@@ -96,7 +96,14 @@ export function ProjectsSection() {
           door into a room you can already see — and on the pages with a filter bar across the
           top it was fighting for the same strip of screen. */}
 
-      {/* Top-left: chair + university (white on dark), clickable → home. */}
+      {/* The top strip: brand block on the left, the filter tabs in the middle — ONE grid, so
+          the two cannot overlap on any screen. They used to be two independent fixed elements
+          (brand at the left edge, tabs centred at 50%), which is a layout that only works while
+          the brand block happens to be narrower than the gap to the tabs; on a laptop, where
+          the root scaled differently, it was not, and the tabs ran under the logo. The grid's
+          first column is at least as wide as the brand, so the tabs are pushed right rather
+          than covered when there is no room to centre them. The logo is sized in rem for the
+          same reason: a 64px logo is a different fraction of every screen. */}
       <div className="frame">
         <button
           type="button"
@@ -112,8 +119,20 @@ export function ProjectsSection() {
             <div className="frame__brand-line">TUM School of Engineering and Design</div>
             <div className="frame__brand-line">Technical University of Munich</div>
           </div>
-          <Logo variant="white" width={64} height={33} />
+          <Logo variant="white" width="4rem" height="2.0625rem" />
         </button>
+
+        {/* Filter tabs — the five project kinds. */}
+        <div className="projects-filter">
+          <GooeyNav
+            items={FILTER_ITEMS}
+            initialActiveIndex={activeFilter}
+            onSelect={(i) => {
+              setActiveFilter(i);
+              setSelected(null);
+            }}
+          />
+        </div>
       </div>
 
       {/* Oversized two-line title, behind the menu (one word per line). */}
@@ -126,18 +145,6 @@ export function ProjectsSection() {
             <span className="oh__inner">Projects</span>
           </span>
         </h2>
-      </div>
-
-      {/* Filter tabs — the five project kinds. */}
-      <div className="projects-filter">
-        <GooeyNav
-          items={FILTER_ITEMS}
-          initialActiveIndex={activeFilter}
-          onSelect={(i) => {
-            setActiveFilter(i);
-            setSelected(null);
-          }}
-        />
       </div>
 
       {/* The filtered open-topics list. */}

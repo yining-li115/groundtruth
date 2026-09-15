@@ -129,7 +129,7 @@ export function HomeBoard() {
             <span>TUM School of Engineering and Design</span>
             <span>Technical University of Munich</span>
           </div>
-          <Logo variant="black" width={72} height={38} />
+          <Logo variant="black" width="4.5rem" height="2.375rem" />
         </header>
 
         <div className="hb-copy">

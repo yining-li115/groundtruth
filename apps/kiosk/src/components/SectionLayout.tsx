@@ -48,7 +48,7 @@ export function SectionLayout({ title, children }: { title: string; children: Re
             <span>TUM School of Engineering and Design</span>
             <span>Technical University of Munich</span>
           </span>
-          <Logo variant="black" width={64} height={33} />
+          <Logo variant="black" width="4rem" height="2.0625rem" />
         </button>
         <h1 className="mt-8 text-5xl font-bold tracking-tight">{title}</h1>
       </div>
