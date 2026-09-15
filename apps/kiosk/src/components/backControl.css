@@ -52,7 +52,7 @@
   /* It is anchored ON the corner, so it grows FROM the corner — scaling about the middle would
      push the brightest part of it off the screen. */
   transform-origin: 0 100%;
-  transition: transform 0.35s ease-out;
+  transition: transform 0.5s ease-out;
 }
 
 /*
@@ -70,18 +70,27 @@
   background: radial-gradient(
     ellipse 100% 100% at 0% 100%,
     var(--bc-scrim) 0%,
-    var(--bc-scrim) 34%,
-    transparent 82%
+    var(--bc-scrim) 30%,
+    color-mix(in srgb, var(--bc-scrim) 72%, transparent) 50%,
+    color-mix(in srgb, var(--bc-scrim) 34%, transparent) 68%,
+    transparent 84%
   );
 }
 
 /*
  * The light itself, over the scrim.
  *
- * Two stops rather than one: a bright core that reads as a deliberate object, and a long tail
- * that dissolves into the page so the edge of the control is never a visible line. The tail has
- * to end before the clip does, or the ellipse cuts the gradient and draws exactly the boundary
- * this is meant not to have.
+ * A LONG, EASED FALLOFF rather than two hard stops. The first version went core → mid → gone
+ * in three stops, and with the mid stop at a third of the radius it read as a bright disc with
+ * a fuzzy rim rather than as light: there was a visible ring where the mid stop sat. The stops
+ * below trace a smooth curve (roughly a squared cosine) from the corner out, so no single
+ * radius is a boundary. The tail still ends before the clip does, or the ellipse cuts the
+ * gradient and draws exactly the line this is meant not to have.
+ *
+ * And it rests DIMMER, so that a hand arriving is a real change. On the black pages the idle
+ * glow at half strength was already most of the way to its lit state — a hand in the room
+ * brightened it so little that nobody read it as a response. Now it idles faint, comes up
+ * clearly when someone is there, and goes to full only under the cursor.
  */
 .bc-home::after {
   content: "";
@@ -90,13 +99,19 @@
   background: radial-gradient(
     ellipse 100% 100% at 0% 100%,
     var(--bc-glow-core) 0%,
-    var(--bc-glow-mid) 32%,
-    transparent 76%
+    color-mix(in srgb, var(--bc-glow-core) 88%, transparent) 12%,
+    color-mix(in srgb, var(--bc-glow-core) 66%, transparent) 24%,
+    var(--bc-glow-mid) 36%,
+    color-mix(in srgb, var(--bc-glow-mid) 62%, transparent) 48%,
+    color-mix(in srgb, var(--bc-glow-mid) 34%, transparent) 60%,
+    color-mix(in srgb, var(--bc-glow-mid) 14%, transparent) 70%,
+    transparent 80%
   );
   /* Recessive until somebody is actually there. A bright corner on an unattended screen is
      chrome nobody asked for, and the showreel is the thing to be looking at. */
-  opacity: 0.55;
-  transition: opacity 0.35s ease-out;
+  opacity: 0.28;
+  /* Slow enough to read as light coming up, not as a switch. */
+  transition: opacity 0.7s ease-out;
 }
 
 /* Dark sections (research / projects / publications): white light, like a lamp off-frame. */
@@ -118,7 +133,7 @@
 
 /* A hand is in the room. */
 .bc-home.is-on::after {
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 /* The cursor is inside the ellipse. `gt-hover` is what the hand pointer applies; `is-hover` is
