@@ -21,7 +21,7 @@ import type { FaceResult, HandResult, Landmark, VisionResult } from "../apps/kio
 import { flightInput, steer, stopFlight } from "../apps/kiosk/src/lib/vision/flightInput";
 import { fallbackBox } from "../apps/kiosk/src/lib/vision/calibration";
 import { dragScrollVelocity } from "../apps/kiosk/src/lib/scrollGesture";
-import { fitReach, shrinkBox, isUsableBox, type ReachSample } from "../apps/kiosk/src/lib/vision/reachFit";
+import { fitReach, laps, shrinkBox, isUsableBox, type ReachSample } from "../apps/kiosk/src/lib/vision/reachFit";
 import { fitJitter, fitPinch, framesFor } from "../apps/kiosk/src/lib/vision/profile";
 import { interactionBox } from "../apps/kiosk/src/lib/vision/calibration";
 import { PinchDetector } from "../apps/kiosk/src/lib/vision/calibration";
@@ -682,6 +682,47 @@ function runFist(p: HandPointer, clock: { t: number }, score: number): boolean {
     const fit = fitReach(sweep({ reach: 2.0, shift: 1.1 }), ASPECT);
     ok("an off-centre sweep is not forced back to the middle",
       !!fit && near(fit.box.shiftFaces ?? 0, 1.1, 0.25), String(fit?.box.shiftFaces));
+  }
+
+  {
+    // The comfortable circle: the box is fitted INSIDE the movement, about the same centre.
+    const easy = sweep({ reach: 1.6, shift: 0.4 });
+    const full = fitReach(easy, ASPECT)!;
+    const fit = fitReach(easy, ASPECT, { comfort: 0.8 })!;
+    ok("a comfort factor shrinks the box", near(fit.box.widthFaces, full.box.widthFaces * 0.8, 0.02),
+      `${fit.box.widthFaces.toFixed(2)} vs ${full.box.widthFaces.toFixed(2)}`);
+    ok("...about its own centre", near(fit.box.shiftFaces ?? 0, full.box.shiftFaces ?? 0, 1e-9)
+      && near(fit.box.dropFaces, full.box.dropFaces, 1e-9));
+    // The point of it: with the box at 0.8 of the circle, a screen corner (5% inset) sits at
+    // about one radius from the centre — ON the circle the visitor found easy, not outside it.
+    const cornerRadii = Math.hypot(
+      (0.45 * fit.box.widthFaces) / (0.5 * full.box.widthFaces),
+      (0.44 * fit.box.heightFaces) / (0.5 * full.box.heightFaces),
+    );
+    ok("...so the screen's corners land on the traced circle", cornerRadii > 0.85 && cornerRadii < 1.05,
+      `${cornerRadii.toFixed(2)} radii`);
+    ok("a nonsense comfort is refused", fitReach(easy, ASPECT, { comfort: 0 }) === null);
+  }
+
+  {
+    // The finish line is laps, not extent. One lap of any size is one lap.
+    ok("one circle is one lap", near(laps(sweep({ reach: 1.2, n: 120 })), 1, 0.05),
+      laps(sweep({ reach: 1.2, n: 120 })).toFixed(2));
+    ok("a small circle counts the same as a big one",
+      near(laps(sweep({ reach: 0.5, n: 120 })), laps(sweep({ reach: 3, n: 120 })), 0.05));
+    const twice = [...sweep({ reach: 1.2, n: 120 }), ...sweep({ reach: 1.2, n: 120 })];
+    ok("twice round is two", near(laps(twice), 2, 0.1), laps(twice).toFixed(2));
+    // Half a circle and back again is a hand waving, not a hand going round.
+    const there = sweep({ reach: 1.2, n: 120 }).slice(0, 60);
+    const back = [...there].reverse();
+    ok("out and back along the same path is not a lap",
+      laps([...there, ...back]) < 0.1, laps([...there, ...back]).toFixed(2));
+    ok("a hand that never moved has gone nowhere", laps(sweep({ reach: 0, n: 100 })) === 0);
+    ok("too few frames to be a circle is zero", laps(sweep({ reach: 1, n: 10 })) === 0);
+    // A tracking glitch — one frame across the room — must not count as half a turn.
+    const glitch = sweep({ reach: 1.2, n: 120 });
+    glitch[60] = { ...glitch[60]!, u: glitch[60]!.u + 30, v: glitch[60]!.v - 30 };
+    ok("a single wild frame does not add a turn", laps(glitch) < 1.1, laps(glitch).toFixed(2));
   }
 
   ok("a sweep too short to mean anything is refused", fitReach(sweep({ reach: 2.2, n: 20 }), ASPECT) === null);

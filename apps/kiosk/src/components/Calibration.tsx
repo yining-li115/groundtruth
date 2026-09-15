@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activePointer } from "../lib/vision/handPointer";
 import { mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
-import { fitReach, shrinkBox, MIN_SAMPLES, type ReachSample } from "../lib/vision/reachFit";
+import { fitReach, laps, shrinkBox, MIN_SAMPLES, type ReachSample } from "../lib/vision/reachFit";
 import {
   PROFILE_VERSION,
   fitJitter,
@@ -26,8 +26,9 @@ import "./calibration.css";
  *
  * WHAT IT MEASURES, and what each one replaces:
  *
- *   1. reach   → the interaction box, in face widths, fitted to where this camera can actually
- *                see a hand rather than to where an arm can go
+ *   1. reach   → the interaction box, in face widths, fitted to an EASY circle the visitor
+ *                traces — the movement they find comfortable, not the one they can force —
+ *                and shrunk so the screen's corners land on that circle (`COMFORT`)
  *   2. stillness → the 1€ filter's cutoff and the dwell radius, chosen by replaying the real
  *                filter over this camera's real noise
  *   3. pinch   → this person's own open and closed clouds, and thresholds landed in the gap
@@ -71,8 +72,22 @@ type Phase =
  * trap someone forever; reaching one is a result, not a failure.
  */
 const LEAD_IN_MS = 1600;
-/** how much of the reach has to be covered before the sweep is a measurement (see `coverage`) */
+/** how many times round the circle has to go before it is a measurement (see `laps`) */
+const LAPS_NEEDED = 2;
 const SWEEP_CAP_MS = 30_000;
+/**
+ * How much of the traced circle the screen is mapped to.
+ *
+ * The circle is COMFORTABLE now, not maximal — see the sweep copy — and a box fitted to its
+ * bounding rectangle would put the screen's corners outside it: a corner of a rectangle is
+ * 1.4 radii from the centre of its inscribed circle, and 1.4 times a comfortable reach is a
+ * stretch. Shrinking the box to this fraction of the circle puts the corners ON the circle
+ * (0.8 x 1.41 x 0.9 ≈ 1.0 radii to the corner targets at 5% inset), so the whole screen sits
+ * inside a movement the visitor has already shown to be easy. The price is gain: a smaller box
+ * means the cursor moves further per centimetre of hand. The stillness step measures the
+ * result and sets the filter to match, so the price is paid where it can be seen.
+ */
+const COMFORT = 0.8;
 /** contiguous milliseconds of a genuinely still hand */
 const STILL_NEEDED_MS = 2200;
 const STILL_CAP_MS = 15_000;
@@ -279,25 +294,25 @@ export function Calibration({ onDone }: { onDone: () => void }) {
               faceW: face.w,
             });
           }
-          const cov = coverage(r.sweep);
+          const cov = Math.min(1, laps(r.sweep) / LAPS_NEEDED);
           setProgress(r.recording ? cov : 0);
           setNote(
             !r.recording
               ? ""
               : !tracked
                 ? "Keep your hand where the camera can see it."
-                : cov > 0.75
-                  ? "Almost — keep going all the way round."
+                : cov > 0.5 && cov < 1
+                  ? "Once more round."
                   : "",
           );
           if ((cov >= 1 && r.sweep.length >= MIN_SAMPLES) || elapsed > SWEEP_CAP_MS) {
             const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
-            const fit = fitReach(r.sweep, aspect);
+            const fit = fitReach(r.sweep, aspect, { comfort: COMFORT });
             if (!fit) {
               setNote(
                 r.sweep.length < MIN_SAMPLES
                   ? "The hand kept dropping out of view — try again, a little closer to the camera."
-                  : "That did not cover enough ground to measure. Try again, reaching further out.",
+                  : "That circle was too small to measure from. Once more, a little bigger — still easy.",
               );
               r.sweep = [];
               advance("seek");
@@ -505,38 +520,6 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   );
 }
 
-/**
- * How much of a reach a sweep has actually covered, 0..1 — the sweep step's progress bar, and
- * its finish line.
- *
- * Three conditions, and the score is the WORST of them, because a sweep that satisfies two is
- * not two thirds of a measurement. Going far in one direction says nothing about the other;
- * going far in both while tracing a diagonal line leaves the corners of the box unmeasured, and
- * the corners are the entire question. So: width, height, and having actually been all the way
- * round.
- */
-function coverage(sweep: ReachSample[]): number {
-  if (sweep.length < 20) return 0;
-  const us = sweep.map((s) => s.u);
-  const vs = sweep.map((s) => s.v);
-  const span = (a: number[]) => Math.max(...a) - Math.min(...a);
-  const cu = (Math.max(...us) + Math.min(...us)) / 2;
-  const cv = (Math.max(...vs) + Math.min(...vs)) / 2;
-  // Twelve sectors around the middle of the sweep; a sector counts once anything lands in it.
-  const bins = new Set<number>();
-  for (const s of sweep) {
-    const a = Math.atan2(s.v - cv, s.u - cu);
-    bins.add(Math.floor(((a + Math.PI) / (2 * Math.PI)) * 12) % 12);
-  }
-  // Targets are deliberately under a full reach (~4.4 x 2.9 face widths measured): the bar has
-  // to be reachable by somebody being careful, not only by somebody flinging an arm.
-  return Math.min(
-    bins.size / 12,
-    Math.min(1, span(us) / 2.6),
-    Math.min(1, span(vs) / 1.7),
-  );
-}
-
 /** RMS spread of a short run of positions — "is this hand actually still?" */
 function spread(points: Array<{ x: number; y: number }>): number {
   if (points.length < 4) return Number.POSITIVE_INFINITY;
@@ -649,8 +632,8 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   },
   sweep: {
     step: "1 of 4",
-    title: "Draw the biggest circle you can",
-    hint: "Take your time. Sweep all the way round — as far out, up and down as is comfortable. It ends when enough of your reach has been covered, not after a countdown.",
+    title: "Draw an easy circle, twice round",
+    hint: "No need to stretch. Move your hand in a relaxed circle in front of you — whatever size feels natural — and go round twice. The screen will be fitted to that.",
   },
   still: {
     step: "2 of 4",
@@ -670,7 +653,7 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   reach: {
     step: "4 of 4",
     title: "Touch all four corners",
-    hint: "Move the cursor into each dot. This is the part that proves the screen is all yours.",
+    hint: "Move the cursor into each dot. They should all sit inside the circle you drew — this is the part that proves it.",
   },
   done: { step: "", title: "Ready", hint: "" },
 };
