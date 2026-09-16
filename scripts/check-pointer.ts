@@ -311,6 +311,8 @@ console.log("\nhand pointer — edge cases\n");
   const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 2;
   let minX = Infinity;
   let maxX = -Infinity;
+  let armMin = Infinity;
+  let armMax = -Infinity;
   let pressed = false;
   for (let i = 0; i < 45; i += 1) {
     clock.t += STEP;
@@ -320,6 +322,11 @@ console.log("\nhand pointer — edge cases\n");
       clock.t,
     );
     if (st.pressed) pressed = true;
+    if (st.rawHeld && !pressed) {
+      // the 350ms between the hand closing and the press counting — where Enter shivered
+      armMin = Math.min(armMin, st.x);
+      armMax = Math.max(armMax, st.x);
+    }
     if (pressed && clock.t > 900) {
       // well past the 180ms timed freeze — this is the part that used to shiver
       minX = Math.min(minX, st.x);
@@ -327,6 +334,8 @@ console.log("\nhand pointer — edge cases\n");
     }
   }
   ok("the fist pressed", pressed);
+  ok("the cursor was already pinned while the press was still arming", armMax - armMin === 0,
+    `wandered ${((armMax - armMin) * 3840).toFixed(1)} px at 4K`);
   ok("the cursor did not move at all while it was held", maxX - minX === 0,
     `wandered ${((maxX - minX) * 3840).toFixed(1)} px at 4K`);
   // ...but a real drag is not a wobble: move the hand a long way and the cursor must follow.

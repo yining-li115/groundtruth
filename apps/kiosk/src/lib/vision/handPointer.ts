@@ -495,7 +495,18 @@ export class HandPointer {
     const rawHeld = pinching || fisting;
     // Audit: a raw latch that never becomes a press is the single most informative event in
     // the whole pipeline — it means the CAMERA saw the pinch and the POLICY threw it away.
-    if (rawHeld && !s.rawHeld) s.counts.rawLatches += 1;
+    if (rawHeld && !s.rawHeld) {
+      s.counts.rawLatches += 1;
+      // PIN FROM THE FIRST FRAME OF THE POSTURE, not from the press. The press is 350ms of
+      // debounce away, and those are the frames in which the hand has just closed and the
+      // landmarks are at their noisiest — so the cursor shivered on the Enter button while the
+      // ring filled. The aim is taken from before the hand began closing, exactly as the press
+      // would take it; if the posture turns out to be too short to be a press, the pin simply
+      // ends with it.
+      this.frozen = this.positionAt(Math.max(now - this.cfg.pressLookbackMs, this.settledAt));
+      this.pressLive = { x: s.liveX, y: s.liveY };
+      this.unpinned = false;
+    }
     // ...and its opposite: the raw posture ending while the debounce was still filling.
     if (!rawHeld && s.rawHeld && s.pressProgress > 0 && !s.pinched) {
       noteReject(
@@ -536,12 +547,18 @@ export class HandPointer {
       // drift a pinch causes, but applied blindly it also reaches into the travel that brought
       // the cursor here — so pinching the instant you arrive delivered the click to where you
       // came FROM. Measured: pinching immediately did nothing; waiting 200ms worked.
-      this.frozen = this.positionAt(
-        Math.max(now - this.cfg.pressLookbackMs, this.settledAt),
-      );
+      // The aim was already pinned when the posture began (see the raw latch above); a press
+      // that arrives with the hand still inside the hold radius keeps it. One that arrives
+      // after the hand moved off re-aims, so a slow, wandering close still lands where the hand
+      // is rather than where it was half a second ago.
+      if (this.unpinned) {
+        this.frozen = this.positionAt(
+          Math.max(now - this.cfg.pressLookbackMs, this.settledAt),
+        );
+        this.pressLive = { x: s.liveX, y: s.liveY };
+        this.unpinned = false;
+      }
       this.freezeUntil = now + this.cfg.pressFreezeMs;
-      this.pressLive = { x: s.liveX, y: s.liveY };
-      this.unpinned = false;
       // A deliberate click ends any dwell in progress — otherwise a slow, careful pinch fires
       // both, and the visitor gets two actions for one intention.
       this.dwellAnchor = null;
@@ -581,7 +598,7 @@ export class HandPointer {
       ) {
         this.unpinned = true;
       }
-      if (now < this.freezeUntil || (s.pinched && !this.unpinned)) {
+      if (now < this.freezeUntil || ((s.pinched || rawHeld) && !this.unpinned)) {
         s.x = this.frozen.x;
         s.y = this.frozen.y;
       } else {

@@ -34,7 +34,7 @@ import { DEFAULT_BOX, type BoxConfig } from "./calibration";
 
 /** Bump when the meaning of a field changes, so stored profiles from an older build are
  *  discarded rather than silently misread. */
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2; // 2: the pointing joint moved from the palm centre to the wrist
 
 export interface CameraFacts {
   /** `MediaDeviceInfo.deviceId` — the key a profile is stored under */

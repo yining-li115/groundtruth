@@ -251,21 +251,41 @@ export class FaceAnchor {
 }
 
 /**
- * Where the hand IS, for pointing purposes: the centre of the palm, not a fingertip.
+ * Where the hand IS, for pointing purposes: the WRIST. Not a fingertip, and no longer the
+ * palm triangle either.
  *
  * A fingertip is the intuitive choice and the wrong one. The fingers are what perform the
  * click, so a cursor tied to a fingertip lurches at the exact moment of selection — the
- * failure Vogel & Balakrishnan designed ThumbTrigger around on large displays. The palm
- * triangle (wrist and the two outer knuckles) is rigid, moves only when the whole hand
- * moves, and is the most reliably tracked part of the skeleton.
+ * failure Vogel & Balakrishnan designed ThumbTrigger around on large displays.
+ *
+ * The palm triangle (wrist plus the two outer knuckles) was the first answer, on the argument
+ * that it is rigid. It is rigid in a skeleton and not in a hand: closing a fist cups the palm,
+ * so both knuckles physically move, and the landmark model — now looking at a hand with most
+ * of its features folded away — re-estimates them with visibly more noise every frame. On the
+ * wall that was a cursor shivering under a hand held perfectly still, at exactly the moment a
+ * click was being made. The wrist is the one point that does not move when the fingers do:
+ * it sits where the hand meets the arm, the fist is made in front of it, not with it.
+ *
+ * `?point=palm` puts the triangle back, for comparing the two at the wall. The choice is read
+ * once, here, because this function is the single definition of "where the hand is" — the
+ * pointer, the calibration sweep and the reach test all go through it, so they cannot
+ * disagree about the answer.
  */
 export function palmCenter(lm: Landmark[] | undefined): { x: number; y: number } | null {
   const a = lm?.[JOINT.wrist];
-  const b = lm?.[JOINT.indexMcp];
-  const c = lm?.[JOINT.pinkyMcp];
-  if (!a || !b || !c) return null;
-  return { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
+  if (!a) return null;
+  if (POINT === "palm") {
+    const b = lm?.[JOINT.indexMcp];
+    const c = lm?.[JOINT.pinkyMcp];
+    if (!b || !c) return null;
+    return { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
+  }
+  return { x: a.x, y: a.y };
 }
+const POINT: "wrist" | "palm" = (() => {
+  if (typeof location === "undefined") return "wrist";
+  return new URLSearchParams(location.search).get("point") === "palm" ? "palm" : "wrist";
+})();
 
 /** Palm width in frame x-units — how big the hand is on the sensor, i.e. how much detail we have. */
 export function palmWidthNorm(lm: Landmark[] | undefined): number {
