@@ -302,6 +302,44 @@ console.log("\nhand pointer — edge cases\n");
 }
 
 {
+  console.log("\na held fist on a still hand is a still cursor");
+  const { p, clock } = fresh({ clickGesture: "fist" });
+  run(p, clock, 600, () => frame(hand(0.5, 0.7)));
+  // Close the fist and hold it for a second and a half, with the landmark shiver a closed
+  // hand actually produces: a few thousandths of the frame, every frame, in a random direction.
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 2;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let pressed = false;
+  for (let i = 0; i < 45; i += 1) {
+    clock.t += STEP;
+    const st = p.update(
+      frame(hand(0.5 + rnd() * 0.006, 0.7 + rnd() * 0.006, 1.44, "Closed_Fist", 0.9)),
+      ASPECT,
+      clock.t,
+    );
+    if (st.pressed) pressed = true;
+    if (pressed && clock.t > 900) {
+      // well past the 180ms timed freeze — this is the part that used to shiver
+      minX = Math.min(minX, st.x);
+      maxX = Math.max(maxX, st.x);
+    }
+  }
+  ok("the fist pressed", pressed);
+  ok("the cursor did not move at all while it was held", maxX - minX === 0,
+    `wandered ${((maxX - minX) * 3840).toFixed(1)} px at 4K`);
+  // ...but a real drag is not a wobble: move the hand a long way and the cursor must follow.
+  let followed = false;
+  for (let i = 0; i < 20; i += 1) {
+    clock.t += STEP;
+    const st = p.update(frame(hand(0.5 - i * 0.01, 0.7, 1.44, "Closed_Fist", 0.9)), ASPECT, clock.t);
+    if (Math.abs(st.x - st.liveX) < 0.02 && i > 10) followed = true;
+  }
+  ok("once the hand has genuinely moved, the cursor follows again", followed);
+}
+
+{
   console.log("\none visitor's cursor never becomes the next one's");
   const { p, clock } = fresh();
   run(p, clock, 600, () => frame(hand(0.66, 0.7)));

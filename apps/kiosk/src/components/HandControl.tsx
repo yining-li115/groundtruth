@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useHandPointer } from "../lib/vision/handPointer";
+import { HOLD_RADIUS, useHandPointer } from "../lib/vision/handPointer";
 import { flightInput, steer, stopFlight } from "../lib/vision/flightInput";
 import { setCursorPosition } from "../lib/cursorPosition";
 import { dragScrollVelocity, scrollableAt, scrollTarget } from "../lib/scroll";
@@ -54,8 +54,11 @@ import "./handControl.css";
  * Measured on the research page: lean 0.04, release, and the topic changed. Whatever a
  * visitor is doing when they lean on a held hand, they are not asking to activate something,
  * so the gesture stops counting as a tap well before it starts counting as a scroll.
+ *
+ * THE SAME NUMBER pins the cursor: below it the pointer keeps the cursor at the press position
+ * (`holdRadius` in handPointer.ts), so a held fist that is not a drag does not shiver.
  */
-const DRAG_START = 0.025;
+const DRAG_START = HOLD_RADIUS;
 /** How far the fingers must close, on the 0..1 scale toward the threshold, to count as a real
  *  attempt rather than a hand relaxing. */
 const NEAR_MISS_DEPTH = 0.55;

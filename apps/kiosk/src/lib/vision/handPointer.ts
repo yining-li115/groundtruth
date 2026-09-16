@@ -63,8 +63,25 @@ export interface PointerConfig {
   /** pinch trigger points, as aperture/palm ratios — fitted to recorded data, see calibration.ts */
   pinchOn: number;
   pinchOff: number;
-  /** how long the cursor is pinned at the press position, in ms */
+  /** how long the cursor is pinned at the press position, in ms — the MINIMUM; see `holdRadius` */
   pressFreezeMs: number;
+  /**
+   * How far the hand may move, in screen fractions, while a click posture is held before the
+   * cursor is let go of the press position.
+   *
+   * The freeze used to be a timer alone: 180ms, and then the cursor went back to following the
+   * hand while the fist was still closed. And a closed fist is the NOISIEST thing the landmark
+   * model tracks — the knuckles and wrist the position is read from are re-estimated every
+   * frame from a hand with most of its features folded away — so a visitor holding perfectly
+   * still watched the cursor shiver under their closed hand. With `beta` set high enough to
+   * keep up with a real move, the 1€ filter reads that noise as speed and opens up for it.
+   *
+   * A held click that has not travelled this far is, by the interaction's own rule, not a
+   * drag (`DRAG_START` in HandControl is the same number) — so there is no reason for the
+   * cursor to move at all. It stays pinned until the hand has genuinely gone somewhere, and
+   * then follows, so pinch-and-drag is unchanged.
+   */
+  holdRadius: number;
   /**
    * How far BACK the pinned position is taken from, in ms.
    *
@@ -97,12 +114,20 @@ export interface PointerConfig {
   leaveMs: number;
 }
 
+/**
+ * How far a held hand may wander before the cursor stops being pinned to the press — the same
+ * distance `HandControl` uses to decide a press has become a drag, exported so the two cannot
+ * drift apart: a cursor that moves while the interaction says "not a drag" is just jitter.
+ */
+export const HOLD_RADIUS = 0.025;
+
 export const DEFAULT_POINTER: PointerConfig = {
   oneEuro: { ...DEFAULT_ONE_EURO },
   box: { ...DEFAULT_BOX },
   pinchOn: PINCH_ON,
   pinchOff: PINCH_OFF,
   pressFreezeMs: 180,
+  holdRadius: HOLD_RADIUS,
   pressLookbackMs: 420,
   /**
    * OFF. Dwell — select by resting on a target — is Apple's own documented fallback and it
@@ -303,6 +328,9 @@ export class HandPointer {
   private goneSince = 0;
   private freezeUntil = 0;
   private frozen = { x: 0.5, y: 0.5 };
+  /** where the LIVE position was at the press, and whether it has since left `holdRadius` */
+  private pressLive = { x: 0.5, y: 0.5 };
+  private unpinned = true;
   /** recent smoothed positions, so a press can reach back past its own gesture */
   private history: Array<{ t: number; x: number; y: number }> = [];
   private frames = 0;
@@ -512,6 +540,8 @@ export class HandPointer {
         Math.max(now - this.cfg.pressLookbackMs, this.settledAt),
       );
       this.freezeUntil = now + this.cfg.pressFreezeMs;
+      this.pressLive = { x: s.liveX, y: s.liveY };
+      this.unpinned = false;
       // A deliberate click ends any dwell in progress — otherwise a slow, careful pinch fires
       // both, and the visitor gets two actions for one intention.
       this.dwellAnchor = null;
@@ -544,7 +574,14 @@ export class HandPointer {
       if (moved > 0.004) this.settledAt = now;
       s.liveX = f.x;
       s.liveY = f.y;
-      if (now < this.freezeUntil) {
+      // Let go of the pin once the hand has genuinely travelled — one way, for this press.
+      if (
+        !this.unpinned &&
+        Math.hypot(f.x - this.pressLive.x, f.y - this.pressLive.y) > this.cfg.holdRadius
+      ) {
+        this.unpinned = true;
+      }
+      if (now < this.freezeUntil || (s.pinched && !this.unpinned)) {
         s.x = this.frozen.x;
         s.y = this.frozen.y;
       } else {
