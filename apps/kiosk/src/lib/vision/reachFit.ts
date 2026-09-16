@@ -83,12 +83,10 @@ export const MIN_SAMPLES = 60;
  * the default, which at least fails the way the wall has always failed rather than in a new way.
  */
 /*
- * The minimums came down with the easy-circle calibration (1.4 → 1.2 wide, 1.0 → 0.8 tall):
- * they are checked on the box AFTER the comfort shrink, and a relaxed circle traced by a small
- * person, flattened into the ellipse most people draw when they are not trying, sits right
- * around a face high once 80% of it is taken. That is a small box and a high gain, but it is
- * the visitor's own movement; the stillness step that follows measures what the gain does to
- * the noise and sets the filter for it.
+ * Minimums of 1.2 faces wide and 0.8 tall: a small person holding four comfortable corners,
+ * not stretching, sits around a face high. That is a small box and a high gain, but it is the
+ * visitor's own movement; the stillness step that follows measures what the gain does to the
+ * noise and sets the filter for it.
  */
 const LIMITS = {
   width: { min: 1.2, max: 9 },
@@ -123,20 +121,11 @@ export interface ReachFit {
  * the way back out, so the conversion has to be undone here or every fitted box comes out
  * stretched by 16/9.
  *
- * `comfort` scales the fitted extent about its own centre, 0..1. The sweep is an easy circle
- * now rather than a maximal reach, so the box is deliberately made SMALLER than the movement:
- * a rectangle inscribed in the traced circle, not the rectangle around it, which is what puts
- * the screen's corners inside a reach the visitor has already shown to be comfortable. The
- * centre and the clipping verdicts are unaffected — they are facts about where the camera can
- * see, and shrinking the box changes nothing about that.
+ * No longer what the calibration screen uses — that is `fitCorners` — but kept: it is the
+ * fit for any recorded movement, which the harness and the hand lab still have a use for.
  */
-export function fitReach(
-  samples: ReachSample[],
-  aspect: number,
-  { comfort = 1 }: { comfort?: number } = {},
-): ReachFit | null {
+export function fitReach(samples: ReachSample[], aspect: number): ReachFit | null {
   if (samples.length < MIN_SAMPLES || !Number.isFinite(aspect) || aspect <= 0) return null;
-  if (!(comfort > 0 && comfort <= 1)) return null;
 
   const faceW = quantile(
     samples.map((s) => s.faceW).filter((w) => w > 0),
@@ -169,17 +158,6 @@ export function fitReach(
   if (clippedBy.top) vLo += (EDGE_MARGIN - yLo) / faceW;
   if (clippedBy.bottom) vHi -= (yHi - (1 - EDGE_MARGIN)) / faceW;
 
-  // Shrink about the centre, AFTER the edge correction: the clipping is about where the frame
-  // ends and has to be judged on the real extent, not the reduced one.
-  if (comfort < 1) {
-    const cu = (uLo + uHi) / 2;
-    const cv = (vLo + vHi) / 2;
-    uLo = cu + (uLo - cu) * comfort;
-    uHi = cu + (uHi - cu) * comfort;
-    vLo = cv + (vLo - cv) * comfort;
-    vHi = cv + (vHi - cv) * comfort;
-  }
-
   const widthFaces = uHi - uLo;
   // `v` is in face-width units; `heightFaces` gets multiplied by the aspect downstream.
   const heightFaces = (vHi - vLo) / aspect;
@@ -203,58 +181,90 @@ export function fitReach(
 }
 
 /**
- * How many times round the hand has gone — the sweep step's progress bar, and its finish line.
+ * Fit a box to FOUR HELD POSITIONS — the visitor's hand at a comfortable top-left, top-right,
+ * bottom-right and bottom-left — instead of to a sweep.
  *
- * This replaced a coverage score, and the reason is in the review that asked for it: "the
- * circle is exhausting, and sometimes one is not enough". The old finish line was three
- * conditions at once — twelve sectors visited, AND a width of 2.6 face widths, AND a height of
- * 1.7 — so a careful, comfortable circle failed on extent, and the visitor was told to keep
- * going without being told what was missing. Worse, the WIDTH condition was the instruction:
- * "draw the biggest circle you can" was there to make the extent conditions passable, and
- * that is what made it tiring. A measurement that requires people to strain is measuring the
- * strain.
+ * This replaced the circle, and the review that asked for it had the argument right: a box is
+ * a rectangle, a rectangle is its corners, and nothing else in the calibration needs a sweep.
+ * The circle existed only to produce the same four extents from a cloud of moving samples, and
+ * it produced them badly — a moving hand at the limit of its reach is the least tracked thing
+ * the camera sees, and at any distance inside a metre the arc ran straight out of the frame.
+ * A held hand is a still sample, taken where the visitor has stopped, with time to check it is
+ * actually in shot before it is kept.
  *
- * Now the only thing asked for is a closed loop, twice. The extent is whatever the visitor
- * found comfortable, and the screen is fitted to THAT (see `COMFORT`). Angular travel is summed
- * around the sweep's own centroid, in whole revolutions, ignoring any frame that jumps more
- * than a quarter turn (a tracking glitch, not a hand) and any sample sitting so close to the
- * centre that its angle is noise. Signed, so a to-and-fro cancels. Recomputed from scratch each frame, which is cheap at the
- * sizes involved and avoids the running-centroid problem where the first lap is measured
- * against a centre that has not yet been found.
+ * Label-free on purpose: the four samples are sorted by where they ARE, so the order they
+ * were collected in and the mirror between the camera and the screen cannot get into the
+ * answer. Left of the box is the mean of the two smallest `u`, right the two largest, and so
+ * on — a mean rather than an extreme so a single hand that stopped a little short does not
+ * set the whole edge.
+ *
+ * `inset` is where the corner targets sit on the screen (5% in from the edge), so the held
+ * positions map to THOSE points rather than to the very corner: the box is the held span
+ * divided by (1 − 2·inset), about the same centre.
  */
-export function laps(sweep: ReachSample[]): number {
-  if (sweep.length < 15) return 0;
-  let cu = 0;
-  let cv = 0;
-  for (const s of sweep) {
-    cu += s.u;
-    cv += s.v;
+export function fitCorners(
+  samples: ReachSample[],
+  aspect: number,
+  { inset = 0.05 }: { inset?: number } = {},
+): ReachFit | null {
+  if (samples.length !== 4 || !Number.isFinite(aspect) || aspect <= 0) return null;
+  if (!(inset >= 0 && inset < 0.4)) return null;
+  const faceW = quantile(
+    samples.map((s) => s.faceW).filter((w) => w > 0),
+    0.5,
+  );
+  if (!(faceW > 0)) return null;
+  const two = (vals: number[], high: boolean): number => {
+    const a = [...vals].sort((m, n) => m - n);
+    const pick = high ? a.slice(2) : a.slice(0, 2);
+    return (pick[0]! + pick[1]!) / 2;
+  };
+  const span = 1 - 2 * inset;
+  const grow = (lo: number, hi: number): [number, number] => {
+    const c = (lo + hi) / 2;
+    const half = (hi - lo) / 2 / span;
+    return [c - half, c + half];
+  };
+  let [uLo, uHi] = grow(two(samples.map((s) => s.u), false), two(samples.map((s) => s.u), true));
+  let [vLo, vHi] = grow(two(samples.map((s) => s.v), false), two(samples.map((s) => s.v), true));
+
+  // The same frame-edge rule as a sweep: a held position inside the margin is one the camera
+  // was about to lose, and the box edge must not be put there.
+  const xs = samples.map((s) => s.x);
+  const ys = samples.map((s) => s.y);
+  const xLo = Math.min(...xs);
+  const xHi = Math.max(...xs);
+  const yLo = Math.min(...ys);
+  const yHi = Math.max(...ys);
+  const clippedBy = {
+    left: xLo < EDGE_MARGIN,
+    right: xHi > 1 - EDGE_MARGIN,
+    top: yLo < EDGE_MARGIN,
+    bottom: yHi > 1 - EDGE_MARGIN,
+  };
+  if (clippedBy.left) uLo += (EDGE_MARGIN - xLo) / faceW;
+  if (clippedBy.right) uHi -= (xHi - (1 - EDGE_MARGIN)) / faceW;
+  if (clippedBy.top) vLo += (EDGE_MARGIN - yLo) / faceW;
+  if (clippedBy.bottom) vHi -= (yHi - (1 - EDGE_MARGIN)) / faceW;
+
+  const widthFaces = uHi - uLo;
+  const heightFaces = (vHi - vLo) / aspect;
+  if (
+    !(widthFaces >= LIMITS.width.min && widthFaces <= LIMITS.width.max) ||
+    !(heightFaces >= LIMITS.height.min && heightFaces <= LIMITS.height.max)
+  ) {
+    return null;
   }
-  cu /= sweep.length;
-  cv /= sweep.length;
-  // Ignore samples inside a tenth of the sweep's own typical radius: their angle is undefined.
-  let rSum = 0;
-  for (const s of sweep) rSum += Math.hypot(s.u - cu, s.v - cv);
-  const rMin = (rSum / sweep.length) * 0.1;
-  let travelled = 0;
-  let prev = Number.NaN;
-  for (const s of sweep) {
-    const du = s.u - cu;
-    const dv = s.v - cv;
-    if (Math.hypot(du, dv) < rMin) continue;
-    const a = Math.atan2(dv, du);
-    if (Number.isFinite(prev)) {
-      let d = a - prev;
-      if (d > Math.PI) d -= 2 * Math.PI;
-      else if (d < -Math.PI) d += 2 * Math.PI;
-      // SIGNED, so that going out and coming back along the same path sums to nothing: a
-      // hand waving side to side is not going round, however long it does it. Either
-      // direction round is fine — the sign only has to be consistent within one sweep.
-      if (Math.abs(d) < Math.PI / 2) travelled += d;
-    }
-    prev = a;
-  }
-  return Math.abs(travelled) / (2 * Math.PI);
+  return {
+    box: {
+      widthFaces,
+      heightFaces,
+      dropFaces: (vLo + vHi) / 2 / aspect,
+      shiftFaces: (uLo + uHi) / 2,
+    },
+    samples: 4,
+    clippedBy,
+  };
 }
 
 /**

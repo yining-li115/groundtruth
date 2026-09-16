@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activePointer } from "../lib/vision/handPointer";
 import { mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
-import { fitReach, laps, shrinkBox, MIN_SAMPLES, type ReachSample } from "../lib/vision/reachFit";
+import { fitCorners, shrinkBox, type ReachSample } from "../lib/vision/reachFit";
 import {
   PROFILE_VERSION,
   fitJitter,
@@ -26,9 +26,9 @@ import "./calibration.css";
  *
  * WHAT IT MEASURES, and what each one replaces:
  *
- *   1. reach   → the interaction box, in face widths, fitted to an EASY circle the visitor
- *                traces — the movement they find comfortable, not the one they can force —
- *                and shrunk so the screen's corners land on that circle (`COMFORT`)
+ *   1. reach   → the interaction box, in face widths, fitted to four COMFORTABLE positions
+ *                the visitor holds a hand at — toward each corner, as far as is easy, and
+ *                checked to be in shot before it is kept (`fitCorners`)
  *   2. stillness → the 1€ filter's cutoff and the dwell radius, chosen by replaying the real
  *                filter over this camera's real noise
  *   3. pinch   → this person's own open and closed clouds, and thresholds landed in the gap
@@ -49,7 +49,7 @@ import "./calibration.css";
 type Phase =
   | "resolving" // finding the camera and any stored profile — renders nothing
   | "seek" // waiting for a face and a hand
-  | "sweep" // record the reachable region
+  | "corners" // hold a hand toward each of the four corners — the reach, one edge at a time
   | "still" // record the noise floor
   | "open" // record the open-hand cloud
   | "close" // record the closing cloud
@@ -61,33 +61,39 @@ type Phase =
  *
  * Each step used to run a fixed clock that started the instant a hand was seen — which is the
  * instant BEFORE the visitor has read what to do. The progress bar filled while somebody was
- * still looking at the sentence telling them to sweep, and the step ended having recorded a
+ * still looking at the sentence telling them what to do, and the step ended having recorded a
  * hand held politely still. A measurement that runs on a timer measures the reading speed of
  * whoever is standing there.
  *
  * So every step now waits out a lead-in first (long enough to read one short line), then
- * records until the THING IT NEEDS has happened — enough of the reach covered, enough
- * contiguous stillness, enough pinches. The bar shows that, not elapsed time, so it stops
+ * records until the THING IT NEEDS has happened — four corners held, enough contiguous
+ * stillness, enough pinches. The bar shows that, not elapsed time, so it stops
  * being a deadline and starts being feedback. The caps below exist only so a step cannot
  * trap someone forever; reaching one is a result, not a failure.
  */
 const LEAD_IN_MS = 1600;
-/** how many times round the circle has to go before it is a measurement (see `laps`) */
-const LAPS_NEEDED = 2;
-const SWEEP_CAP_MS = 30_000;
 /**
- * How much of the traced circle the screen is mapped to.
- *
- * The circle is COMFORTABLE now, not maximal — see the sweep copy — and a box fitted to its
- * bounding rectangle would put the screen's corners outside it: a corner of a rectangle is
- * 1.4 radii from the centre of its inscribed circle, and 1.4 times a comfortable reach is a
- * stretch. Shrinking the box to this fraction of the circle puts the corners ON the circle
- * (0.8 x 1.41 x 0.9 ≈ 1.0 radii to the corner targets at 5% inset), so the whole screen sits
- * inside a movement the visitor has already shown to be easy. The price is gain: a smaller box
- * means the cursor moves further per centimetre of hand. The stillness step measures the
- * result and sets the filter to match, so the price is paid where it can be seen.
+ * THE CORNERS, NOT A CIRCLE. The reach used to be measured by having the visitor draw a circle
+ * and fitting a box to the cloud. The review that ended that had the argument right: nothing
+ * in the calibration needs a sweep. The box is a rectangle, a rectangle is its four corners,
+ * and the circle was just a slow and tiring way of producing the same four numbers from the
+ * least reliable frames the camera sees — a hand moving at the limit of its reach, which at
+ * any distance inside a metre ran straight out of the picture. So the visitor now holds a
+ * hand toward each corner instead, as far that way as is comfortable, and each one is a still
+ * sample taken only once the hand has stopped AND is safely inside the frame.
  */
-const COMFORT = 0.8;
+/** how long the hand has to be still at a corner before that corner is taken */
+const CORNER_HOLD_MS = 900;
+/** RMS wander in RAW frame units below which a hand at a corner counts as held (≈1% of the frame) */
+const CORNER_STILL_TOLERANCE = 0.01;
+/**
+ * How far inside the picture a held corner has to be, as a fraction of the frame. Wider than
+ * `EDGE_MARGIN` in the fit on purpose: the fit's margin is where tracking degrades, this one is
+ * where the visitor is TOLD to come back before the sample is ever taken.
+ */
+const FRAME_MARGIN = 0.08;
+/** a beat between one corner being taken and the next being asked for */
+const CORNER_BEAT_MS = 700;
 /** contiguous milliseconds of a genuinely still hand */
 const STILL_NEEDED_MS = 2200;
 const STILL_CAP_MS = 15_000;
@@ -103,12 +109,15 @@ const STILL_TOLERANCE = 0.02;
 /** How far from a corner target the cursor counts as having arrived, in screen fractions. */
 const REACH_RADIUS = 0.09;
 /** Corner targets, inset from the very edge — the last few percent belong to nothing. */
+const CORNER_INSET = 0.05;
 const CORNERS = [
-  { id: "tl", x: 0.05, y: 0.06 },
-  { id: "tr", x: 0.95, y: 0.06 },
-  { id: "bl", x: 0.05, y: 0.94 },
-  { id: "br", x: 0.95, y: 0.94 },
+  { id: "tl", x: CORNER_INSET, y: 0.06, name: "top-left" },
+  { id: "tr", x: 1 - CORNER_INSET, y: 0.06, name: "top-right" },
+  { id: "bl", x: CORNER_INSET, y: 0.94, name: "bottom-left" },
+  { id: "br", x: 1 - CORNER_INSET, y: 0.94, name: "bottom-right" },
 ];
+/** The order the corners are asked for in step 1: round the screen, not across it. */
+const CORNER_ORDER = [CORNERS[0]!, CORNERS[1]!, CORNERS[3]!, CORNERS[2]!];
 /** How much to give up when a corner cannot be held, and how many times to try. */
 const SHRINK = 0.88;
 const MAX_RETRIES = 2;
@@ -142,7 +151,10 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   // Everything the recording collects. Refs, not state: this fills at the camera's frame rate
   // and re-rendering the tree sixty times a second would be its own performance problem.
   const rec = useRef({
-    sweep: [] as ReachSample[],
+    corners: [] as ReachSample[],
+    cornerIdx: 0,
+    /** raw-frame positions of the hand over the last few frames, for the corner hold */
+    recentRaw: [] as ReachSample[],
     still: [] as Array<{ x: number; y: number; t: number }>,
     open: [] as number[],
     close: [] as number[],
@@ -246,6 +258,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       r.recording = false;
       r.held = 0;
       r.recent = [];
+      r.recentRaw = [];
       r.ratioMax = 0;
       r.closed = false;
       r.cycles = 0;
@@ -276,56 +289,96 @@ export function Calibration({ onDone }: { onDone: () => void }) {
 
       switch (current) {
         case "seek": {
-          // Both, and steadily: a sweep recorded against a face the detector is still finding
-          // is a sweep measured against a moving ruler.
-          if (tracked && s.present) advance("sweep");
+          // Both, and steadily: a corner recorded against a face the detector is still finding
+          // is a corner measured against a moving ruler.
+          if (tracked && s.present) advance("corners");
           break;
         }
 
-        case "sweep": {
+        case "corners": {
           const elapsed = now - phaseStart;
           r.recording = elapsed >= LEAD_IN_MS;
-          if (r.recording && fresh && tracked && palm && face) {
-            r.sweep.push({
+          const target = CORNER_ORDER[r.cornerIdx];
+          if (!target) break;
+          // Inside the picture, with room to spare? A hand out here is one the camera is about
+          // to lose, and it is told so BEFORE anything is recorded.
+          const inShot =
+            !!palm &&
+            palm.x > FRAME_MARGIN &&
+            palm.x < 1 - FRAME_MARGIN &&
+            palm.y > FRAME_MARGIN &&
+            palm.y < 1 - FRAME_MARGIN;
+          if (r.recording && fresh && tracked && palm && face && inShot) {
+            r.recentRaw.push({
               u: (palm.x - face.cx) / face.w,
               v: (palm.y - face.cy) / face.w,
               x: palm.x,
               y: palm.y,
               faceW: face.w,
             });
+            if (r.recentRaw.length > 12) r.recentRaw.shift();
+            // Stillness in RAW frame units — the mapping is the thing being measured, so it
+            // cannot be what "still" is judged through.
+            if (spread(r.recentRaw) < CORNER_STILL_TOLERANCE) r.held += 1000 / Math.max(10, r.fps);
+            else r.held = 0;
+          } else if (r.recording) {
+            r.held = 0;
+            r.recentRaw = [];
           }
-          const cov = Math.min(1, laps(r.sweep) / LAPS_NEEDED);
-          setProgress(r.recording ? cov : 0);
+          setProgress(
+            r.recording
+              ? Math.min(1, (r.cornerIdx + Math.min(1, r.held / CORNER_HOLD_MS)) / CORNER_ORDER.length)
+              : 0,
+          );
           setNote(
             !r.recording
               ? ""
               : !tracked
                 ? "Keep your hand where the camera can see it."
-                : cov > 0.5 && cov < 1
-                  ? "Once more round."
-                  : "",
+                : !inShot
+                  ? "Too far — the hand is at the edge of the picture. Come back in a little and hold there."
+                  : r.held === 0 && r.recentRaw.length > 6
+                    ? "Hold it still…"
+                    : "",
           );
-          if ((cov >= 1 && r.sweep.length >= MIN_SAMPLES) || elapsed > SWEEP_CAP_MS) {
-            const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
-            const fit = fitReach(r.sweep, aspect, { comfort: COMFORT });
-            if (!fit) {
-              setNote(
-                r.sweep.length < MIN_SAMPLES
-                  ? "The hand kept dropping out of view — try again, a little closer to the camera."
-                  : "That circle was too small to measure from. Once more, a little bigger — still easy.",
-              );
-              r.sweep = [];
-              advance("seek");
-              break;
+          if (r.held >= CORNER_HOLD_MS && r.recentRaw.length >= 4) {
+            // The corner is the mean of the held run, not its last frame.
+            const n = r.recentRaw.length;
+            const mean = r.recentRaw.reduce(
+              (a, p) => ({ u: a.u + p.u / n, v: a.v + p.v / n, x: a.x + p.x / n, y: a.y + p.y / n, faceW: a.faceW + p.faceW / n }),
+              { u: 0, v: 0, x: 0, y: 0, faceW: 0 },
+            );
+            r.corners.push(mean);
+            r.cornerIdx += 1;
+            r.held = 0;
+            r.recentRaw = [];
+            setReached(r.corners.map((_, i) => CORNER_ORDER[i]!.id));
+            // A beat, so the next instruction can be read before its hold starts counting.
+            phaseStart = now - LEAD_IN_MS + CORNER_BEAT_MS;
+            r.recording = false;
+            if (r.cornerIdx >= CORNER_ORDER.length) {
+              const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
+              const fit = fitCorners(r.corners, aspect, { inset: CORNER_INSET });
+              if (!fit) {
+                setNote(
+                  "Those four were too close together to measure from. Once more, a little further apart — still easy.",
+                );
+                r.corners = [];
+                r.cornerIdx = 0;
+                setReached([]);
+                advance("seek");
+                break;
+              }
+              r.box = fit.box;
+              r.clippedBy = fit.clippedBy;
+              // Apply it immediately and WITHOUT saving: everything after this — the noise
+              // floor, the corner test — has to be measured through the mapping that will
+              // actually ship, not through the default it is replacing.
+              applyProfile(provisional(r.box, fit.clippedBy, r), false);
+              setNote("");
+              setReached([]);
+              advance("still");
             }
-            r.box = fit.box;
-            r.clippedBy = fit.clippedBy;
-            // Apply it immediately and WITHOUT saving: everything after this — the noise floor,
-            // the corner test — has to be measured through the mapping that will actually ship,
-            // not through the default it is replacing.
-            applyProfile(provisional(r.box, fit.clippedBy, r), false);
-            setNote("");
-            advance("still");
           }
           break;
         }
@@ -414,7 +467,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       }
 
       setRecording(r.recording);
-      drawPreview(canvasRef.current, r, s.box, current);
+      drawPreview(canvasRef.current, r, s.box, current, palm);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
@@ -451,7 +504,9 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   const restart = useCallback(() => {
     rec.current = {
       ...rec.current,
-      sweep: [],
+      corners: [],
+      cornerIdx: 0,
+      recentRaw: [],
       still: [],
       open: [],
       close: [],
@@ -474,6 +529,8 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   if (phase === "resolving") return null;
 
   const copy = COPY[phase];
+  const cornerName = CORNER_ORDER[rec.current.cornerIdx]?.name ?? "";
+  const title = phase === "corners" ? `Move your hand toward the ${cornerName}` : copy.title;
   return (
     <div className="cal" role="dialog" aria-label="Set up hand control">
       <div className="cal-frame">
@@ -482,7 +539,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
 
       <div className="cal-body">
         <span className="cal-step">{copy.step}</span>
-        <h1 className="cal-title">{copy.title}</h1>
+        <h1 className="cal-title">{title}</h1>
         <p className="cal-hint">{note || copy.hint}</p>
 
         {phase !== "done" && phase !== "reach" && phase !== "seek" && (
@@ -495,11 +552,13 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         {phase === "done" && result && <Summary profile={result} />}
       </div>
 
-      {phase === "reach" &&
+      {(phase === "reach" || phase === "corners") &&
         CORNERS.map((c) => (
           <div
             key={c.id}
-            className={`cal-corner ${reached.includes(c.id) ? "is-on" : ""}`}
+            className={`cal-corner ${reached.includes(c.id) ? "is-on" : ""} ${
+              phase === "corners" && CORNER_ORDER[rec.current.cornerIdx]?.id === c.id ? "is-next" : ""
+            }`}
             style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%` }}
           />
         ))}
@@ -532,7 +591,7 @@ function spread(points: Array<{ x: number; y: number }>): number {
 
 /** A profile from whatever has been measured so far. Everything unmeasured keeps its default. */
 function build(r: {
-  sweep: ReachSample[];
+  corners: ReachSample[];
   still: Array<{ x: number; y: number; t: number }>;
   open: number[];
   close: number[];
@@ -630,10 +689,10 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
     title: "Stand where you would stand",
     hint: "Raise one hand so the camera can see both you and it.",
   },
-  sweep: {
+  corners: {
     step: "1 of 4",
-    title: "Draw an easy circle, twice round",
-    hint: "No need to stretch. Move your hand in a relaxed circle in front of you — whatever size feels natural — and go round twice. The screen will be fitted to that.",
+    title: "Move your hand toward the top-left",
+    hint: "As far that way as is comfortable — no need to stretch — and hold it there for a moment. Keep it inside the camera picture. The screen will be fitted to the four places you hold.",
   },
   still: {
     step: "2 of 4",
@@ -653,24 +712,25 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   reach: {
     step: "4 of 4",
     title: "Touch all four corners",
-    hint: "Move the cursor into each dot. They should all sit inside the circle you drew — this is the part that proves it.",
+    hint: "Move the cursor into each dot — the same four places you just held your hand. This is the part that proves it.",
   },
   done: { step: "", title: "Ready", hint: "" },
 };
 
 /**
- * The live picture of what is being measured: the camera frame, the face the scale comes from,
- * the sweep so far, and the box that has been fitted to it.
+ * The live picture of what is being measured: the camera frame, the margin a held hand must
+ * stay inside, the corners taken so far, and the box that has been fitted to them.
  *
  * Not decoration. Calibration is otherwise a black box that asks for arm-waving and then claims
- * success, and the two ways it goes wrong — a sweep that never reached, a box the frame edge cut
- * short — are both immediately obvious here and invisible in a progress bar.
+ * success, and the two ways it goes wrong — a hand held at the edge of the picture, a box the
+ * frame edge cut short — are both immediately obvious here and invisible in a progress bar.
  */
 function drawPreview(
   canvas: HTMLCanvasElement | null,
-  r: { sweep: ReachSample[] },
+  r: { corners: ReachSample[]; recentRaw: ReachSample[] },
   box: { x0: number; y0: number; x1: number; y1: number } | null,
   phase: Phase,
+  hand: { x: number; y: number } | null,
 ): void {
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
@@ -682,13 +742,29 @@ function drawPreview(
   ctx.lineWidth = 1;
   ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
 
-  // the sweep, mirrored so it reads as the visitor's own movement rather than the camera's view
-  if (r.sweep.length) {
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    for (let i = Math.max(0, r.sweep.length - 400); i < r.sweep.length; i += 1) {
-      const s = r.sweep[i]!;
-      ctx.fillRect((1 - s.x) * w - 1, s.y * h - 1, 2, 2);
-    }
+  // the margin the hand has to stay inside while a corner is held
+  if (phase === "corners") {
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(FRAME_MARGIN * w, FRAME_MARGIN * h, (1 - 2 * FRAME_MARGIN) * w, (1 - 2 * FRAME_MARGIN) * h);
+    ctx.setLineDash([]);
+  }
+
+  // the hand now, mirrored so it reads as the visitor's own movement rather than the camera's view
+  if (hand) {
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.beginPath();
+    ctx.arc((1 - hand.x) * w, hand.y * h, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // the corners held so far
+  for (const c of r.corners) {
+    ctx.strokeStyle = "rgba(122,122,255,0.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc((1 - c.x) * w, c.y * h, 7, 0, Math.PI * 2);
+    ctx.stroke();
   }
 
   // the fitted box

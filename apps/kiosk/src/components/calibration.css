@@ -123,6 +123,22 @@
   background: color-mix(in srgb, var(--gt-brand-white) 8%, transparent);
   transition: background 0.25s ease-out, border-color 0.25s ease-out, transform 0.25s ease-out;
 }
+/* The corner being asked for right now, in step 1. */
+.cal-corner.is-next {
+  border-color: var(--gt-brand-white);
+  animation: cal-pulse 1.4s ease-in-out infinite;
+}
+@keyframes cal-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+}
 .cal-corner.is-on {
   border-color: var(--gt-brand-electric);
   background: color-mix(in srgb, var(--gt-brand-electric) 55%, transparent);
@@ -196,5 +212,6 @@
   .cal-btn,
   .cal-bar {
     transition: none;
+    animation: none;
   }
 }
