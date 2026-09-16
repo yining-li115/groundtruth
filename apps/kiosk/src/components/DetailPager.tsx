@@ -61,7 +61,9 @@ export function DetailPager({
           →
         </span>
       </button>
-      {/* Where you are. Not a control, and out of the way at the bottom. */}
+      {/* Where you are. It lived at the bottom centre, where a long abstract scrolls straight
+          under it — and the pool of page colour that kept it legible ate the meta row instead.
+          Under the "next" arrow it sits on something that is already a control, over nothing. */}
       <span className="dp-count" aria-live="polite">
         {index + 1} / {total}
       </span>

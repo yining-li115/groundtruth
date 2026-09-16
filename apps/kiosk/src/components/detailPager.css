@@ -3,16 +3,19 @@
 /*
  * Geometry. A half-ellipse anchored on the side edge, at mid-height — viewport units, like the
  * Home corner, so it is the same fraction of the wall as of a laptop. Centred a little above
- * the true middle: the Home corner climbs 38vh up the left edge, and these must end above it.
- * Hit area, scrim and glow are all the same clipped shape, so what you can see is what you
- * can press and nothing else.
+ * the true middle: the Home corner climbs 38vh up the left edge, and these should end about
+ * where it begins. Hit area, scrim and glow are all the same clipped shape, so what you can
+ * see is what you can press and nothing else.
+ *
+ * Sized up once already (13vw x 34vh → 18vw x 44vh) after the first look at the wall: at the
+ * smaller size the glow read as a smudge at the edge rather than as a place to put a hand.
  */
 .dp-wing {
   position: fixed;
-  top: 45vh;
+  top: 42vh;
   transform: translateY(-50%);
-  width: clamp(8rem, 13vw, 24rem);
-  height: clamp(14rem, 34vh, 38rem);
+  width: clamp(10rem, 18vw, 34rem);
+  height: clamp(18rem, 44vh, 52rem);
   z-index: 60;
   border: 0;
   padding: 0;
@@ -81,17 +84,17 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: clamp(2.4rem, 3.8vmin, 4.8rem);
+  font-size: clamp(2.8rem, 4.6vmin, 6rem);
   font-weight: 700;
   line-height: 1;
   color: currentColor;
   transition: transform 0.35s ease-out;
 }
 .dp-wing--prev .dp-wing__arrow {
-  left: clamp(1.2rem, 2.2vw, 3.6rem);
+  left: clamp(1.6rem, 3vw, 5rem);
 }
 .dp-wing--next .dp-wing__arrow {
-  right: clamp(1.2rem, 2.2vw, 3.6rem);
+  right: clamp(1.6rem, 3vw, 5rem);
 }
 
 /* Under the cursor: the hand pointer paints `gt-hover` / `is-hover`; `:hover` is a dev mouse. */
@@ -123,17 +126,18 @@
   cursor: default;
 }
 
-/* The counter: bottom centre, small, never a control. */
+/* The counter: under the "next" arrow, inside the right wing's light, never a control. Same
+   inset as the arrow so the two read as one mark. */
 .dp-count {
   position: fixed;
-  bottom: 2.4rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 60;
-  font-size: 0.9rem;
+  top: calc(42vh + clamp(2.2rem, 3.6vmin, 4.6rem));
+  right: clamp(1.6rem, 3vw, 5rem);
+  z-index: 61;
+  font-size: clamp(0.85rem, 1.2vmin, 1.5rem);
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--gt-text-secondary);
+  color: var(--gt-text-primary);
+  opacity: 0.7;
   pointer-events: none;
 }
 
