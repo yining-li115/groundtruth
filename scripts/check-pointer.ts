@@ -302,6 +302,23 @@ console.log("\nhand pointer — edge cases\n");
 }
 
 {
+  console.log("\na face smaller than the hand is not the visitor's face");
+  const { p, clock } = fresh();
+  // A hand at the usual distance (palm 0.06 of the frame), and a "face" a sixth as wide, off
+  // in a corner — a photo on the wall behind. Scaling the box from it would be a 3cm box.
+  const poster = { cx: 0.15, cy: 0.15, w: 0.01, h: 0.013, score: 0.9 };
+  const s1 = run(p, clock, 800, () => frame(hand(0.5, 0.7), poster));
+  ok("the poster is not used as the ruler", s1.conf.reason === "no-face", s1.conf.reason);
+  ok("...and the box is the hand's own size instead", !!s1.box && s1.box.w > 0.15, String(s1.box?.w));
+  // The same hand, 2cm to one side: the cursor moves a little, not half a screen.
+  const s2 = run(p, clock, 800, () => frame(hand(0.5 - 0.015, 0.7), poster));
+  ok("a small move is a small move", Math.abs(s2.x - s1.x) < 0.15, `${(s2.x - s1.x).toFixed(3)}`);
+  // A real face beside the hand is still the ruler.
+  const s3 = run(p, clock, 800, () => frame(hand(0.5, 0.7), face()));
+  ok("a real face is still trusted", s3.conf.reason === "ok", s3.conf.reason);
+}
+
+{
   console.log("\nthe reach knob makes the screen cheaper without remeasuring");
   const a = fresh();
   const b = fresh({ reachScale: 0.5 });
@@ -730,10 +747,10 @@ function runFist(p: HandPointer, clock: { t: number }, score: number): boolean {
         !!box && box.y1 <= 0.96,
         `bottom at ${box?.y1.toFixed(3)}`,
       );
-      ok("...where the shipped default did not", (() => {
+      ok("...and so does the default now: no box edge is ever put on the frame edge", (() => {
         const d = interactionBox({ cx: 0.5, cy: 0.22, w: 0.16, h: 0.2, score: 1 }, ASPECT);
-        return !!d && d.y1 > 0.99;
-      })(), "the default box is pinned to the frame's bottom edge at this distance");
+        return !!d && d.y1 <= 0.941 && d.shifted;
+      })(), "the default box used to be pinned to the frame's bottom row at this distance");
     }
   }
 

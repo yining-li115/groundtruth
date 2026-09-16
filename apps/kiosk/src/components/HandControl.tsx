@@ -13,6 +13,7 @@ import {
 } from "../lib/vision/trace";
 import { visionLog } from "../lib/vision/visionLog";
 import { VisionDebug } from "./VisionDebug";
+import { CamPreview } from "./CamPreview";
 import "./handControl.css";
 
 /**
@@ -469,6 +470,8 @@ export function HandControl() {
       {/* The fault-isolation HUD. Renders nothing at all without `?visionDebug=1`, and works
           in a production build too — the wall is where the measurements have to be taken. */}
       <VisionDebug video={videoRef} pointer={pointer} />
+      {/* The camera as the pointer sees it — `?cam=1`. Renders nothing otherwise. */}
+      <CamPreview video={videoRef} pointer={pointer} />
 
       {status === "error" ? (
         <div className="gt-hand-error" role="status">

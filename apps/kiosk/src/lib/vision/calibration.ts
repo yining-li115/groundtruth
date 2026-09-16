@@ -78,6 +78,9 @@ export const DEFAULT_BOX: BoxConfig = {
   shiftFaces: 0,
 };
 
+/** How far inside the picture a box edge always stays, as a fraction of the frame. */
+export const BOX_EDGE = 0.06;
+
 export interface InteractionBox {
   /** raw frame coordinates, [0,1] per axis */
   x0: number;
@@ -130,11 +133,19 @@ export function interactionBox(
 
   // Slide the box back inside the frame if it hangs over an edge, and only cut it if it is
   // genuinely larger than the frame. See `shifted` above for why the order matters.
+  //
+  // "Inside the frame" means inside BOX_EDGE of it, not the last pixel. Tracking does not stop
+  // at the edge of the picture, it degrades for a while first — the palm half out of shot,
+  // the landmarks extrapolated — and a box edge put on the frame edge puts the edge of the
+  // SCREEN in the one place the pointer is least trustworthy. On the wall that was "I can't
+  // reach the bottom right": the box had slid down to the frame's bottom row, and the wrist
+  // had to leave the picture to get there.
   const fit = (lo: number, hi: number): { lo: number; hi: number; cut: boolean; slid: boolean } => {
     const size = hi - lo;
-    if (size >= 1) return { lo: 0, hi: 1, cut: true, slid: false };
-    if (lo < 0) return { lo: 0, hi: size, cut: false, slid: true };
-    if (hi > 1) return { lo: 1 - size, hi: 1, cut: false, slid: true };
+    const room = 1 - 2 * BOX_EDGE;
+    if (size >= room) return { lo: BOX_EDGE, hi: 1 - BOX_EDGE, cut: true, slid: false };
+    if (lo < BOX_EDGE) return { lo: BOX_EDGE, hi: BOX_EDGE + size, cut: false, slid: true };
+    if (hi > 1 - BOX_EDGE) return { lo: 1 - BOX_EDGE - size, hi: 1 - BOX_EDGE, cut: false, slid: true };
     return { lo, hi, cut: false, slid: false };
   };
 

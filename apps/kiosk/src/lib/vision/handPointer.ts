@@ -442,11 +442,18 @@ export class HandPointer {
     }
 
     const hand = res.hands[0] ?? null;
-    // Steadied anchor, not the raw detection: it stops the mapping shivering under a still
-    // hand, and it survives the hand passing in front of the face — which happens constantly.
-    const face = this.face.update(res.face, now);
     const palm = palmCenter(hand?.landmarks);
     const palmNorm = palmWidthNorm(hand?.landmarks);
+    // A face narrower than the visitor's own palm is not the visitor's face. It is a poster,
+    // a photo on the wall behind, or a colleague further back — and a box scaled from it is
+    // built to a stranger's size in a stranger's place: a centimetre of hand becomes half a
+    // screen, and the corners land wherever that face happens to be. A real face is about 1.6
+    // palms wide, so the bar is generous; below it the hand measures itself (`fallbackBox`).
+    const plausibleFace =
+      res.face && palmNorm > 0 && res.face.w < palmNorm * MIN_FACE_PER_PALM ? null : res.face;
+    // Steadied anchor, not the raw detection: it stops the mapping shivering under a still
+    // hand, and it survives the hand passing in front of the face — which happens constantly.
+    const face = this.face.update(plausibleFace, now);
     // The face is the ruler, but never the gate. When it cannot be found at all, the hand
     // measures itself and the mapping degrades instead of the pointer switching off.
     const boxCfg = this.scaledBox();
@@ -711,6 +718,8 @@ export class HandPointer {
   }
 }
 
+/** A face this much narrower than the palm beside it is somebody else's — see `update`. */
+const MIN_FACE_PER_PALM = 0.9;
 /** How much recent position history to keep, in ms. Only has to outlast `pressLookbackMs`. */
 const HISTORY_MS = 600;
 /** Re-arming dwell needs a real move, not the smoothing's settling creep. */
