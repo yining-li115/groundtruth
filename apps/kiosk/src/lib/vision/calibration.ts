@@ -58,14 +58,23 @@ export interface BoxConfig {
 }
 
 /**
- * Defaults in physical terms, taking a face as ~15 cm wide: a box about 68 cm wide and 45 cm
- * tall, centred ~39 cm below the eyes. That is the region a standing person's hand covers
- * without leaning or reaching, which is the region the mapping should spend the screen on.
+ * Defaults in physical terms, taking a face as ~15 cm wide: a box about 40 cm wide and 27 cm
+ * tall, centred ~33 cm below the eyes — a hand moving in front of the chest, elbow bent.
+ *
+ * SMALLER THAN IT WAS, on purpose (4.5 x 3.0 faces, 68 x 45 cm, until Sept 2026). The old
+ * box was "what a standing adult can comfortably reach", which is the wrong question: the
+ * box is not where the hand CAN go, it is how much of that the screen should cost. A box
+ * the size of a full reach means the corners of the screen are at the limit of the arm — and
+ * at any distance inside a metre or so, outside the camera's picture altogether, because a
+ * webcam's field of view is narrower than an arm is long. Every tester reported the same
+ * thing: "I can't reach the corners." A small box in the middle of the frame is reachable
+ * from every distance the camera can see a hand at; what it costs is precision, and the
+ * cursor's targets are sized for that already.
  */
 export const DEFAULT_BOX: BoxConfig = {
-  widthFaces: 4.5,
-  heightFaces: 3.0,
-  dropFaces: 2.6,
+  widthFaces: 2.7,
+  heightFaces: 1.8,
+  dropFaces: 2.2,
   shiftFaces: 0,
 };
 

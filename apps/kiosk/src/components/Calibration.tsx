@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { activePointer } from "../lib/vision/handPointer";
-import { mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
+import { DEFAULT_BOX, mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
 import { fitCorners, shrinkBox, type ReachSample } from "../lib/vision/reachFit";
 import {
   PROFILE_VERSION,
@@ -110,6 +110,19 @@ const STILL_TOLERANCE = 0.02;
 const REACH_RADIUS = 0.09;
 /** Corner targets, inset from the very edge — the last few percent belong to nothing. */
 const CORNER_INSET = 0.05;
+/**
+ * Where the HELD positions are mapped to — past the edge of the screen, not onto the targets.
+ *
+ * Mapping the four held positions exactly onto the 5%-inset targets sounds right and is a box
+ * one size too big: to put the cursor on a corner the visitor then has to return their hand
+ * to precisely where they held it, at the limit of the reach they chose, and with a shaky
+ * pointer and a face-anchored box that breathes a little, "precisely" is a coin toss. Mapping
+ * them 8% BEYOND the edge instead means the corner is reached with the hand still short of
+ * where it was held — every point on the screen is inside the movement they already made,
+ * with room to spare. The cost is a smaller box and a higher gain, which is the trade this
+ * whole calibration exists to make on the visitor's behalf.
+ */
+const CORNER_FIT_INSET = -0.08;
 const CORNERS = [
   { id: "tl", x: CORNER_INSET, y: 0.06, name: "top-left" },
   { id: "tr", x: 1 - CORNER_INSET, y: 0.06, name: "top-right" },
@@ -358,7 +371,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
             r.recording = false;
             if (r.cornerIdx >= CORNER_ORDER.length) {
               const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
-              const fit = fitCorners(r.corners, aspect, { inset: CORNER_INSET });
+              const fit = fitCorners(r.corners, aspect, { inset: CORNER_FIT_INSET });
               if (!fit) {
                 setNote(
                   "Those four were too close together to measure from. Once more, a little further apart — still easy.",
@@ -610,7 +623,7 @@ function build(r: {
     version: PROFILE_VERSION,
     measuredAt: Date.now(),
     camera: { deviceId, label, frameW: r.frame.w, frameH: r.frame.h, fps: r.fps },
-    box: r.box ?? { widthFaces: 4.5, heightFaces: 3.0, dropFaces: 2.6, shiftFaces: 0 },
+    box: r.box ?? { ...DEFAULT_BOX },
     clippedBy: r.clippedBy,
     pinch,
     jitter,

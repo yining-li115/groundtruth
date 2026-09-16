@@ -108,6 +108,12 @@ export interface PointerConfig {
    * trade this hardware forces.
    */
   clickGesture: "pinch" | "fist" | "either";
+  /**
+   * A global multiplier on the box, 0..1. The box is the cost of the screen in hand movement,
+   * and this is the one knob that makes it cheaper everywhere at once — measured or default,
+   * at every distance — without touching what was measured. `?reach=0.7` at the wall.
+   */
+  reachScale: number;
   /** a hand must persist this long to count as a visitor (anti-flicker) */
   enterMs: number;
   /** ...and be gone this long before the cursor does */
@@ -142,6 +148,7 @@ export const DEFAULT_POINTER: PointerConfig = {
   dwellMs: 0,
   dwellRadius: 0.035,
   clickGesture: "either",
+  reachScale: 1,
   enterMs: 250,
   leaveMs: 1200,
 };
@@ -396,6 +403,17 @@ export class HandPointer {
     return this.pinch.strength(this.state.ratio);
   }
 
+  /** The configured box with `reachScale` applied about its centre. */
+  private scaledBox(): BoxConfig {
+    const k = this.cfg.reachScale;
+    if (!(k > 0) || k === 1) return this.cfg.box;
+    return {
+      ...this.cfg.box,
+      widthFaces: this.cfg.box.widthFaces * k,
+      heightFaces: this.cfg.box.heightFaces * k,
+    };
+  }
+
   /** The smoothed position as it was at time `t` — how a press recovers its aim. */
   private positionAt(t: number): { x: number; y: number } {
     const h = this.history;
@@ -431,8 +449,8 @@ export class HandPointer {
     const palmNorm = palmWidthNorm(hand?.landmarks);
     // The face is the ruler, but never the gate. When it cannot be found at all, the hand
     // measures itself and the mapping degrades instead of the pointer switching off.
-    const box =
-      interactionBox(face, aspect, this.cfg.box) ?? fallbackBox(palmNorm, aspect, this.cfg.box);
+    const boxCfg = this.scaledBox();
+    const box = interactionBox(face, aspect, boxCfg) ?? fallbackBox(palmNorm, aspect, boxCfg);
     const ratio = handRatio(hand);
 
     s.box = box;

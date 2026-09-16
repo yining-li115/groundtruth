@@ -302,6 +302,19 @@ console.log("\nhand pointer — edge cases\n");
 }
 
 {
+  console.log("\nthe reach knob makes the screen cheaper without remeasuring");
+  const a = fresh();
+  const b = fresh({ reachScale: 0.5 });
+  // The same hand, the same small offset from the box centre — twice the cursor travel.
+  const x = 0.5 - 0.02;
+  const sa = run(a.p, a.clock, 1500, () => frame(hand(x, 0.7)));
+  const sb = run(b.p, b.clock, 1500, () => frame(hand(x, 0.7)));
+  ok("half the box is twice the travel",
+    near(sb.x - 0.5, (sa.x - 0.5) * 2, 0.02), `${(sa.x - 0.5).toFixed(3)} → ${(sb.x - 0.5).toFixed(3)}`);
+  ok("...about the same centre", sa.x > 0.5 && sb.x > 0.5);
+}
+
+{
   console.log("\na held fist on a still hand is a still cursor");
   const { p, clock } = fresh({ clickGesture: "fist" });
   run(p, clock, 600, () => frame(hand(0.5, 0.7)));

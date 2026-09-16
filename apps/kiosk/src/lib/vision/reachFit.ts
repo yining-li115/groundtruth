@@ -8,7 +8,8 @@ import { DEFAULT_BOX, type BoxConfig } from "./calibration";
  * reach — 4.5 by 3.0 faces, centred 2.6 faces below the eyes. That is a fair guess about a
  * person and no guess at all about a CAMERA, and the camera is the half that breaks.
  *
- * Measured against the shipping default, on a 16:9 frame with the face at the usual height:
+ * Measured against the default as it was then (4.5 x 3.0 faces — the shipped default is now
+ * 2.7 x 1.8, see `DEFAULT_BOX`), on a 16:9 frame with the face at the usual height:
  *
  *   ~0.5 m   box 0.05..0.95 x 0.00..1.00   CUT — the box is wider than the frame
  *   ~0.8 m   box 0.21..0.79 x 0.31..1.00   bottom edge pinned to the frame
@@ -198,9 +199,10 @@ export function fitReach(samples: ReachSample[], aspect: number): ReachFit | nul
  * on — a mean rather than an extreme so a single hand that stopped a little short does not
  * set the whole edge.
  *
- * `inset` is where the corner targets sit on the screen (5% in from the edge), so the held
- * positions map to THOSE points rather than to the very corner: the box is the held span
- * divided by (1 − 2·inset), about the same centre.
+ * `inset` is where the held positions land on the screen: 0.05 puts them on targets 5% in
+ * from the edge, 0 on the very corner, and a NEGATIVE value past the edge — a smaller box
+ * than the movement, so every corner is reached with the hand short of where it was held.
+ * The box is the held span divided by (1 − 2·inset), about the same centre.
  */
 export function fitCorners(
   samples: ReachSample[],
@@ -208,7 +210,7 @@ export function fitCorners(
   { inset = 0.05 }: { inset?: number } = {},
 ): ReachFit | null {
   if (samples.length !== 4 || !Number.isFinite(aspect) || aspect <= 0) return null;
-  if (!(inset >= 0 && inset < 0.4)) return null;
+  if (!(inset > -0.3 && inset < 0.4)) return null;
   const faceW = quantile(
     samples.map((s) => s.faceW).filter((w) => w > 0),
     0.5,

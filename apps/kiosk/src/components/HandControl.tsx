@@ -95,6 +95,11 @@ const DWELL_MS = (() => {
   const v = Number(PARAMS?.get("dwell"));
   return Number.isFinite(v) && PARAMS?.get("dwell") !== null ? v : undefined;
 })();
+/** `?reach=0.7`: shrink the box — how much hand movement the screen costs — without remeasuring. */
+const REACH_SCALE = (() => {
+  const v = Number(PARAMS?.get("reach"));
+  return Number.isFinite(v) && v > 0 && v <= 1 ? v : undefined;
+})();
 
 export function HandControl() {
   const { videoRef, status, error, pointer } = useHandPointer(true);
@@ -117,6 +122,7 @@ export function HandControl() {
   useEffect(() => {
     if (CLICK_GESTURE) pointer.current.configure({ clickGesture: CLICK_GESTURE });
     if (DWELL_MS !== undefined) pointer.current.configure({ dwellMs: DWELL_MS });
+    if (REACH_SCALE !== undefined) pointer.current.configure({ reachScale: REACH_SCALE });
   }, [pointer]);
 
   useEffect(() => {
