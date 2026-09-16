@@ -58,6 +58,34 @@
   left: 50vw;
   z-index: 0;
   pointer-events: none;
+  transition: opacity 0.45s ease-out;
+}
+/* The moment a row is under the hand, the title steps back — the same rule as Projects, for
+   the same reason: a paper lit to full white was sitting on a word twice its height in the
+   same white. The title fades and a scrim in the page colour comes up over its half of the
+   screen (`.menu::before`), leaving the chosen row the only bright thing on the page. */
+.publications:has(.menu__item.is-hover) .title,
+.publications:has(.menu__item:hover) .title {
+  opacity: 0.16;
+}
+.publications .menu::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    transparent 30%,
+    color-mix(in srgb, var(--gt-bg) 78%, transparent) 55%,
+    color-mix(in srgb, var(--gt-bg) 92%, transparent) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.45s ease-out;
+}
+.publications:has(.menu__item.is-hover) .menu::before,
+.publications:has(.menu__item:hover) .menu::before {
+  opacity: 1;
 }
 .publications .title__main {
   margin: 0;
