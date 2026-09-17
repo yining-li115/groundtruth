@@ -1,5 +1,9 @@
 # Roadmap
 
+> Historical delivery log. The Phase 1 phone/relay input was later replaced in production by
+> the webcam gesture system documented in `docs/gesture-input.md`; the controller and relay
+> workspaces remain as isolated prototypes.
+
 Build order is "make it work, then make it cool." Each phase is a coherent chunk Claude
 Code can take on. Check items off as they land; update CLAUDE.md §7 when an open
 decision resolves.
@@ -130,8 +134,8 @@ This is the project's only make-or-break risk. Prove it first.
 - [x] **Cursor-fluid garnish on home** (`experiments/liquid/LiquidEther.tsx`, vendored from
       React Bits' LiquidEther — a GPU stable-fluids sim, three.js). A faint, fixed full-page layer
       (`.home-fluid`) in front of content whose trail follows the cursor across the whole home.
-      Driven by our cursor (`lib/cursorPosition`: `Cursor.tsx` publishes the kiosk pointer;
-      `activePointer()` prefers a real mouse in dev, the phone-driven cursor on the kiosk) instead
+      Driven by our cursor (`lib/cursorPosition`: `HandControl.tsx` publishes the stabilized
+      hand pointer; `activePointer()` prefers a real mouse while it moves in dev) instead
       of the upstream window listeners. Brand palette (`assetColors`); reduced-motion skips it.
       Preview at `/?exp=liquid`. Note: a 4th WebGL context on the home.
 - [x] **Pixel page transition** on section navigation (`components/PixelOverlay.tsx` +

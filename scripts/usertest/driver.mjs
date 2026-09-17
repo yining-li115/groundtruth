@@ -141,18 +141,35 @@ export async function openKiosk({ url, width = 1600, height = 900 }) {
      * Scroll by leaning: hold, move away from the grab point, stay there, come back, release.
      * `dy` is how far the hand leans, in screen fractions; positive leans down.
      */
-    async leanScroll(dy, { holdMs = 1500 } = {}) {
+    async leanScroll(dy, { holdMs = 1500, gesture = "fist", blinkMs = 0 } = {}) {
       const s = await evaluate(`window.__handState()`);
       const u = s.x;
       const v = s.y;
-      await evaluate(`window.__handSim.pinching = true`);
+      if (gesture === "pinch") await evaluate(`window.__handSim.pinching = true`);
+      else await evaluate(`window.__handSim.label = "Closed_Fist"`);
       await sleep(500); // past the press debounce, so the grab is registered
       await evaluate(`window.__handSim.aim = { u: ${u}, v: ${Math.min(0.97, Math.max(0.03, v + dy))} }`);
-      await sleep(holdMs);
+      let blinkState = null;
+      if (blinkMs > 0) {
+        await sleep(Math.max(0, holdMs / 2));
+        await evaluate(`window.__handSim.present = false`);
+        await sleep(blinkMs);
+        blinkState = await evaluate(`({
+          pinched: window.__handState().pinched,
+          ownerId: window.__handState().owner.id,
+          ownerVisible: window.__handState().owner.visible,
+        })`);
+        await evaluate(`window.__handSim.present = true`);
+        await sleep(Math.max(0, holdMs / 2));
+      } else {
+        await sleep(holdMs);
+      }
       await evaluate(`window.__handSim.aim = { u: ${u}, v: ${v} }`);
       await sleep(250);
-      await evaluate(`window.__handSim.pinching = false`);
-      await sleep(350);
+      if (gesture === "pinch") await evaluate(`window.__handSim.pinching = false`);
+      else await evaluate(`window.__handSim.label = "None"`);
+      await sleep(500); // includes the fist neutral-release gate when using production default
+      return { blinkState };
     },
     /** Take the hand out of shot entirely. */
     async handAway(ms = 2000) {

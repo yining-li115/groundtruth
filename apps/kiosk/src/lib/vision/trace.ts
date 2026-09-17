@@ -44,7 +44,7 @@ export type RejectReason =
    *  mean anything. `calibration.confidence` → "too-far" / "hand-too-small". OPTICS, not code. */
   | "HAND_TOO_SMALL"
   /** RECOGNITION — inside the settle lockout after a tracking gap, so no new pinch may latch
-   *  however closed the fingers are. `PinchDetector.settleFrames` (8 frames ≈ 265ms @30fps). */
+   *  however closed the fingers are. `PinchDetector.settleMs` (265ms of decoded-sample time). */
   | "LANDMARK_UNSTABLE"
   /** RECOGNITION — fingers read as more open than PINCH_ON. The single most common one, and
    *  the one the feature audit is about. `PinchDetector.update`, `ratio < this.onAt` false. */
@@ -55,8 +55,8 @@ export type RejectReason =
   /** RECOGNITION — held past MAX_HOLD_MS (3s) and force-released as a mis-read.
    *  `handPointer.update`, `this.suppressed = true`. */
   | "PINCH_HELD_TOO_LONG"
-  /** RECOGNITION — the press ended because the HAND VANISHED, not because it opened. A tap
-   *  fires on release, and this release does not count. `handPointer.update`, `releasedByLoss`. */
+  /** RECOGNITION — a held continuous gesture ended because the HAND VANISHED, not because it
+   *  opened. It must cancel scroll/scene motion, never count as release. */
   | "PINCH_RELEASE_NOT_FOUND"
   /** INTERACTION — the hand travelled past DRAG_START while held, so the gesture was re-read
    *  as a scroll. `HandControl`, `moved > DRAG_START`. Not fatal on its own — see below. */

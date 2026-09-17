@@ -13,7 +13,7 @@ import "./people.css";
  * member carries a `category`, and we group by it in a fixed order, so adding a person is a
  * JSON edit that lands in the right group automatically. Layout mirrors the design locked in
  * the ?exp=people prototype: a sticky "TEAM" intro beside a grid of portrait cards, with a
- * cursor-proximity scale "lens" driven by the kiosk cursor (works for the phone-driven pointer
+ * cursor-proximity scale "lens" driven by the kiosk cursor (works for the hand pointer
  * on the wall and a real mouse in dev — see lib/cursorPosition).
  */
 
@@ -62,7 +62,7 @@ function groupByCategory(list: Person[]): { label: string; people: Person[] }[] 
 }
 
 /** Cursor-proximity scale: each item grows by how close the kiosk cursor is (a soft lens).
- *  Driven by activePointer() in a rAF loop so it follows the phone-driven cursor on the wall
+ *  Driven by activePointer() in a rAF loop so it follows the camera-driven cursor on the wall
  *  and a real mouse in dev alike. Reduced motion opts out. */
 function useProximityScale(rootRef: React.RefObject<HTMLDivElement | null>, key: unknown) {
   useEffect(() => {

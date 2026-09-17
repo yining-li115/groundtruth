@@ -2,8 +2,8 @@
 /**
  * One-command dev launcher: relay + kiosk + controller in a single terminal, each with
  * a coloured prefix. Auto-detects this machine's LAN IP (no hard-coded address) and
- * injects it into the apps' VITE_RELAY_URL / VITE_CONTROLLER_URL so phones reach the
- * relay and the QR points at the real controller — change networks freely, no edits.
+ * gives the controller its relay URL and the retained QR experiment its controller URL —
+ * change networks freely, no edits.
  *
  *   npm run dev:all
  *   GT_HOST_IP=10.0.0.5 npm run dev:all   # force a specific IP if auto-detect is wrong
@@ -67,7 +67,7 @@ const { result } = concurrently(
       command: "npm run dev -w @groundtruth/kiosk",
       name: "kiosk",
       prefixColor: "cyan",
-      env: { ...process.env, VITE_RELAY_URL: relayUrl, VITE_CONTROLLER_URL: controllerUrl },
+      env: { ...process.env, VITE_CONTROLLER_URL: controllerUrl },
     },
     {
       command: "npm run dev -w @groundtruth/controller",

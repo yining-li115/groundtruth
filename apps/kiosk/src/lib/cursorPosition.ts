@@ -1,9 +1,8 @@
 /**
- * Shared on-screen cursor position (viewport pixels). `Cursor.tsx` is the authority for the
- * kiosk pointer (it integrates the phone's relative deltas); it writes its smoothed position
- * here every frame so other effects — e.g. the LiquidEther cursor-fluid — can follow the SAME
- * cursor without re-deriving it or churning the zustand store. `moved` is a timestamp of the
- * last real position change, so consumers can tell "idle" from "moving".
+ * Shared on-screen hand-cursor position (viewport pixels). `HandControl.tsx` publishes its
+ * stabilized position here so other effects — e.g. the LiquidEther cursor-fluid — follow the
+ * same pointer without re-deriving it or churning the Zustand store. `moved` is a timestamp of
+ * the last real position change, so consumers can tell "idle" from "moving".
  */
 export const cursorPosition = {
   x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
@@ -12,7 +11,7 @@ export const cursorPosition = {
   moved: 0,
 };
 
-/** Called by Cursor.tsx each frame with its smoothed position. */
+/** Called by HandControl when its stabilized on-screen position changes. */
 export function setCursorPosition(x: number, y: number) {
   if (x !== cursorPosition.x || y !== cursorPosition.y) {
     cursorPosition.x = x;
@@ -21,9 +20,8 @@ export function setCursorPosition(x: number, y: number) {
   }
 }
 
-// Real-mouse fallback. The kiosk has no mouse (the phone-driven gt-cursor is the only pointer),
-// but on a dev desktop we want effects to follow the real mouse. We track it here and prefer it
-// only while it's actively moving; otherwise we fall back to the kiosk cursor.
+// Real-mouse fallback for desktop development. Prefer it only while it is actively moving;
+// otherwise effects follow the camera-driven hand cursor.
 let realX = 0;
 let realY = 0;
 let realMoved = 0;
@@ -41,7 +39,7 @@ if (typeof window !== "undefined") {
 
 /**
  * The pointer cursor-following effects (LiquidEther) should track: the real mouse while it's
- * moving (dev), else the phone-driven kiosk cursor, else null (nothing has moved yet → effects
+ * moving (dev), else the camera-driven hand cursor, else null (nothing has moved yet → effects
  * can idle). Returns viewport pixels.
  */
 export function activePointer(): { x: number; y: number } | null {

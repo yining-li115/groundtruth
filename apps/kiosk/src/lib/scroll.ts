@@ -16,7 +16,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  * Lenis drives the *real* document scroll, so existing code that reads `window.scrollY`
  * or listens for `scroll` events (e.g. the home hero disperse) keeps working unchanged —
  * it just receives eased values. The one thing that must NOT bypass Lenis is programmatic
- * scrolling (the phone's two-finger scroll); route that through `scrollByPx` below.
+ * scrolling (including hand lean-to-scroll); route that through `scrollByPx` below.
  */
 
 gsap.registerPlugin(ScrollTrigger);
@@ -30,7 +30,7 @@ let started = false;
 
 /**
  * Start the singleton smooth-scroll loop. Idempotent and persistent for the tab's lifetime
- * (mirrors the socket singleton) so React StrictMode's dev double-mount can't churn it.
+ * so React StrictMode's dev double-mount cannot churn the animation loop.
  * No-op under reduced motion — the page falls back to native scrolling.
  */
 export function startSmoothScroll() {

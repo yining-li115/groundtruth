@@ -3,10 +3,27 @@ import * as THREE from "three";
 import { SparkRenderer, SplatMesh, SparkControls } from "@sparkjsdev/spark";
 import { dark } from "@groundtruth/tokens";
 import { showreel } from "../../lib/content";
-import { useHandFlight } from "../../lib/vision/useHandFlight";
-import { flightInput } from "../../lib/vision/flightInput";
+import {
+  flightInput,
+  setSceneAvailability,
+  type SceneEndReason,
+} from "../../lib/vision/flightInput";
 import { HandSkeleton } from "../../components/HandSkeleton";
 import { SKY_ENABLED, createSkyDome, type SkyDome } from "./sky";
+import {
+  DEFAULT_SCENE_NAVIGATION,
+  SceneNavigationController,
+  sceneSampleIsFresh,
+  type SceneNavigationConfig,
+} from "./sceneNavigation";
+import {
+  buildProductionTourCurve,
+  inspectCurveInRoam,
+  isRoamablePoint,
+  routeTourThroughRoam,
+  type RoamVolume,
+  type TourWaypoint as Waypoint,
+} from "./safeTour";
 import autoTour from "./tour.json";
 import roamVolume from "./roam.json";
 
@@ -150,20 +167,33 @@ const SHOW_HUD = PARAMS?.get("hud") === "1";
  * the first numbers wrong by an order of magnitude: 5 u/s of panning is 15 m/s, a car going
  * past a façade, not someone reading it. These are a brisk walk and a jog respectively.
  */
-const HAND_DOLLY_SPEED = num("handdolly", 1.0);
-const HAND_STRAFE_SPEED = num("handstrafe", 0.8);
-/** Seconds to reach full pan speed, and to coast back to a stop. Instant velocity changes
- *  read as a twitch; a short ramp is what makes a held key feel like gliding. */
-const HAND_ACCEL = num("handaccel", 0.35);
-const HAND_LIFT_SPEED = num("handlift", 0.8);
-/** Turn/tilt rate in rad/sec. Tilt is bounded because looking far enough up finds sky, which
- *  is the one thing every stop was verified to keep off the screen. */
-const HAND_YAW_RATE = num("handyaw", 0.5);
-/** How far from the tour's pose a visitor may get, in world units. One radius rather than
- *  per-axis limits: once the view can turn, "forward" is no longer a fixed direction, so
- *  budgeting forward separately from sideways stops meaning anything. */
-const HAND_RANGE = num("handrange", 12);
-const HAND_RELEASE = 1.2; // per-second decay back to the tour's framing once the hand leaves
+const SCENE_INPUT_TTL_MS = num("scenettl", 180);
+const SCENE_CONFIG: SceneNavigationConfig = {
+  ...DEFAULT_SCENE_NAVIGATION,
+  yawGain: num("lookyaw", DEFAULT_SCENE_NAVIGATION.yawGain),
+  pitchGain: num("lookpitch", DEFAULT_SCENE_NAVIGATION.pitchGain),
+  lookDeadzone: num("lookdead", DEFAULT_SCENE_NAVIGATION.lookDeadzone),
+  lookFilterTau: num("looktau", DEFAULT_SCENE_NAVIGATION.lookFilterTau),
+  pitchLimit: THREE.MathUtils.degToRad(
+    num("pitchlimit", THREE.MathUtils.radToDeg(DEFAULT_SCENE_NAVIGATION.pitchLimit)),
+  ),
+  exploreYawRate: num("exploreyaw", DEFAULT_SCENE_NAVIGATION.exploreYawRate),
+  moveDeadzone: num("movedead", DEFAULT_SCENE_NAVIGATION.moveDeadzone),
+  moveFullScale: num("movefull", DEFAULT_SCENE_NAVIGATION.moveFullScale),
+  moveExponent: num("movecurve", DEFAULT_SCENE_NAVIGATION.moveExponent),
+  dollySpeed: num("handdolly", DEFAULT_SCENE_NAVIGATION.dollySpeed),
+  strafeSpeed: num("handstrafe", DEFAULT_SCENE_NAVIGATION.strafeSpeed),
+  accelerationTau: num("handaccel", DEFAULT_SCENE_NAVIGATION.accelerationTau),
+  range: num("handrange", DEFAULT_SCENE_NAVIGATION.range),
+  holdMs: num("returnhold", DEFAULT_SCENE_NAVIGATION.holdMs),
+  returnSpeed: num("returnspeed", DEFAULT_SCENE_NAVIGATION.returnSpeed),
+  returnTurnRate: num("returnturn", DEFAULT_SCENE_NAVIGATION.returnTurnRate),
+  flingWindowMs: num("flingwindow", DEFAULT_SCENE_NAVIGATION.flingWindowMs),
+  flingMinRate: num("flingmin", DEFAULT_SCENE_NAVIGATION.flingMinRate),
+  flingMaxRate: num("flingmax", DEFAULT_SCENE_NAVIGATION.flingMaxRate),
+  flingTau: num("flingtau", DEFAULT_SCENE_NAVIGATION.flingTau),
+  flingMaxAngle: num("flingangle", DEFAULT_SCENE_NAVIGATION.flingMaxAngle),
+};
 /**
  * Adaptive quality, in the order a viewer minds least.
  *
@@ -190,7 +220,7 @@ const ADAPT = PARAMS?.get("adapt") !== "0";
  * should come back; without it, it should not.
  */
 const ADAPT_EARLY = PARAMS?.get("adaptearly") === "1";
-const TARGET_FPS = num("fps", 55);
+const MAX_TARGET_FPS = num("fps", 55);
 const SCALE_MIN = 0.6; // never subsample below this — below it, holes appear
 const DPR_MIN = 1.0; // and never render softer than this before touching the splat count
 
@@ -208,30 +238,8 @@ const BOUNDS: Record<AssetKey, { min: [number, number, number]; max: [number, nu
 const START_SPEED = 12; // world-units/sec — the campus is ~100 units across
 const SPEED_STEPS = [2, 4, 8, 12, 20, 35, 60];
 
-interface Waypoint {
-  /** "stop" = the camera pauses here and a news card attaches · "via" = pure path shaping,
-   *  flown straight through (keeps the route out of the buildings). The auto-cycle is a
-   *  CONTINUOUS flight — a Catmull-Rom spline through these positions with slerped
-   *  orientation — never a cut between frames. */
-  kind: "stop" | "via";
-  pos: [number, number, number];
-  /** camera quaternion — captured raw so a replay reproduces the framing exactly */
-  quat: [number, number, number, number];
-  /** vertical field of view in degrees, default DEFAULT_FOV. A pose that let the void into
-   *  frame is corrected by tilting and/or reaching for a longer lens — never by moving the
-   *  camera, since the position is the part a person actually chose. */
-  fov?: number;
-}
-
 /** what the current gesture is doing — shown under the skeleton so the vocabulary is
  *  discoverable without a sign on the wall */
-const HAND_HINT: Record<string, string> = {
-  slide: "☝︎ Move your hand to slide across and up",
-  look: "✌︎ Move your hand to turn · up to fly in, down to pull back",
-  idle: "☝︎ one finger to slide · ✌︎ two to turn and fly · 🖐 palm to stop",
-  none: "☝︎ one finger to slide · ✌︎ two to turn and fly · 🖐 palm to stop",
-};
-
 /**
  * Where a visitor is allowed to fly, as a coarse occupancy grid built by
  * scripts/build-roam-volume.py: the open air connected to the tour's stops, under the
@@ -240,19 +248,14 @@ const HAND_HINT: Record<string, string> = {
  * down or sideways would bury the camera in a wall. Testing the actual cell is what makes
  * "no clipping through the model" a rule rather than a hope.
  */
-const ROAM = {
+const ROAM: RoamVolume = {
   cell: roamVolume.cell,
   min: roamVolume.min as [number, number, number],
   dims: roamVolume.dims as [number, number, number],
   free: roamVolume.free,
 };
 function isRoamable(x: number, y: number, z: number) {
-  const ix = Math.floor((x - ROAM.min[0]) / ROAM.cell);
-  const iy = Math.floor((y - ROAM.min[1]) / ROAM.cell);
-  const iz = Math.floor((z - ROAM.min[2]) / ROAM.cell);
-  const [nx, ny, nz] = ROAM.dims;
-  if (ix < 0 || iy < 0 || iz < 0 || ix >= nx || iy >= ny || iz >= nz) return false;
-  return ROAM.free[(ix * ny + iy) * nz + iz] === "1";
+  return isRoamablePoint(ROAM, x, y, z);
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -267,7 +270,10 @@ const r4 = (n: number) => Math.round(n * 10000) / 10000;
  * Every waypoint carries the measured `fill` it was verified at.
  * Cast through unknown: JSON widens the tuples to number[].
  */
-const AUTO_TOUR = autoTour as unknown as Waypoint[];
+// The authored framing is preserved, but its old Catmull-Rom interpolation cut across cells
+// that MOVE correctly classed as occupied. Route the between-pose vias through the exact same
+// occupancy volume so taking over at an arbitrary tour frame can never start inside a wall.
+const AUTO_TOUR = routeTourThroughRoam(autoTour as unknown as Waypoint[], ROAM);
 
 const STORE_KEY = "gt.spark.waypoints";
 const loadPins = (): Waypoint[] => {
@@ -321,7 +327,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 
 function buildFlight(pins: Waypoint[]) {
   const points = pins.map((p) => new THREE.Vector3(...p.pos));
   const quats = pins.map((p) => new THREE.Quaternion(...p.quat));
-  const curve = new THREE.CatmullRomCurve3(points, false, "centripetal", 0.5);
+  const curve = buildProductionTourCurve(pins);
   // u-boundaries by cumulative chord length, so speed stays even across the route
   const chords = points.slice(1).map((p, i) => p.distanceTo(points[i]!));
   const total = chords.reduce((a, b) => a + b, 0) || 1;
@@ -362,6 +368,16 @@ function buildFlight(pins: Waypoint[]) {
   return { curve, segments, quats, uAt, fovs, stopCount };
 }
 
+const AUTO_FLIGHT = buildFlight(AUTO_TOUR);
+const AUTO_FLIGHT_ROAM = inspectCurveInRoam(AUTO_FLIGHT.curve, ROAM);
+if (!AUTO_FLIGHT_ROAM.ok) {
+  const point = AUTO_FLIGHT_ROAM.firstBlocked;
+  throw new Error(
+    `Safe tour construction left the roam volume at ${point?.x.toFixed(2)},` +
+      `${point?.y.toFixed(2)},${point?.z.toFixed(2)}`,
+  );
+}
+
 type Leg = { a: number; b: number; u0: number; u1: number };
 
 /** which waypoint pair the flight is between, and how far across it */
@@ -399,7 +415,7 @@ export function CampusFlight({
   autoPlay = false,
   asset = "mid",
   handControl = false,
-  handSource = "own",
+  visitorPresent = false,
 }: {
   /** HUD, free-fly controls and the waypoint-pinning keys. Off for the unattended screen. */
   tools?: boolean;
@@ -407,29 +423,21 @@ export function CampusFlight({
   autoPlay?: boolean;
   /** density tier. `?asset=` overrides it, so the tool page can compare tiers on demand. */
   asset?: AssetKey;
-  /** webcam hand tracking: a visitor takes the camera off the tour and steers it themselves */
+  /** consume the one global, routed scene intent published by HandControl */
   handControl?: boolean;
   /**
-   * Where the steering comes from.
-   *
-   * "own" opens a camera and runs the models here — right for the standalone tool page at
-   * /?exp=spark, which is the only thing running. Inside the kiosk that would be a second
-   * camera pipeline alongside the global hand pointer, so there it reads the intent the
-   * pointer already publishes instead.
+   * A fresh stable owner is in frame. Production uses this to freeze the attract/news tour
+   * before the first navigation sample, and to keep the visitor's view parked while their open
+   * hand crosses UI. It never authorizes motion; `flightInput.active` remains that boundary.
    */
-  handSource?: "own" | "global";
+  visitorPresent?: boolean;
 } = {}) {
   const ASSET: AssetKey = ASSET_PARAM ?? asset;
-  const own = useHandFlight(handControl && handSource === "own");
   const globalFlight = useRef(flightInput);
-  const hand = handSource === "global" ? globalFlight : own.flight;
-  const videoRef = own.videoRef;
-  const handStatus = handSource === "global" ? "running" : own.status;
-  const handError = handSource === "global" ? null : own.error;
-  // the mode changes rarely, so mirroring it into state costs nothing and lets the hint react
-  const [handMode, setHandMode] = useState<string>("idle");
-  const [globalPresent, setGlobalPresent] = useState(false);
-  const handPresent = handSource === "global" ? globalPresent : own.present;
+  const hand = globalFlight;
+  const visitorPresentRef = useRef(visitorPresent);
+  visitorPresentRef.current = visitorPresent;
+  const [handVisible, setHandVisible] = useState(false);
   /** true from the moment a hand takes over until the camera has drifted back to the tour —
    *  the spotlight card belongs to the tour's composed shot, not to whatever the visitor is
    *  pointing at, so it steps aside for the whole interaction */
@@ -437,8 +445,7 @@ export function CampusFlight({
   useEffect(() => {
     if (!handControl) return;
     const id = setInterval(() => {
-      setHandMode(hand.current.mode);
-      setGlobalPresent(hand.current.present);
+      setHandVisible(hand.current.hands.length > 0);
     }, 120);
     return () => clearInterval(id);
   }, [handControl, hand]);
@@ -455,7 +462,9 @@ export function CampusFlight({
   const [playInfo, setPlayInfo] = useState("");
   const [active, setActive] = useState(0);
   const [scale, setScale] = useState(1);
-  const [dpr, setDpr] = useState(DPR_CAP);
+  const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio, DPR_CAP));
+  const [fpsTarget, setFpsTarget] = useState(() => Math.min(MAX_TARGET_FPS, 54));
+  const [collisionBlocked, setCollisionBlocked] = useState(false);
   /** which spotlight card is on screen, and how far it has risen (0..1) */
   const [card, setCard] = useState<{ stop: number; t: number } | null>(null);
 
@@ -492,9 +501,26 @@ export function CampusFlight({
     if (!host) return;
     let disposed = false;
     let raf = 0;
+    if (handControl) {
+      setSceneAvailability("loading");
+    }
+    const navigation = new SceneNavigationController(SCENE_CONFIG);
+    const failSetup = (stage: string, error: unknown) => {
+      if (handControl) setSceneAvailability("failed");
+      const message = error instanceof Error ? error.message : String(error);
+      setStatus(`${stage} FAILED — ${message}`);
+      console.error(`[spark] ${stage.toLowerCase()} failed`, error);
+    };
 
-    const renderer = new THREE.WebGLRenderer({ antialias: false }); // Spark: AA off on purpose
-    let curDpr = Math.min(window.devicePixelRatio, DPR_CAP);
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false }); // Spark: AA off on purpose
+    } catch (error) {
+      failSetup("WebGL setup", error);
+      return;
+    }
+    let deviceDprCap = Math.min(window.devicePixelRatio, DPR_CAP);
+    let curDpr = deviceDprCap;
     renderer.setPixelRatio(curDpr);
     renderer.setSize(host.clientWidth, host.clientHeight);
     host.appendChild(renderer.domElement);
@@ -508,18 +534,27 @@ export function CampusFlight({
     );
     cameraRef.current = camera;
 
-    const spark = new SparkRenderer({
-      renderer,
-      focalAdjustment: FOCAL_ADJUSTMENT, // 2.0 = match PlayCanvas/SuperSplat sharpness
-      blurAmount: BLUR_AMOUNT,
-      preBlurAmount: PRE_BLUR_AMOUNT,
-      maxStdDev: MAX_STD_DEV,
-      maxPixelRadius: MAX_PIXEL_RADIUS,
-      minPixelRadius: MIN_PIXEL_RADIUS,
-      lodSplatCount: LOD_SPLAT_COUNT,
-      coneFov0: CONE_FOV0,
-      coneFov: CONE_FOV,
-    });
+    let spark: SparkRenderer;
+    try {
+      spark = new SparkRenderer({
+        renderer,
+        focalAdjustment: FOCAL_ADJUSTMENT, // 2.0 = match PlayCanvas/SuperSplat sharpness
+        blurAmount: BLUR_AMOUNT,
+        preBlurAmount: PRE_BLUR_AMOUNT,
+        maxStdDev: MAX_STD_DEV,
+        maxPixelRadius: MAX_PIXEL_RADIUS,
+        minPixelRadius: MIN_PIXEL_RADIUS,
+        lodSplatCount: LOD_SPLAT_COUNT,
+        coneFov0: CONE_FOV0,
+        coneFov: CONE_FOV,
+      });
+    } catch (error) {
+      renderer.dispose();
+      renderer.domElement.remove();
+      cameraRef.current = null;
+      failSetup("Spark setup", error);
+      return;
+    }
     scene.add(spark);
 
     // Sky first, so the campus is standing under something from the very first frame rather
@@ -532,12 +567,25 @@ export function CampusFlight({
     }
 
     const asset = URLS[ASSET];
-    const splats = new SplatMesh({ url: asset.url, ...LOD_OPT });
+    let splats: SplatMesh;
+    try {
+      splats = new SplatMesh({ url: asset.url, ...LOD_OPT });
+    } catch (error) {
+      skyDome?.dispose();
+      renderer.dispose();
+      renderer.domElement.remove();
+      cameraRef.current = null;
+      failSetup("Model setup", error);
+      return;
+    }
     // stored Y-down → flip so the world is Y-up (see the orientation note above)
     splats.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0));
     scene.add(splats);
 
-    const controls = new SparkControls({ canvas: renderer.domElement });
+    // SparkControls installs global/canvas listeners and exposes no dispose API. Production
+    // (`tools=false`) never consumes it, so constructing it there leaked one listener set and
+    // detached canvas on every showreel entry (and twice under StrictMode).
+    const controls = tools ? new SparkControls({ canvas: renderer.domElement }) : null;
 
     /**
      * Adaptive quality must not act on the LOADING frame rate.
@@ -551,12 +599,37 @@ export function CampusFlight({
      * arrived. It was measuring the download and charging the picture for it.
      */
     let ready = false;
+    let renderFailed = false;
     let adaptFrom = Number.POSITIVE_INFINITY;
+    let rejectThroughSessionId = flightInput.sessionId;
+    const failRender = (error: unknown) => {
+      if (disposed || renderFailed) return;
+      renderFailed = true;
+      ready = false;
+      cancelAnimationFrame(raf);
+      navigation.reset();
+      if (handControl) setSceneAvailability("failed");
+      const message = error instanceof Error ? error.message : String(error);
+      setStatus(`render FAILED — ${message}`);
+      console.error("[spark] render failed", error);
+    };
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      failRender(new Error("WebGL context lost"));
+    };
+    renderer.domElement.addEventListener("webglcontextlost", onContextLost);
+    const renderFrame = () => {
+      try {
+        renderer.render(scene, camera);
+      } catch (error) {
+        failRender(error);
+      }
+    };
 
     const t0 = performance.now();
     splats.initialized
       .then(() => {
-        if (disposed) return;
+        if (disposed || renderFailed) return;
         // Open on the tour's first stop — that framing is the showreel's resting state, so
         // arriving anywhere else means the first thing a passer-by sees is a shot nobody
         // composed. Fall back to an overview of the whole block only if there is no tour.
@@ -589,6 +662,13 @@ export function CampusFlight({
         // to. Throw away the measurement in flight, too, or the first honest tick is polluted
         // by the frames that came before it.
         ready = true;
+        if (handControl) {
+          // A grip that began against the loading/default camera must never wake up later and
+          // capture that pose. Only a session beginning after the composed opening is installed
+          // may take ownership.
+          rejectThroughSessionId = flightInput.sessionId;
+          setSceneAvailability("ready");
+        }
         adaptFrom = performance.now() + 1500;
         frames = 0;
         fpsAt = performance.now();
@@ -599,12 +679,19 @@ export function CampusFlight({
             `budget ${(LOD_SPLAT_COUNT / 1e6).toFixed(1)}M`,
         );
         if (autoPlay && AUTO_TOUR.length >= 2) {
-          playRef.current = { flight: buildFlight(AUTO_TOUR), i: 0, t: 0, phase: "fly" };
+          playRef.current = { flight: AUTO_FLIGHT, i: 0, t: 0, phase: "fly" };
           setPlaying(true);
         }
       })
       .catch((e: unknown) => {
+        // StrictMode deliberately mounts, disposes and mounts again in development. A late
+        // rejection from the disposed first instance has no authority to turn off the live
+        // second instance's global scene input or overwrite its status.
+        if (disposed) return;
         console.error("[spark] load failed", e);
+        if (handControl) {
+          setSceneAvailability("failed");
+        }
         setStatus(`load FAILED — ${e instanceof Error ? e.message : String(e)}`);
       });
 
@@ -614,64 +701,132 @@ export function CampusFlight({
     let recordAcc = 0;
     const lastRecorded = new THREE.Vector3(Infinity, Infinity, Infinity);
     const tmpQ = new THREE.Quaternion();
-    /**
-     * How far the visitor has pushed the camera off the tour's pose, as two scalars along the
-     * pose's own axes rather than a free vector. Keeping them separate is what allows "you may
-     * push in a long way but only back off a little" — a single radius cannot express that.
-     */
-    const manual = { active: false, offset: new THREE.Vector3(), yaw: 0 };
-    /** ramped rates, so a held hand accelerates into motion instead of snapping to speed */
-    const vel = { strafe: 0, lift: 0, dolly: 0, yaw: 0 };
-    const AXES = ["x", "y", "z"] as const;
-    /** the pose the tour was frozen at — every frame re-derives from THIS, never from the
-     *  previous frame's result, or the offset compounds and the camera runs away */
-    const basePos = new THREE.Vector3();
-    const baseQuat = new THREE.Quaternion();
-    const qYaw = new THREE.Quaternion();
-    const curFwd = new THREE.Vector3();
-    const curRight = new THREE.Vector3();
-    const step = new THREE.Vector3();
-    const tmpV = new THREE.Vector3();
-    const UP = new THREE.Vector3(0, 1, 0);
-    // No separate model-bounds clamp: the roam volume is strictly inside the model, so a
-    // clamp could only run AFTER the cell test and shove the camera back into a solid cell.
+    let reportedInteracting = false;
+    let reportedBlocked = false;
+    let acceptedOwnerId: number | null = null;
+    const refreshIntervals: number[] = [];
+    let refreshTarget = Math.min(MAX_TARGET_FPS, 54);
+    let slowWindows = 0;
+    let spareWindows = 0;
 
     const tick = () => {
-      if (disposed) return;
+      if (disposed || renderFailed) return;
       raf = requestAnimationFrame(tick);
       const now = performance.now();
-      const dt = Math.min((now - last) / 1000, 0.05);
+      const elapsedMs = now - last;
+      const abnormalFrameGap = elapsedMs > 120;
+      // Preserve real-time speed down to 10fps; SceneNavigationController divides this into
+      // bounded physics steps. Clamping at 50ms made the same gesture 25% slower at 15fps.
+      const dt = abnormalFrameGap ? 0 : Math.min(elapsedMs / 1000, 0.1);
       last = now;
 
-      // A visitor's hand outranks the tour: freeze the flight where it is and hand the camera
-      // over. Their movement accumulates as an OFFSET from that frozen pose, so letting go
-      // returns to a composed shot instead of wherever they happened to leave the camera.
+      // Learn the display ceiling rather than assuming every screen is 60Hz. A 30Hz panel
+      // should target ~27fps, not be permanently classified as overloaded against a 55fps bar.
+      if (elapsedMs >= 4 && elapsedMs <= 60 && refreshIntervals.length < 90) {
+        refreshIntervals.push(elapsedMs);
+        if (refreshIntervals.length === 45 || refreshIntervals.length === 90) {
+          const ordered = [...refreshIntervals].sort((a, b) => a - b);
+          const interval = ordered[Math.floor(ordered.length * 0.2)] ?? 1000 / 60;
+          const ceiling = 1000 / interval;
+          refreshTarget = Math.min(MAX_TARGET_FPS, Math.max(20, ceiling * 0.9));
+          setFpsTarget(Math.round(refreshTarget));
+        }
+      }
+
+      // The scene sees only a router-owned session. Presence, cursor position and UI presses
+      // cannot enter this branch. Both producer and consumer enforce freshness so a frozen tab,
+      // stalled decoder or lost hand stops on the first stale frame.
       const h = hand.current;
-      const driving = handControl && h.present;
-      if (driving && !manual.active) {
-        manual.active = true;
-        setInteracting(true);
-        manual.offset.set(0, 0, 0);
-        manual.yaw = 0;
-        vel.strafe = vel.lift = vel.dolly = vel.yaw = 0;
-        // Freeze the pose the tour was paused at. Position and heading are the ORIGIN the
-        // visitor's movement is measured from, and what letting go returns to; the travel
-        // axes themselves are re-derived each frame from where they are currently looking.
-        basePos.copy(camera.position);
-        baseQuat.copy(camera.quaternion);
-      } else if (
-        !driving &&
-        manual.active &&
-        manual.offset.lengthSq() < 4e-4 && Math.abs(manual.yaw) < 0.01
-      ) {
-        manual.active = false;
-        manual.offset.set(0, 0, 0);
-        manual.yaw = 0;
-        setInteracting(false); // back on the tour's own pose — the card can return
+      // Presence decides who owns the showreel lifecycle, but never authorizes movement. The
+      // routed scene session below is still the sole camera writer. This distinction lets an
+      // open hand freeze the news immediately while UI hover / a fist safely holds the view.
+      const visitor = handControl && visitorPresentRef.current;
+      const before = navigation.status;
+      const fresh = sceneSampleIsFresh(
+        h.freshAt,
+        now,
+        Math.max(SCENE_INPUT_TTL_MS, h.freshForMs),
+      );
+      const continuingAcceptedSession =
+        before.phase === "grab" &&
+        before.sessionId === h.sessionId &&
+        acceptedOwnerId === h.ownerId;
+      const eligible =
+        handControl &&
+        ready &&
+        h.ready &&
+        h.active &&
+        h.ownerId !== null &&
+        (continuingAcceptedSession || h.sessionId > rejectThroughSessionId) &&
+        fresh &&
+        !abnormalFrameGap;
+
+      // A newly published session can replace the old one between two display frames. End
+      // the old clutch first instead of leaving it stuck in `grab` while its mismatched
+      // updates are ignored. The next display frame may accept the newer session because we
+      // reject only through the session we actually consumed.
+      if (before.phase === "grab" && h.active && !continuingAcceptedSession) {
+        rejectThroughSessionId = Math.max(rejectThroughSessionId, before.sessionId);
+        navigation.end(camera, "owner-changed", now);
+      } else if (eligible) {
+        if (navigation.status.phase !== "grab") {
+          acceptedOwnerId = h.ownerId;
+          rejectThroughSessionId = Math.max(rejectThroughSessionId, h.sessionId);
+          navigation.begin(camera, {
+            sessionId: h.sessionId,
+            seq: h.seq,
+            mode: h.mode,
+            dx: h.dx,
+            dy: h.dy,
+            at: h.freshAt,
+          });
+        }
+        navigation.update(
+          camera,
+          {
+            sessionId: h.sessionId,
+            seq: h.seq,
+            mode: h.mode,
+            dx: h.dx,
+            dy: h.dy,
+            at: h.freshAt,
+          },
+          dt,
+          isRoamable,
+        );
+      } else if (before.phase === "grab") {
+        let reason: SceneEndReason = h.endReason ?? "cancelled";
+        if (abnormalFrameGap || (h.active && !fresh)) reason = "stale";
+        else if (h.active && acceptedOwnerId !== h.ownerId) reason = "owner-changed";
+        else if (!ready || !h.ready) reason = "scene-unavailable";
+        rejectThroughSessionId = Math.max(rejectThroughSessionId, h.sessionId);
+        navigation.end(
+          camera,
+          reason,
+          now,
+          reason === "released" && Number.isFinite(h.freshAt) ? h.freshAt : now,
+        );
+      }
+
+      // While the visitor is still in frame, a released/paused Explore stays exactly where
+      // they left it. Only losing the stable hand starts the breadcrumb return; the tour cannot
+      // resume until that safe return reaches its original composed pose.
+      if (navigation.status.phase !== "grab" && !visitor) {
+        navigation.tick(camera, dt, now, isRoamable);
+      }
+      const navStatus = navigation.status;
+      const showreelTakenOver = visitor || navStatus.interacting;
+      if (showreelTakenOver !== reportedInteracting) {
+        reportedInteracting = showreelTakenOver;
+        setInteracting(reportedInteracting);
+      }
+      if (navStatus.blocked !== reportedBlocked) {
+        reportedBlocked = navStatus.blocked;
+        setCollisionBlocked(reportedBlocked);
       }
 
       const play = playRef.current;
-      if (play && !driving && !manual.active) {
+      if (play && !visitor && !navStatus.interacting) {
         // preview flight — drive the camera along the spline; manual controls stay off so
         // they can't fight it. Loops forever; Esc drops back to free-fly.
         const segs = play.flight.segments;
@@ -686,8 +841,20 @@ export function CampusFlight({
             const k = Math.min(1, play.t / seg.duration);
             const e = easeInOut(k);
             const p = play.flight.curve.getPointAt(seg.u0 + (seg.u1 - seg.u0) * e);
-            // a degenerate spline segment yields NaN and would freeze the camera silently
-            if (Number.isFinite(p.x)) camera.position.copy(p);
+            // The shared offline invariant samples this exact curve, but the render-time guard
+            // is the final authority: a future route/curve edit must never leave the camera in
+            // a blocked voxel that an arriving visitor cannot move out of. Freeze on the last
+            // safe pose and surface a real scene failure instead of offering broken Explore.
+            if (
+              !Number.isFinite(p.x) ||
+              !Number.isFinite(p.y) ||
+              !Number.isFinite(p.z) ||
+              !isRoamable(p.x, p.y, p.z)
+            ) {
+              failRender(new Error("Automatic tour left the safe roam volume"));
+              return;
+            }
+            camera.position.copy(p);
             camera.quaternion.copy(orientAt(play.flight, seg, e, tmpQ));
             const fov = fovAt(play.flight, seg, e);
             if (Math.abs(camera.fov - fov) > 0.01) {
@@ -711,7 +878,17 @@ export function CampusFlight({
             play.phase === "dwell"
               ? 1
               : Math.max(0, (play.t / seg.duration - (1 - CARD_IN_FRACTION)) / CARD_IN_FRACTION);
-          setCard(approach > 0 ? { stop: seg.stop % play.flight.stopCount, t: approach } : null);
+          const cardStop = seg.stop % play.flight.stopCount;
+          setCard((previous) => {
+            if (approach <= 0) return previous === null ? previous : null;
+            if (
+              previous?.stop === cardStop &&
+              (approach === 1 ? previous.t === 1 : Math.abs(previous.t - approach) < 0.015)
+            ) {
+              return previous;
+            }
+            return { stop: cardStop, t: approach };
+          });
 
           if (now - fpsAt >= 500) {
             const pct = play.phase === "fly" ? Math.min(1, play.t / seg.duration) : 1;
@@ -723,11 +900,14 @@ export function CampusFlight({
             );
           }
         }
-      } else if (play && (driving || manual.active)) {
-        // hold the flight's pose; only the offset moves
+      } else if (play && (visitor || navStatus.interacting)) {
+        // The tour/news clock freezes as soon as a stable hand appears, then stays frozen until
+        // any displaced camera has safely retraced to the composed pose after that hand leaves.
       } else if (tools) {
-        controls.fpsMovement.moveSpeed = speedRef.current;
-        controls.update(camera);
+        if (controls) {
+          controls.fpsMovement.moveSpeed = speedRef.current;
+          controls.update(camera);
+        }
 
         // auto-record: while flying with recording on, drop a via every RECORD_INTERVAL_S.
         // Beats hand-placing vias for a route that has to climb over the ring of buildings
@@ -754,54 +934,10 @@ export function CampusFlight({
         }
       }
 
-      if (manual.active) {
-        const ramp = (v: number, want: number) => v + (want - v) * Math.min(1, dt / HAND_ACCEL);
-        if (driving) {
-          vel.strafe = ramp(vel.strafe, h.strafe * HAND_STRAFE_SPEED);
-          vel.lift = ramp(vel.lift, h.lift * HAND_LIFT_SPEED);
-          vel.dolly = ramp(vel.dolly, h.dolly * HAND_DOLLY_SPEED);
-          vel.yaw = ramp(vel.yaw, h.yaw * HAND_YAW_RATE);
-          manual.yaw -= vel.yaw * dt; // yaw is anticlockwise about +Y
-        } else {
-          const decay = 1 - Math.min(1, HAND_RELEASE * dt);
-          manual.offset.multiplyScalar(decay);
-          manual.yaw *= decay;
-          vel.strafe = vel.lift = vel.dolly = vel.yaw = 0;
-        }
-
-        // Aim first, then move — travel follows where the visitor is NOW looking. Freezing the
-        // axes at takeover would mean that after turning 90°, "forward" still ran off in the
-        // direction they started in.
-        qYaw.setFromAxisAngle(UP, manual.yaw);
-        camera.quaternion.copy(qYaw).multiply(baseQuat);
-
-        if (driving) {
-          camera.getWorldDirection(curFwd);
-          curRight.crossVectors(curFwd, UP).normalize();
-          step
-            .copy(curFwd)
-            .multiplyScalar(vel.dolly * dt)
-            .addScaledVector(curRight, vel.strafe * dt);
-          step.y += vel.lift * dt;
-
-          // Take the step one world axis at a time, so a visitor pushing into a wall SLIDES
-          // along it. Refusing the whole step reads as the controls having died.
-          for (const axis of AXES) {
-            const was = manual.offset[axis];
-            manual.offset[axis] = was + step[axis];
-            const p = tmpV.copy(basePos).add(manual.offset);
-            if (manual.offset.length() > HAND_RANGE || !isRoamable(p.x, p.y, p.z)) {
-              manual.offset[axis] = was;
-            }
-          }
-        }
-        camera.position.copy(basePos).add(manual.offset);
-      }
-
       // Walks the sun about a quarter of a degree a minute; the call is a clock check.
       skyDome?.update(now);
 
-      renderer.render(scene, camera);
+      renderFrame();
 
       frames += 1;
       if (now - fpsAt >= 500) {
@@ -809,16 +945,21 @@ export function CampusFlight({
         setFps(measured);
         if (ADAPT && (ADAPT_EARLY || (ready && now >= adaptFrom))) {
           // Nudge, don't jump: a big correction overshoots and the detail visibly pumps.
-          const slow = measured < TARGET_FPS - 5;
-          const spare = measured > TARGET_FPS + 8;
+          const slow = measured < refreshTarget - 3;
+          const spare = measured > refreshTarget + 2;
+          slowWindows = slow ? slowWindows + 1 : 0;
+          spareWindows = spare ? spareWindows + 1 : 0;
           const s0 = spark.lodSplatScale ?? 1;
-          if (slow) {
+          const dprFloor = Math.min(DPR_MIN, deviceDprCap);
+          if (slowWindows >= 3) {
             // resolution first, splat count only once there is no resolution left to give
-            if (curDpr > DPR_MIN) curDpr = Math.max(DPR_MIN, curDpr - 0.15);
+            if (curDpr > dprFloor) curDpr = Math.max(dprFloor, curDpr - 0.15);
             else spark.lodSplatScale = Math.max(SCALE_MIN, s0 * 0.9);
-          } else if (spare) {
+            slowWindows = 0;
+          } else if (spareWindows >= 8) {
             if (s0 < 1) spark.lodSplatScale = Math.min(1, s0 * 1.05);
-            else if (curDpr < DPR_CAP) curDpr = Math.min(DPR_CAP, curDpr + 0.1);
+            else if (curDpr < deviceDprCap) curDpr = Math.min(deviceDprCap, curDpr + 0.1);
+            spareWindows = 0;
           }
           if (Math.abs(renderer.getPixelRatio() - curDpr) > 0.01) {
             renderer.setPixelRatio(curDpr);
@@ -826,7 +967,7 @@ export function CampusFlight({
             // Refill it before the browser sees it. A resize reallocates the drawing buffer
             // cleared, and this block runs AFTER the frame's render — so without this the next
             // thing presented is one blank frame, which is a black flash on a dark scene.
-            renderer.render(scene, camera);
+            renderFrame();
           }
           setScale(spark.lodSplatScale ?? 1);
           setDpr(curDpr);
@@ -846,21 +987,39 @@ export function CampusFlight({
     const onResize = () => {
       camera.aspect = host.clientWidth / host.clientHeight;
       camera.updateProjectionMatrix();
+      const previousCap = deviceDprCap;
+      const qualityFraction = previousCap > 0 ? curDpr / previousCap : 1;
+      deviceDprCap = Math.min(window.devicePixelRatio, DPR_CAP);
+      curDpr = THREE.MathUtils.clamp(
+        deviceDprCap * qualityFraction,
+        Math.min(DPR_MIN, deviceDprCap),
+        deviceDprCap,
+      );
+      renderer.setPixelRatio(curDpr);
       renderer.setSize(host.clientWidth, host.clientHeight);
-      renderer.render(scene, camera); // same reason as the dpr change above
+      setDpr(curDpr);
+      renderFrame(); // same reason as the dpr change above
     };
     window.addEventListener("resize", onResize);
 
     return () => {
       disposed = true;
+      // Keep a real failure visible when React removes the failed scene (for example after a
+      // lazy/error-boundary rejection). A normal route teardown may publish unavailable, but
+      // it must not erase the diagnosis before ShowreelFlight can render it.
+      if (handControl && flightInput.availability !== "failed") {
+        setSceneAvailability("unavailable");
+      }
+      navigation.reset();
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
       splats.dispose?.();
       skyDome?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [tools, autoPlay, ASSET]);
+  }, [tools, autoPlay, ASSET, handControl, hand]);
 
   // waypoint capture + speed keys, kept out of the render loop
   useEffect(() => {
@@ -911,7 +1070,12 @@ export function CampusFlight({
         // viewpoints chosen off the geometry, every frame filled by the model).
         const route = k === "y" || pinsRef.current.length < 2 ? AUTO_TOUR : pinsRef.current;
         if (route.length >= 2) {
-          playRef.current = { flight: buildFlight(route), i: 0, t: 0, phase: "fly" };
+          playRef.current = {
+            flight: route === AUTO_TOUR ? AUTO_FLIGHT : buildFlight(route),
+            i: 0,
+            t: 0,
+            phase: "fly",
+          };
           setPlaying(true);
         }
       } else if (k === "escape") {
@@ -986,20 +1150,12 @@ export function CampusFlight({
         </div>
       )}
 
-      {/* Webcam feed for the tracker. Never shown — putting a mirror of the room on the wall
-          is both a distraction and a privacy problem; the skeleton is the feedback. */}
-      {handControl && (
-        <video ref={videoRef} playsInline muted className="hidden" aria-hidden />
-      )}
-
-      {/* Hand feedback, bottom-right. Present only while someone is actually being tracked, so
-          the idle wall stays a clean picture. */}
-      {/* Bottom-LEFT: the QR owns the bottom-right corner, and the spotlight card owns the
-          right half. This is the corner nothing else competes for. */}
-      {handControl && handPresent && (
-        <div className="pointer-events-none absolute bottom-14 left-8 flex flex-col items-start gap-2">
+      {/* Visualise the one globally owned hand while routed Explore is active. This is
+          feedback, never a second tracker or a second gesture vocabulary. */}
+      {handControl && handVisible && (
+        <div className="pointer-events-none absolute right-8 top-8 flex flex-col items-end gap-2">
           <HandSkeleton
-            flight={hand}
+            source={hand}
             style={{
               width: 260,
               height: 195,
@@ -1013,19 +1169,16 @@ export function CampusFlight({
             className="rounded-full px-4 py-1.5 text-xs font-semibold"
             style={{ background: "rgb(0 0 0 / 0.55)", color: dark.text.primary }}
           >
-            {HAND_HINT[handMode] ?? HAND_HINT.idle}
+            EXPLORE · open hand left/right to turn · up/down to travel
           </div>
-        </div>
-      )}
-
-      {/* Tracking that failed silently is the worst case: the wall just stops responding and
-          nobody knows why. Say it out loud instead. */}
-      {handControl && handStatus === "error" && (
-        <div
-          className="absolute bottom-14 left-8 max-w-md rounded-lg px-4 py-3 text-xs"
-          style={{ background: "rgb(0 0 0 / 0.6)", color: dark.text.secondary }}
-        >
-          hand tracking unavailable — {handError}
+          {collisionBlocked && (
+            <div
+              className="rounded-full px-4 py-1.5 text-xs font-semibold"
+              style={{ background: "rgb(0 0 0 / 0.62)", color: dark.text.primary }}
+            >
+              Boundary reached · move away to continue
+            </div>
+          )}
         </div>
       )}
 
@@ -1038,7 +1191,11 @@ export function CampusFlight({
           style={panel}
         >
           <div>
-            <span style={{ color: fps >= 50 ? dark.accent : dark.text.secondary }}>{fps} fps</span>
+            <span
+              style={{ color: fps >= fpsTarget - 3 ? dark.accent : dark.text.secondary }}
+            >
+              {fps} fps / {fpsTarget} target
+            </span>
             {"  ·  drawing "}
             <span style={{ color: dark.accent }}>{(active / 1e6).toFixed(2)}M</span>
             {" splats/frame"}

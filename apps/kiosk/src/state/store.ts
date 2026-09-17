@@ -5,7 +5,6 @@ import { create } from "zustand";
  *  §6: the kiosk owns navigation). */
 export type View =
   | "home"
-  | "showreel"
   | "people"
   | "research"
   | "projects"
@@ -23,12 +22,7 @@ export type View =
 export type HomeVariant = "board" | "menu" | "classic" | "fly";
 
 interface KioskState {
-  /** Socket connected to the relay. */
-  connected: boolean;
-  /** A controller holds the token → interactive mode (architecture §6). */
-  hasDriver: boolean;
-  /** Manually entered the site from the showreel (a click, no phone) — e.g. for a demo. Lets the
-   *  interactive shell show without a real driver; the phone cursor still only appears with one. */
+  /** Entered the site from the showreel (or the explicit demo deep-link). */
   entered: boolean;
   /**
    * The camera in front of this screen has been measured — or the measurement was skipped, or
@@ -42,8 +36,8 @@ interface KioskState {
   view: View;
   /** Which home design the "home" view renders. */
   homeVariant: HomeVariant;
-  /** A tracked hand is steering the screen. This is what "someone is here" means now that
-   *  the phone is gone — the camera, not a token from the relay. */
+  /** A fresh, stable hand owner is visible. Used for hints and the visitor idle timer only;
+   *  scene/UI authority belongs to an explicit GestureSession, never to presence itself. */
   handPresent: boolean;
   /**
    * The visitor keeps closing their fingers and the pinch keeps not registering.
@@ -58,11 +52,6 @@ interface KioskState {
   /** How the one input the kiosk has is doing. With no phone left as a second way in, a dead
    *  camera is a dead screen, so this is not a detail to keep inside a component. */
   handStatus: "idle" | "loading" | "running" | "error";
-  /** Home hero is pinned → a one-finger drag orbits the particles (and the cursor is
-   *  hidden) instead of moving the cursor. Off once you scroll past the hero. */
-  heroOrbitActive: boolean;
-  setConnected: (v: boolean) => void;
-  setHasDriver: (v: boolean) => void;
   setEntered: (v: boolean) => void;
   setCalibrated: (v: boolean) => void;
   setHandPresent: (v: boolean) => void;
@@ -70,7 +59,6 @@ interface KioskState {
   setPinchTrouble: (v: boolean) => void;
   setView: (v: View) => void;
   setHomeVariant: (v: HomeVariant) => void;
-  setHeroOrbitActive: (v: boolean) => void;
 }
 
 /** Optional deep-link: `?view=projects` opens that section directly (else home). */
@@ -79,7 +67,6 @@ const initialView = ((): View => {
   const v = new URLSearchParams(window.location.search).get("view");
   const valid: View[] = [
     "home",
-    "showreel",
     "people",
     "research",
     "projects",
@@ -106,8 +93,6 @@ const initialEntered =
   typeof window !== "undefined" && new URLSearchParams(window.location.search).get("enter") === "1";
 
 export const useKioskStore = create<KioskState>((set) => ({
-  connected: false,
-  hasDriver: false,
   entered: initialEntered,
   calibrated: false,
   view: initialView,
@@ -115,9 +100,6 @@ export const useKioskStore = create<KioskState>((set) => ({
   handPresent: false,
   handStatus: "idle",
   pinchTrouble: false,
-  heroOrbitActive: false,
-  setConnected: (connected) => set({ connected }),
-  setHasDriver: (hasDriver) => set({ hasDriver }),
   setEntered: (entered) => set({ entered }),
   setCalibrated: (calibrated) => set({ calibrated }),
   setHandPresent: (handPresent) => set({ handPresent }),
@@ -125,5 +107,4 @@ export const useKioskStore = create<KioskState>((set) => ({
   setPinchTrouble: (pinchTrouble) => set({ pinchTrouble }),
   setView: (view) => set({ view }),
   setHomeVariant: (homeVariant) => set({ homeVariant }),
-  setHeroOrbitActive: (heroOrbitActive) => set({ heroOrbitActive }),
 }));

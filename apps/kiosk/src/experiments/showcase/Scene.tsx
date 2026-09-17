@@ -262,7 +262,7 @@ function PointCity({
     const u = matRef.current?.uniforms.uProgress;
     if (u) u.value += ((progressRef.current ?? 0) - u.value) * 0.08;
     if (idleSpin && groupRef.current) {
-      // Ease toward the phone-driven orbit target (Cursor routes one-finger drag here).
+      // Ease toward the shared orbit target (the CV hand experiment or dev drag drives it).
       rot.current.yaw += (heroOrbit.yaw - rot.current.yaw) * 0.1;
       rot.current.pitch += (heroOrbit.pitch - rot.current.pitch) * 0.1;
       // Idle sway is a "you can drag me" hint; fade it out once the visitor takes control.

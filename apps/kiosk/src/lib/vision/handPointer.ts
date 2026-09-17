@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  JOINT,
   VisionEngine,
+  extendedFingers,
+  fingerCurlRatios,
   fistFromGeometry,
   type FaceResult,
   type Landmark,
@@ -10,10 +13,15 @@ import {
   DEFAULT_BOX,
   FaceAnchor,
   PINCH_OFF,
+  PINCH_OFF_MS,
   PINCH_ON,
+  PINCH_ON_MS,
+  PINCH_GRACE_MS,
+  PINCH_SETTLE_MS,
   PinchDetector,
   confidence,
   fallbackBox,
+  frameYInXUnits,
   MIN_PALM_PX,
   interactionBox,
   mapToBox,
@@ -28,6 +36,24 @@ import { NO_FEATURES, pinchFeatures, type PinchFeatures } from "./features";
 import { noteReject, type GesturePhase, type RejectReason } from "./trace";
 import { SIM_ASPECT, activeSim, simFrame } from "./handSim";
 import { visionLog } from "./visionLog";
+import { StableHandOwner } from "./handOwner";
+import { StableOwnerFace } from "./faceOwner";
+import {
+  CONTROL_FRESH_MIN_MS,
+  CONTROL_MAX_INFERENCE_MS,
+  CONTROL_MAX_SAMPLE_GAP_MS,
+  CONTROL_TRACKING_GAP_GRACE_MS,
+  ControlFreshnessEstimator,
+  InferenceHealthMonitor,
+} from "./controlFreshness";
+import { RUNTIME_CLICK_GESTURE, type ClickGesture } from "./gestureRuntime";
+import { PointerStabilizer } from "./pointerStabilizer";
+import {
+  startDecodedFrameLoop,
+  type DecodedFrameStamp,
+  type VideoFrameStaleReason,
+} from "./videoFrameSource";
+import { cameraIdentityFromTrack, publishCameraIdentity } from "./cameraPairing";
 
 /**
  * Hand → cursor. The pointing half of the touchless kiosk.
@@ -50,11 +76,11 @@ import { visionLog } from "./visionLog";
  * POSITION FROM THE PALM, NEVER THE FINGERTIP. The fingers perform the click, so a cursor
  * tied to them lurches at the moment of selection.
  *
- * THE CURSOR FREEZES AS A CLICK LANDS. Even from the palm, a pinch disturbs the whole hand
- * enough to move the cursor a few pixels while the press registers — the failure Vogel &
- * Balakrishnan built ThumbTrigger to avoid on large displays. The position is held for a
- * moment after the press so the click lands where it was aimed, then released so that
- * pinch-and-drag still works.
+ * THE CURSOR FREEZES WHILE A CLICK IS PENDING. Even from the palm, a pinch disturbs the whole
+ * hand enough to move the cursor a few pixels while the press registers — the failure Vogel &
+ * Balakrishnan built ThumbTrigger to avoid on large displays. The aimed position stays pinned
+ * while the closed hand remains inside the drag radius, so opening commits at that position;
+ * real movement releases the cursor and reclassifies the same hold as scrolling.
  */
 
 export interface PointerConfig {
@@ -107,7 +133,7 @@ export interface PointerConfig {
    * geometry we assemble ourselves. It is less elegant and much more reliable, which is the
    * trade this hardware forces.
    */
-  clickGesture: "pinch" | "fist" | "either";
+  clickGesture: ClickGesture;
   /**
    * A global multiplier on the box, 0..1. The box is the cost of the screen in hand movement,
    * and this is the one knob that makes it cheaper everywhere at once — measured or default,
@@ -126,6 +152,25 @@ export interface PointerConfig {
  * drift apart: a cursor that moves while the interaction says "not a drag" is just jitter.
  */
 export const HOLD_RADIUS = 0.025;
+
+export interface GestureTimingConfig {
+  pinchGraceMs: number;
+  pinchSettleMs: number;
+  pinchOnMs: number;
+  pinchOffMs: number;
+  fistOnMs: number;
+  fistOffMs: number;
+}
+
+/** Recognition gates are elapsed decoded-sample time, never inferred from camera FPS. */
+export const DEFAULT_GESTURE_TIMING: GestureTimingConfig = {
+  pinchGraceMs: PINCH_GRACE_MS,
+  pinchSettleMs: PINCH_SETTLE_MS,
+  pinchOnMs: PINCH_ON_MS,
+  pinchOffMs: PINCH_OFF_MS,
+  fistOnMs: 66,
+  fistOffMs: 100,
+} as const;
 
 export const DEFAULT_POINTER: PointerConfig = {
   oneEuro: { ...DEFAULT_ONE_EURO },
@@ -147,14 +192,116 @@ export const DEFAULT_POINTER: PointerConfig = {
    */
   dwellMs: 0,
   dwellRadius: 0.035,
-  clickGesture: "either",
+  clickGesture: RUNTIME_CLICK_GESTURE,
   reachScale: 1,
   enterMs: 250,
   leaveMs: 1200,
 };
 
+export type HandPosture = "open" | "closed" | "unknown";
+
+/** Camera-space coordinates for scene interaction. Nothing UI-specific has touched them. */
+export interface RawHandState {
+  /** Raw camera direction: x grows toward image-right (the visitor's left in a selfie view). */
+  frameX: number;
+  /** Raw camera direction: y grows downward, converted to frame-x units. */
+  frameY: number;
+  /** Index-MCP to pinky-MCP span in frame-x units. */
+  palmSpan: number;
+  /** Optional body-relative coordinate from the steadied face ruler, still unmirrored. */
+  body: { xFaces: number; yFaces: number; anchorHeld: boolean } | null;
+}
+
+export type PointerCancelReason =
+  | "hand-lost"
+  | "source-stale"
+  | "track-ended"
+  | "page-hidden"
+  | "owner-changed"
+  | "mapping-changed"
+  | "hold-timeout";
+
+interface PointerGestureEventBase {
+  seq: number;
+  at: number;
+  ownerId: number;
+  via: "pinch" | "fist";
+  /** UI aim, already mapped and frozen for the press. */
+  aim: { x: number; y: number };
+  /** Unfrozen mapped cursor at this exact event frame (drag origin/update reference). */
+  live: { x: number; y: number };
+  /** Raw observation at this edge. Null only when tracking itself caused a cancellation. */
+  rawHand: RawHandState | null;
+  /** Adaptive result-age budget measured from this laptop's actual completion cadence. */
+  freshForMs: number;
+}
+
+export type PointerGestureEvent =
+  | (PointerGestureEventBase & { type: "press" })
+  | (PointerGestureEventBase & { type: "release" })
+  | (PointerGestureEventBase & { type: "cancel"; reason: PointerCancelReason });
+
+/**
+ * A dwell is produced by the camera clock but consumed by the display clock. Keeping it as a
+ * queued event (instead of only a one-camera-frame boolean) makes it exactly-once even when a
+ * 15fps camera feeds a 120Hz display, or when the display misses the firing frame entirely.
+ */
+export interface PointerDwellEvent {
+  seq: number;
+  at: number;
+  ownerId: number;
+  aim: { x: number; y: number };
+  freshForMs: number;
+}
+
+interface ActivePress {
+  ownerId: number;
+  via: "pinch" | "fist";
+  aim: { x: number; y: number };
+  /** Last mapped position observed while the configured gesture was still closed. */
+  lastHeldLive: { x: number; y: number };
+  /** Conservative shape immediately before a fist press, used only to recognise relaxation. */
+  fistBaseline: FistShape | null;
+  startedAt: number;
+}
+
+interface FistShape {
+  aperture: number | null;
+  curls: [number, number, number, number] | null;
+}
+
+interface TimedFistShape extends FistShape {
+  at: number;
+}
+
 /** Live pointer state. Mutated in place so a render loop can read it without re-rendering. */
 export interface PointerState {
+  /** Metadata from the one decoded video frame that produced this state. */
+  sample: DecodedFrameStamp & {
+    processedAtMs: number;
+    inferenceMs: number;
+    freshForMs: number;
+    sourceFresh: boolean;
+  };
+  /** Stable interaction owner. `id` stays reserved briefly while `visible` is false. */
+  owner: {
+    id: number | null;
+    visible: boolean;
+    selectedIndex: number;
+    handedness: string | null;
+    acquiredAtMs: number;
+    lastSeenAtMs: number;
+  };
+  /** Unmapped and unfiltered owner position for grip-relative scene navigation. */
+  rawHand: RawHandState | null;
+  /** Conservative sensor posture: uncertainty is never treated as an open hand. */
+  posture: HandPosture;
+  /** Independent classifier latches, exposed so calibration can prove each gesture honestly. */
+  pinchHeld: boolean;
+  fistHeld: boolean;
+  /** Legacy edge fields are retained while consumers migrate to `drainEvents()`. */
+  cancelled: boolean;
+  cancelReason: PointerCancelReason | null;
   /** a hand has been present long enough to trust */
   present: boolean;
   /** unit screen coordinates, 0..1, already smoothed and mirrored */
@@ -181,9 +328,9 @@ export interface PointerState {
   /**
    * The release happened because the hand was LOST, not because it opened.
    *
-   * A tap fires on release, so this is the difference between "they let go" and "they walked
-   * away" — and without it, lowering an arm leaves a click behind on whatever the cursor was
-   * last over.
+   * UI controls activate on the confirmed press, but continuous scroll/scene sessions still
+   * end on a real release. This distinguishes "they let go" from "they walked away" so loss
+   * can cancel motion without pretending the visitor deliberately completed it.
    */
   releasedByLoss: boolean;
   /**
@@ -198,7 +345,7 @@ export interface PointerState {
   pressProgress: number;
   /** 0..1 progress toward a dwell trigger; 1 fires it */
   dwell: number;
-  /** true for exactly one frame when dwell fires */
+  /** Legacy camera-frame pulse; production consumers use `drainDwellEvents()` instead. */
   dwellFired: boolean;
   /** whether the geometry is good enough to be believed, and why not */
   conf: Confidence;
@@ -207,10 +354,9 @@ export interface PointerState {
   /**
    * The steadied face anchor this frame — the ruler everything else is measured in.
    *
-   * Exposed because a calibration has to record hand positions RELATIVE TO IT: a sweep stored
-   * in raw frame coordinates is a fact about where somebody happened to stand, and a sweep
-   * stored in face widths is a fact about reach, which is the one that survives the next
-   * visitor standing somewhere else.
+   * Exposed because installation axis holds are recorded relative to this ruler. Raw frame
+   * coordinates describe where the operator stood; face-width units describe reachable camera
+   * space and survive the next visitor standing closer or farther away.
    */
   face: FaceResult | null;
   /** the box is coasting on a remembered face — normally because a hand is in front of it */
@@ -278,6 +424,29 @@ export interface PointerState {
 
 function blankState(): PointerState {
   return {
+    sample: {
+      seq: 0,
+      receivedAtMs: 0,
+      processedAtMs: 0,
+      inferenceMs: 0,
+      freshForMs: CONTROL_FRESH_MIN_MS,
+      mediaTimeMs: 0,
+      sourceFresh: false,
+    },
+    owner: {
+      id: null,
+      visible: false,
+      selectedIndex: -1,
+      handedness: null,
+      acquiredAtMs: 0,
+      lastSeenAtMs: 0,
+    },
+    rawHand: null,
+    posture: "unknown",
+    pinchHeld: false,
+    fistHeld: false,
+    cancelled: false,
+    cancelReason: null,
     present: false,
     x: 0.5,
     y: 0.5,
@@ -319,6 +488,36 @@ function blankState(): PointerState {
 }
 
 /**
+ * Whether this state is safe to turn into an action RIGHT NOW.
+ *
+ * `present` intentionally has a long leave grace for the cursor and idle timer. It must never
+ * be used as a motion-validity test: a camera can freeze while presence remains true forever.
+ */
+export function hasFreshOwner(
+  state: Pick<PointerState, "sample" | "owner" | "rawHand">,
+  nowMs: number,
+  maxAgeMs?: number,
+): boolean {
+  const capturedAt = state.sample.receivedAtMs;
+  const actionableAt = state.sample.processedAtMs;
+  const allowedAge = maxAgeMs ?? state.sample.freshForMs;
+  const inferenceAge = actionableAt - capturedAt;
+  return (
+    state.sample.sourceFresh &&
+    state.owner.id !== null &&
+    state.owner.visible &&
+    state.rawHand !== null &&
+    Number.isFinite(actionableAt) &&
+    Number.isFinite(inferenceAge) &&
+    inferenceAge >= 0 &&
+    inferenceAge <= CONTROL_MAX_INFERENCE_MS &&
+    Number.isFinite(allowedAge) &&
+    nowMs >= actionableAt &&
+    nowMs - capturedAt <= allowedAge
+  );
+}
+
+/**
  * The pointing state machine. Framework-free and camera-free: feed it one vision result per
  * frame and read the state. Kept that way so the kiosk, the lab and any future test harness
  * all drive the exact same code, and a number that looks good in one cannot differ in another.
@@ -329,8 +528,20 @@ export class HandPointer {
   private cfg: PointerConfig;
   private readonly smooth: OneEuroPoint;
   private readonly pinch: PinchDetector;
-  private readonly fist = new FistLatch();
+  private readonly fist = new FistLatch(
+    DEFAULT_GESTURE_TIMING.fistOnMs,
+    DEFAULT_GESTURE_TIMING.fistOffMs,
+  );
   private readonly face = new FaceAnchor();
+  private readonly owner = new StableHandOwner();
+  private readonly ownerFace = new StableOwnerFace();
+  private readonly freshness = new ControlFreshnessEstimator();
+  private readonly stabilizer = new PointerStabilizer();
+  private readonly events: PointerGestureEvent[] = [];
+  private readonly dwellEvents: PointerDwellEvent[] = [];
+  private activePress: ActivePress | null = null;
+  /** Monotonic for this pointer lifetime, including camera/effect restarts. */
+  private sampleSeq = 0;
   private seenSince = 0;
   private goneSince = 0;
   private freezeUntil = 0;
@@ -346,22 +557,36 @@ export class HandPointer {
   private settledAt = 0;
   private dwellAnchor: { x: number; y: number } | null = null;
   private dwellSince = 0;
+  private dwellPausedAt: number | null = null;
   /** dwell must leave the radius before it may fire again — otherwise it repeats forever */
   private dwellArmed = true;
   private dwellFiredAt = -Infinity;
   /** when the current raw click posture began — for the press debounce */
   private rawSince = 0;
+  /** sustained neutral/open evidence used when a released fist is labelled `None` */
+  private fistNeutralSince = 0;
+  /** Recent closed-shape samples; press locks their conservative p75 as a relative baseline. */
+  private fistShapeHistory: TimedFistShape[] = [];
   /** a click was force-released; ignore the posture until it ends */
   private suppressed = false;
   /** audit only: previous frame's clock, for a velocity that is per-second not per-frame */
   private lastAt = 0;
+  /** Last decoded-frame delivery, used to reject elapsed time with no camera evidence. */
+  private lastDecodedAtMs = 0;
   /** audit only: the last reason reported, so a steady state is not logged sixty times a second */
   private lastReject: RejectReason | null = null;
 
   constructor(cfg: PointerConfig = DEFAULT_POINTER) {
     this.cfg = { ...cfg, oneEuro: { ...cfg.oneEuro }, box: { ...cfg.box } };
     this.smooth = new OneEuroPoint(this.cfg.oneEuro);
-    this.pinch = new PinchDetector(this.cfg.pinchOn, this.cfg.pinchOff);
+    this.pinch = new PinchDetector(
+      this.cfg.pinchOn,
+      this.cfg.pinchOff,
+      DEFAULT_GESTURE_TIMING.pinchGraceMs,
+      DEFAULT_GESTURE_TIMING.pinchSettleMs,
+      DEFAULT_GESTURE_TIMING.pinchOffMs,
+      DEFAULT_GESTURE_TIMING.pinchOnMs,
+    );
   }
 
   /**
@@ -373,20 +598,62 @@ export class HandPointer {
    * sitting in `this.cfg` while the classifier went on using the shipped ones. That is the
    * quietest possible way for a calibration to appear to work and change nothing.
    */
-  configure(cfg: Partial<PointerConfig> & { frames?: { grace?: number; settle?: number; fistOn?: number; fistOff?: number } }): void {
-    const { frames, ...rest } = cfg;
+  configure(cfg: Partial<PointerConfig> & { timing?: Partial<GestureTimingConfig> }): void {
+    const { timing, ...rest } = cfg;
+    const mappingChanged =
+      (cfg.box !== undefined && !sameBox(this.cfg.box, cfg.box)) ||
+      (cfg.reachScale !== undefined && cfg.reachScale !== this.cfg.reachScale) ||
+      (cfg.oneEuro !== undefined && !sameOneEuro(this.cfg.oneEuro, cfg.oneEuro));
+
+    if (mappingChanged) {
+      const s = this.state;
+      const now = Number.isFinite(s.sample.processedAtMs)
+        ? s.sample.processedAtMs
+        : typeof performance !== "undefined"
+          ? performance.now()
+          : 0;
+      // Nothing measured in the previous coordinate system may land after a profile/display
+      // switch. Replace any unconsumed edge with one cancellation that can also close a router
+      // session whose press was already consumed.
+      this.events.length = 0;
+      this.dwellEvents.length = 0;
+      if (this.activePress) {
+        this.cancelActive("mapping-changed", now);
+      } else if (s.owner.id !== null) {
+        this.enqueue({
+          type: "cancel",
+          seq: s.sample.seq,
+          at: now,
+          ownerId: s.owner.id,
+          via: s.pressVia ?? (this.cfg.clickGesture === "pinch" ? "pinch" : "fist"),
+          aim: { x: s.x, y: s.y },
+          live: { x: s.liveX, y: s.liveY },
+          rawHand: s.rawHand ? cloneRawHand(s.rawHand) : null,
+          freshForMs: s.sample.freshForMs,
+          reason: "mapping-changed",
+        });
+        s.cancelled = true;
+        s.cancelReason = "mapping-changed";
+      }
+      if (s.rawHeld) this.suppressed = true;
+      s.sample.sourceFresh = false;
+      this.resetSpatialState();
+    }
+
     this.cfg = { ...this.cfg, ...rest };
     if (cfg.oneEuro) this.smooth.configure(cfg.oneEuro);
-    if (cfg.pinchOn !== undefined || cfg.pinchOff !== undefined || frames) {
+    if (cfg.pinchOn !== undefined || cfg.pinchOff !== undefined || timing) {
       this.pinch.configure({
         on: cfg.pinchOn,
         off: cfg.pinchOff,
-        graceFrames: frames?.grace,
-        settleFrames: frames?.settle,
+        graceMs: timing?.pinchGraceMs,
+        settleMs: timing?.pinchSettleMs,
+        offMs: timing?.pinchOffMs,
+        onMs: timing?.pinchOnMs,
       });
     }
-    if (frames?.fistOn !== undefined || frames?.fistOff !== undefined) {
-      this.fist.configure({ onFrames: frames.fistOn, offFrames: frames.fistOff });
+    if (timing?.fistOnMs !== undefined || timing?.fistOffMs !== undefined) {
+      this.fist.configure({ onMs: timing.fistOnMs, offMs: timing.fistOffMs });
     }
   }
 
@@ -401,6 +668,55 @@ export class HandPointer {
 
   pinchStrength(): number {
     return this.pinch.strength(this.state.ratio);
+  }
+
+  /** Consume gesture edges exactly once. The interaction router is the sole intended reader. */
+  drainEvents(): PointerGestureEvent[] {
+    if (!this.events.length) return [];
+    return this.events.splice(0, this.events.length);
+  }
+
+  /** Consume dwell completions exactly once, independently of display refresh rate. */
+  drainDwellEvents(): PointerDwellEvent[] {
+    if (!this.dwellEvents.length) return [];
+    return this.dwellEvents.splice(0, this.dwellEvents.length);
+  }
+
+  /**
+   * Invalidate control without pretending that the visitor opened their hand.
+   * Called by the decoded-frame watchdog and track lifecycle events.
+   */
+  invalidate(
+    now: number,
+    reason: "source-stale" | "track-ended" | "page-hidden",
+  ): void {
+    const s = this.state;
+    s.sample.sourceFresh = false;
+    s.owner.visible = false;
+    s.owner.selectedIndex = -1;
+    s.rawHand = null;
+    s.handSeen = false;
+    s.posture = "unknown";
+    s.pinchHeld = false;
+    s.fistHeld = false;
+    s.present = false;
+    this.seenSince = 0;
+    this.goneSince = now;
+    s.pressed = false;
+    s.released = false;
+    s.releasedByLoss = true;
+    s.dwellFired = false;
+    this.cancelActive(reason, now);
+    // Even if there was no active press, resuming directly into a closed posture is not a new
+    // click. Positive open-hand evidence is required to begin the next gesture epoch.
+    this.suppressed = true;
+    this.resetTrackingState(true);
+    // A resumed stream is a new observation epoch. Keeping the old spatial track through a
+    // frozen/hidden source could let whichever hand appears next inherit an in-progress
+    // visitor's identity.
+    this.owner.reset();
+    this.freshness.reset();
+    this.lastDecodedAtMs = 0;
   }
 
   /** The configured box with `reachScale` applied about its centre. */
@@ -426,12 +742,68 @@ export class HandPointer {
     return { x: first.x, y: first.y };
   }
 
-  update(res: VisionResult, aspect: number, now: number): PointerState {
+  update(res: VisionResult, aspect: number, stampOrNow: number | DecodedFrameStamp): PointerState {
     const s = this.state;
+    const stamp: DecodedFrameStamp =
+      typeof stampOrNow === "number"
+        ? {
+            seq: ++this.sampleSeq,
+            receivedAtMs: stampOrNow,
+            processedAtMs: stampOrNow,
+            inferenceMs: 0,
+            mediaTimeMs: stampOrNow,
+          }
+        : { ...stampOrNow, seq: ++this.sampleSeq };
+    const now = stamp.receivedAtMs;
+    const processedAtMs =
+      Number.isFinite(stamp.processedAtMs) && stamp.processedAtMs! >= now
+        ? stamp.processedAtMs!
+        : now;
+    const inferenceMs =
+      Number.isFinite(stamp.inferenceMs) && stamp.inferenceMs! >= 0 ? stamp.inferenceMs! : 0;
+    const decodedGapMs = this.lastDecodedAtMs > 0 ? now - this.lastDecodedAtMs : 0;
+    const decodedContinuityBroken =
+      !Number.isFinite(decodedGapMs) ||
+      decodedGapMs < 0 ||
+      decodedGapMs > CONTROL_MAX_SAMPLE_GAP_MS;
+    const sampleAgeMs = processedAtMs - now;
+    const sampleTooOld =
+      !Number.isFinite(sampleAgeMs) ||
+      sampleAgeMs < 0 ||
+      sampleAgeMs > CONTROL_MAX_INFERENCE_MS ||
+      inferenceMs > CONTROL_MAX_INFERENCE_MS;
+    const continuityBroken = decodedContinuityBroken || sampleTooOld;
+    this.lastDecodedAtMs = now;
+
+    if (continuityBroken) this.freshness.reset();
+    const freshForMs = this.freshness.update(
+      processedAtMs,
+      sampleTooOld ? 0 : inferenceMs,
+    );
+
+    s.sample = {
+      ...stamp,
+      processedAtMs,
+      inferenceMs,
+      freshForMs,
+      sourceFresh: !sampleTooOld,
+    };
     s.pressed = false;
     s.released = false;
     s.releasedByLoss = false;
+    s.cancelled = false;
+    s.cancelReason = null;
     s.dwellFired = false;
+
+    if (continuityBroken) {
+      // Elapsed-time gesture gates may only count intervals bracketed by decoded observations.
+      // Cancel an active operation, clear every recogniser accumulator and stay disarmed until
+      // a real open hand is seen. The resumed closed frame may seed a new latch for diagnostics,
+      // but suppression prevents it from becoming an action without that open transition.
+      this.cancelActive("source-stale", now);
+      this.suppressed = true;
+      this.resetTrackingState();
+    }
 
     this.frames += 1;
     if (!this.fpsAt) this.fpsAt = now;
@@ -441,21 +813,64 @@ export class HandPointer {
       this.fpsAt = now;
     }
 
-    const hand = res.hands[0] ?? null;
+    // MediaPipe result order is not identity. Select the same physical hand by continuity and
+    // reserve it briefly through gaps so a bystander's hand cannot steal a held interaction.
+    const previousOwnerId = s.owner.id;
+    const selected = this.owner.update(
+      res.hands,
+      now,
+      aspect,
+      // `freshForMs` is measured from capture. On a loaded Gaussian page, most of that lease can
+      // already have elapsed by the time inference completes, and one genuinely missing result
+      // spans two completion periods between visible hands. Keep the immutable owner through one
+      // bounded post-freshness hole; recovered coordinates still need to pass the ordinary match.
+      this.activePress ? freshForMs + CONTROL_TRACKING_GAP_GRACE_MS : undefined,
+    );
+    s.owner = {
+      id: selected.ownerId,
+      visible: selected.visible,
+      selectedIndex: selected.selectedIndex,
+      handedness: selected.handedness,
+      acquiredAtMs: selected.acquiredAtMs,
+      lastSeenAtMs: selected.lastSeenAtMs,
+    };
+    const identityBoundary =
+      selected.changed ||
+      (previousOwnerId !== null &&
+        (selected.ownerId === null || previousOwnerId !== selected.ownerId));
+    if (identityBoundary) {
+      const lostActive = this.activePress !== null;
+      const boundaryReason = selected.ownerId === null ? "hand-lost" : "owner-changed";
+      this.cancelActive(boundaryReason, now);
+      if (lostActive && boundaryReason === "hand-lost") {
+        s.counts.lostReleases += 1;
+        noteReject("PINCH_RELEASE_NOT_FOUND", "owner missing beyond tracking grace", now);
+      }
+      this.resetTrackingState(true);
+      s.present = false;
+      this.seenSince = 0;
+      this.goneSince = now;
+    }
+
+    const hand = selected.hand;
     const palm = palmCenter(hand?.landmarks);
-    const palmNorm = palmWidthNorm(hand?.landmarks);
-    // A face narrower than the visitor's own palm is not the visitor's face. It is a poster,
-    // a photo on the wall behind, or a colleague further back — and a box scaled from it is
-    // built to a stranger's size in a stranger's place: a centimetre of hand becomes half a
-    // screen, and the corners land wherever that face happens to be. A real face is about 1.6
-    // palms wide, so the bar is generous; below it the hand measures itself (`fallbackBox`).
+    const palmNorm = palmWidthNorm(hand?.landmarks, aspect);
+    const wrist = hand?.landmarks[JOINT.wrist] ?? null;
+
+    const associatedFace = this.ownerFace.update(
+      res.faces ?? (res.face ? [res.face] : []),
+      selected.ownerId,
+      wrist,
+      palmNorm,
+      now,
+      aspect,
+    );
+    // A face narrower than the visitor's own palm is likely a poster or somebody behind them.
     const plausibleFace =
-      res.face && palmNorm > 0 && res.face.w < palmNorm * MIN_FACE_PER_PALM ? null : res.face;
-    // Steadied anchor, not the raw detection: it stops the mapping shivering under a still
-    // hand, and it survives the hand passing in front of the face — which happens constantly.
-    const face = this.face.update(plausibleFace, now);
-    // The face is the ruler, but never the gate. When it cannot be found at all, the hand
-    // measures itself and the mapping degrades instead of the pointer switching off.
+      associatedFace && palmNorm > 0 && associatedFace.w < palmNorm * MIN_FACE_PER_PALM
+        ? null
+        : associatedFace;
+    const face = this.face.update(plausibleFace, now, selected.visible);
     const boxCfg = this.scaledBox();
     const box = interactionBox(face, aspect, boxCfg) ?? fallbackBox(palmNorm, aspect, boxCfg);
     const ratio = handRatio(hand);
@@ -463,18 +878,29 @@ export class HandPointer {
     s.box = box;
     s.face = face;
     s.faceHeld = this.face.held;
-    s.hands = res.hands.map((h) => h.landmarks);
+    s.hands = res.hands.map((item) => item.landmarks);
     s.ratio = ratio;
-    // Audit finding F1, now fixed (docs/vision-audit.md §3.3). This used to read
-    // `palmNorm * 1280` — a hard-coded assumption about the camera rather than a measurement.
-    // `getUserMedia` asks for an *ideal* 1280x720 and a browser may hand back 640x480 without
-    // complaint, in which case every palm-pixel figure the "too far" and "hand too small"
-    // verdicts are judged on was exactly twice the truth, so neither could ever fire on the one
-    // camera that most needed them. The frame's real width now comes through `VisionResult`.
+    s.rawHand =
+      wrist && Number.isFinite(wrist.x) && Number.isFinite(wrist.y) && palmNorm > 0
+        ? {
+            frameX: wrist.x,
+            frameY: frameYInXUnits(wrist.y, aspect),
+            palmSpan: palmNorm,
+            body:
+              face && face.w > 0
+                ? {
+                    xFaces: (wrist.x - face.cx) / face.w,
+                    yFaces: (wrist.y - face.cy) / face.w,
+                    anchorHeld: this.face.held,
+                  }
+                : null,
+          }
+        : null;
+
     const trueFrameW = res.frame?.w && res.frame.w > 0 ? res.frame.w : 1280;
     s.conf = confidence(face, box, hand ? palmNorm * trueFrameW : Number.NaN);
 
-    // --- audit instrumentation: derived only, decides nothing -----------------------------
+    // --- audit instrumentation ------------------------------------------------------------
     const frameW = res.frame?.w ?? Number.NaN;
     const frameH = res.frame?.h ?? Number.NaN;
     s.frame = { w: frameW, h: frameH };
@@ -486,7 +912,8 @@ export class HandPointer {
     const dtS = this.lastAt ? Math.max(1e-3, (now - this.lastAt) / 1000) : 0;
     this.lastAt = now;
 
-    // --- presence, with hysteresis on both edges so a dropped frame is not an exit ---
+    // Presence remains deliberately forgiving for cursor visibility and the kiosk idle timer.
+    // Action validity is the much tighter `hasFreshOwner`, never this flag.
     if (hand && palm && box) {
       this.goneSince = 0;
       if (!this.seenSince) this.seenSince = now;
@@ -496,44 +923,150 @@ export class HandPointer {
       if (!this.goneSince) this.goneSince = now;
       if (s.present && now - this.goneSince > this.cfg.leaveMs) {
         s.present = false;
-        // Forget the filter history, or the next visitor's cursor glides in from where the
-        // last one left it — which reads as the screen being haunted rather than responsive.
         this.smooth.reset();
         this.dwellAnchor = null;
         s.dwell = 0;
       }
     }
 
-    // --- the click, before the position: a press must be able to freeze where it was aimed ---
-    const wasPinched = s.pinched;
+    // MediaPipe commonly loses the landmarks for one or two frames exactly while the fingers
+    // fold over the palm. StableHandOwner has reserved the same non-null identity, so this is an
+    // observation gap, not a release and not an invitation for another hand to take over. Keep
+    // the immutable press and last held position, pause every recogniser/off timer, and let the
+    // owner reservation provide the hard bound. Once that reservation expires the identity
+    // boundary above cancels the operation normally.
+    if (!hand && this.activePress && selected.ownerId === this.activePress.ownerId) {
+      s.rawHand = null;
+      s.owner.visible = false;
+      s.posture = "unknown";
+      s.pressed = false;
+      s.released = false;
+      s.rawHeld = true;
+      s.pinched = true;
+      s.pressVia = this.activePress.via;
+      s.pressProgress = 0;
+      s.phase = "HELD";
+      s.reject = "HAND_NOT_FOUND";
+      this.lastReject = "HAND_NOT_FOUND";
+      return s;
+    }
+
+    // --- recognition and explicit open/closed/unknown posture ----------------------------
     const g = this.cfg.clickGesture;
-    const pinching = g !== "fist" && this.pinch.update(ratio);
+    const pinching = g !== "fist" && this.pinch.update(ratio, now);
+    const rawGeometricFist = hand ? fistFromGeometry(hand.world) : false;
+    const classifierFist =
+      !!hand && hand.label === "Closed_Fist" && hand.score >= FIST_MIN_SCORE;
+    const confidentClassifierFist =
+      !!hand && hand.label === "Closed_Fist" && hand.score >= FIST_RELEASE_VETO_SCORE;
+    const curls = hand ? fingerCurlRatios(hand.world) : null;
+    const currentShape: FistShape = {
+      aperture: Number.isFinite(ratio) ? ratio : null,
+      curls,
+    };
+    const baseline = this.activePress?.via === "fist" ? this.activePress.fistBaseline : null;
+    const apertureRelaxed =
+      !confidentClassifierFist &&
+      !rawGeometricFist &&
+      baseline?.aperture != null &&
+      currentShape.aperture != null &&
+      currentShape.aperture - baseline.aperture >= FIST_APERTURE_RELAX_DELTA;
+    const curlRelaxed =
+      !confidentClassifierFist && fistCurlRelaxed(baseline?.curls ?? null, currentShape.curls);
+    const relativeFistRelaxed = curlRelaxed || apertureRelaxed;
+    // Only multi-finger uncurl may override a geometry vote that is still technically below
+    // the old 1.0 boundary. Merely opening the thumb/index aperture cannot release a true fist.
+    const geometricFist = rawGeometricFist && !curlRelaxed;
+    // A 0.4 classifier vote is useful for acquiring a fist, but it is not strong enough to veto
+    // a sustained, multi-finger release measured relative to this exact press. Keep a higher veto
+    // threshold for that conflict so a stale 0.41 label cannot hold the UI down for 30 seconds.
+    const effectiveClassifierFist =
+      classifierFist && !(this.activePress?.via === "fist" && relativeFistRelaxed);
+    const fistEvidence = !!hand && (effectiveClassifierFist || geometricFist);
     const fisting =
       g !== "pinch" &&
-      this.fist.update(hand?.label ?? null, hand?.score ?? 0, hand ? fistFromGeometry(hand.world) : false);
-    // Keep the pinch calibrator fed even when it isn't driving, so its open reference stays
-    // converged and switching gesture mid-session doesn't start from a stale baseline.
-    if (g === "fist") this.pinch.update(ratio);
+      this.fist.update(
+        effectiveClassifierFist ? "Closed_Fist" : null,
+        effectiveClassifierFist ? hand?.score ?? 0 : 0,
+        geometricFist,
+        now,
+      );
+    if (g === "fist") this.pinch.update(ratio, now);
+    s.pinchHeld = pinching;
+    s.fistHeld = fisting;
 
-    // Debounced: a posture has to survive PRESS_DEBOUNCE_MS before the rest of the system
-    // hears about it at all. See the constant for what happened without this.
-    const rawHeld = pinching || fisting;
-    // Audit: a raw latch that never becomes a press is the single most informative event in
-    // the whole pipeline — it means the CAMERA saw the pinch and the POLICY threw it away.
+    const fingers = hand ? extendedFingers(hand.landmarks) : null;
+    const openPalm =
+      !!hand &&
+      ((hand.label === "Open_Palm" && hand.score >= OPEN_PALM_MIN_SCORE) ||
+        (fingers ? fingers.slice(1).filter(Boolean).length >= 3 : false));
+    const pinchOpen = !!hand && Number.isFinite(ratio) && ratio > this.cfg.pinchOff;
+    // `fisting` already contains the first elapsed-time release hysteresis. Do not override it
+    // with one Open_Palm label or one noisy geometry vote: doing so turns a single bad frame
+    // into release -> second press while the visitor never opened their fist.
+    //
+    // MediaPipe commonly labels an ordinarily relaxed hand `None`, however. Requiring a
+    // classifier-perfect Open_Palm left the accepted fist latched forever, so no later control
+    // could produce another press. For that neutral path, require a wide thumb/index aperture
+    // to remain after the fist latch has gone off for a second, independent time gate.
+    const activeFistNeedsNaturalProof = this.activePress?.via === "fist";
+    const neutralFistCandidate =
+      !!hand &&
+      !fisting &&
+      !fistEvidence &&
+      (!activeFistNeedsNaturalProof || openPalm || pinchOpen || relativeFistRelaxed);
+    if (neutralFistCandidate) {
+      if (!this.fistNeutralSince) this.fistNeutralSince = now;
+    } else {
+      this.fistNeutralSince = 0;
+    }
+    const neutralFistOpen =
+      this.fistNeutralSince > 0 && now - this.fistNeutralSince >= FIST_NEUTRAL_RELEASE_MS;
+    const confirmedFistOpen = !fisting && !fistEvidence && (openPalm || neutralFistOpen);
+    // Aperture above the off threshold is only provisional open evidence. The detector's
+    // elapsed release grace must complete before a pinch can release or re-arm; otherwise one
+    // noisy fingertip frame can end a held click and manufacture another press.
+    const confirmedPinchOpen = pinchOpen && !pinching;
+    const rawHeld = !!hand && (pinching || fisting);
+    const pinchEvidence = !!hand && Number.isFinite(ratio) && ratio <= this.cfg.pinchOff;
+    const directGestureClosed =
+      g === "fist"
+        ? fistEvidence
+        : g === "pinch"
+          ? pinchEvidence
+          : fistEvidence || pinchEvidence;
+    const explicitGestureOpen =
+      g === "fist"
+        ? confirmedFistOpen
+        : g === "pinch"
+          ? confirmedPinchOpen
+          : confirmedFistOpen && confirmedPinchOpen;
+    // The router and the press latch must agree about whether this gesture epoch is open.
+    // Previously a neutral-labelled hand was published as `open` from its aperture while the
+    // fist press itself remained held, so the router re-armed even though HandPointer could
+    // never emit another press. One canonical value now drives both decisions.
+    // Direct evidence publishes CLOSED immediately so the router keeps its neutral arming while
+    // the temporal latch is still proving a deliberate close. Once an active press exists, the
+    // latch remains held briefly after that direct evidence disappears; publish this release-
+    // hysteresis interval as UNKNOWN, not CLOSED. Opening can move the mapped hand shape, and
+    // treating those frames as held motion would turn a stationary tap into scroll. UI sessions
+    // wait safely for the durable release edge; scene motion fails closed.
+    const closingOrHeld = directGestureClosed || (rawHeld && !this.activePress);
+    s.posture = closingOrHeld
+      ? "closed"
+      : rawHeld
+        ? "unknown"
+        : explicitGestureOpen
+          ? "open"
+          : "unknown";
+
     if (rawHeld && !s.rawHeld) {
       s.counts.rawLatches += 1;
-      // PIN FROM THE FIRST FRAME OF THE POSTURE, not from the press. The press is 350ms of
-      // debounce away, and those are the frames in which the hand has just closed and the
-      // landmarks are at their noisiest — so the cursor shivered on the Enter button while the
-      // ring filled. The aim is taken from before the hand began closing, exactly as the press
-      // would take it; if the posture turns out to be too short to be a press, the pin simply
-      // ends with it.
       this.frozen = this.positionAt(Math.max(now - this.cfg.pressLookbackMs, this.settledAt));
       this.pressLive = { x: s.liveX, y: s.liveY };
       this.unpinned = false;
     }
-    // ...and its opposite: the raw posture ending while the debounce was still filling.
-    if (!rawHeld && s.rawHeld && s.pressProgress > 0 && !s.pinched) {
+    if (!rawHeld && s.rawHeld && s.pressProgress > 0 && !this.activePress) {
       noteReject(
         "PINCH_TOO_SHORT",
         `held ${(now - this.rawSince).toFixed(0)}ms of ${PRESS_DEBOUNCE_MS}ms`,
@@ -543,80 +1076,104 @@ export class HandPointer {
     s.rawHeld = rawHeld;
     if (!rawHeld) {
       this.rawSince = 0;
-      this.suppressed = false; // the posture ended; a new one may start
-    } else if (!this.rawSince) this.rawSince = now;
-    s.pinched = !this.suppressed && rawHeld && now - this.rawSince >= PRESS_DEBOUNCE_MS;
+      // A timeout/discontinuity suppression is released only by the configured gesture's
+      // canonical open evidence. For a fist, aperture alone is not enough: it must follow the
+      // non-fist latch and survive the neutral-release gate. A lost hand can never re-arm it.
+      if (explicitGestureOpen && !sampleTooOld) this.suppressed = false;
+    } else if (!this.rawSince) {
+      this.rawSince = now;
+    }
+
+    if (!this.activePress && (classifierFist || rawGeometricFist)) {
+      this.fistShapeHistory.push({ at: now, ...currentShape });
+      const cutoff = now - FIST_BASELINE_HISTORY_MS;
+      while (
+        this.fistShapeHistory.length > 1 &&
+        (this.fistShapeHistory[0]?.at ?? 0) < cutoff
+      ) {
+        this.fistShapeHistory.shift();
+      }
+    } else if (!this.activePress && !rawHeld) {
+      this.fistShapeHistory = [];
+    }
+
+    const debouncedHeld =
+      !this.suppressed && rawHeld && this.rawSince > 0 && now - this.rawSince >= PRESS_DEBOUNCE_MS;
     s.pressProgress =
-      this.suppressed || !rawHeld || s.pinched
+      this.suppressed || !rawHeld || this.activePress
         ? 0
         : Math.min(1, (now - this.rawSince) / PRESS_DEBOUNCE_MS);
 
-    // Held impossibly long? Then it was never a click — let go, whatever the sensor thinks.
-    // With fixed thresholds a permanent stick should be impossible, but a click that cannot
-    // be released is the one failure that disables everything else, so it keeps a backstop.
-    if (s.pinched && now - this.rawSince > MAX_HOLD_MS) {
-      // Only the suppression flag — deliberately NOT resetting the detectors. Resetting them
-      // makes the posture read as absent for a few frames, which clears the very flag that is
-      // meant to hold the release, and the click latches straight back on. The flag alone
-      // keeps it down until the hand genuinely opens.
-      this.suppressed = true;
-      s.pinched = false;
-      s.counts.stuckReleases += 1;
-      noteReject("PINCH_HELD_TOO_LONG", `${(now - this.rawSince).toFixed(0)}ms`, now);
-    }
-    s.pressVia = s.pinched ? (pinching ? "pinch" : "fist") : null;
-    if (s.pinched && !wasPinched) {
-      s.pressed = true;
-      s.counts.presses += 1;
-      // Never reach back past the moment the hand settled. The lookback exists to undo the
-      // drift a pinch causes, but applied blindly it also reaches into the travel that brought
-      // the cursor here — so pinching the instant you arrive delivered the click to where you
-      // came FROM. Measured: pinching immediately did nothing; waiting 200ms worked.
-      // The aim was already pinned when the posture began (see the raw latch above); a press
-      // that arrives with the hand still inside the hold radius keeps it. One that arrives
-      // after the hand moved off re-aims, so a slow, wandering close still lands where the hand
-      // is rather than where it was half a second ago.
+    let pendingPress = false;
+    let pendingRelease: ActivePress | null = null;
+    if (!this.activePress && debouncedHeld && s.owner.id !== null && s.rawHand) {
       if (this.unpinned) {
-        this.frozen = this.positionAt(
-          Math.max(now - this.cfg.pressLookbackMs, this.settledAt),
-        );
+        this.frozen = this.positionAt(Math.max(now - this.cfg.pressLookbackMs, this.settledAt));
         this.pressLive = { x: s.liveX, y: s.liveY };
         this.unpinned = false;
       }
+      // A real fist often also collapses the thumb/index aperture below the pinch threshold.
+      // Prefer the whole-hand posture when both classifiers are true: its release requires
+      // either an explicit open palm or the separately gated neutral-hand proof, while a pinch
+      // release is governed by the aperture detector.
+      const via: "pinch" | "fist" = fisting ? "fist" : "pinch";
+      this.activePress = {
+        ownerId: s.owner.id,
+        via,
+        aim: { ...this.frozen },
+        lastHeldLive: { x: s.liveX, y: s.liveY },
+        fistBaseline: via === "fist" ? fistShapeBaseline(this.fistShapeHistory) : null,
+        startedAt: now,
+      };
+      pendingPress = true;
+      s.pressed = true;
+      s.counts.presses += 1;
       this.freezeUntil = now + this.cfg.pressFreezeMs;
-      // A deliberate click ends any dwell in progress — otherwise a slow, careful pinch fires
-      // both, and the visitor gets two actions for one intention.
       this.dwellAnchor = null;
       s.dwell = 0;
       this.dwellArmed = false;
-    } else if (!s.pinched && wasPinched) {
-      s.released = true;
-      // No hand this frame means the fingers never opened — the tracking simply stopped.
-      s.releasedByLoss = !hand;
-      if (s.releasedByLoss) {
-        s.counts.lostReleases += 1;
-        noteReject("PINCH_RELEASE_NOT_FOUND", "hand lost mid-press", now);
-      }
     }
 
-    // --- position ---
+    if (this.activePress) {
+      const explicitOpen =
+        this.activePress.via === "pinch" ? confirmedPinchOpen : confirmedFistOpen;
+      if (explicitOpen) {
+        pendingRelease = this.activePress;
+        this.activePress = null;
+        s.released = true;
+        // In `either` mode a fist can also satisfy the pinch detector (and vice versa). Releasing
+        // the detector that owns this epoch must not let the still-held secondary detector create
+        // an immediate second press. Suppress until both channels have observed canonical open.
+        if (rawHeld) this.suppressed = true;
+      } else if (now - this.activePress.startedAt > MAX_HOLD_MS) {
+        this.suppressed = true;
+        s.counts.stuckReleases += 1;
+        noteReject("PINCH_HELD_TOO_LONG", `${(now - this.activePress.startedAt).toFixed(0)}ms`, now);
+        this.cancelActive("hold-timeout", now);
+      }
+    }
+    s.pinched = this.activePress !== null;
+    s.pressVia = this.activePress?.via ?? null;
+
+    // --- mapped UI position (separate from raw scene coordinates) -------------------------
     if (palm && box) {
       const m = mapToBox(box, palm);
-      const f = this.smooth.filter(m.u, m.v, now);
-      // History holds the LIVE filtered position, never the frozen output — otherwise a press
-      // writes its own frozen value back into the record it will read from next time.
+      const filtered = this.smooth.filter(m.u, m.v, now);
+      const f = this.stabilizer.filter(
+        filtered.x,
+        filtered.y,
+        s.posture === "open" && !this.activePress,
+        now,
+      );
       this.history.push({ t: now, x: f.x, y: f.y });
       const cutoff = now - HISTORY_MS;
       while (this.history.length > 1 && (this.history[0]?.t ?? 0) < cutoff) this.history.shift();
 
-      // Travelling fast means the visitor is still moving toward something; the moment that
-      // stops is the moment their aim exists.
       const moved = Math.hypot(f.x - s.liveX, f.y - s.liveY);
       if (dtS) s.velocity = moved / dtS;
       if (moved > 0.004) this.settledAt = now;
       s.liveX = f.x;
       s.liveY = f.y;
-      // Let go of the pin once the hand has genuinely travelled — one way, for this press.
       if (
         !this.unpinned &&
         Math.hypot(f.x - this.pressLive.x, f.y - this.pressLive.y) > this.cfg.holdRadius
@@ -632,14 +1189,61 @@ export class HandPointer {
       }
     }
 
-    // --- dwell: the fallback for when a pinch will not read ---
-    if (this.cfg.dwellMs > 0 && s.present && !s.pinched) {
+    // Opening a fist changes the hand silhouette and can move the mapped wrist a little even
+    // when the visitor intended a stationary tap. A release must decide tap-versus-scroll from
+    // the last position while the gesture was actually held, not from that opening frame. This
+    // still captures a real fast drag because every closed camera sample advances this value.
+    const activeStillClosed =
+      this.activePress?.via === "fist" ? fistEvidence : pinchEvidence;
+    if (this.activePress && activeStillClosed) {
+      this.activePress.lastHeldLive = { x: s.liveX, y: s.liveY };
+    }
+
+    if (pendingPress && this.activePress && s.rawHand) {
+      this.enqueue({
+        type: "press",
+        seq: s.sample.seq,
+        // Freshness is total age since capture, not a new lease beginning when inference ends.
+        at: now,
+        ownerId: this.activePress.ownerId,
+        via: this.activePress.via,
+        aim: { ...this.activePress.aim },
+        live: { ...this.activePress.lastHeldLive },
+        rawHand: cloneRawHand(s.rawHand),
+        freshForMs,
+      });
+    }
+    if (pendingRelease) {
+      this.enqueue({
+        type: "release",
+        seq: s.sample.seq,
+        at: now,
+        ownerId: pendingRelease.ownerId,
+        via: pendingRelease.via,
+        aim: { ...pendingRelease.aim },
+        live: { ...pendingRelease.lastHeldLive },
+        rawHand: s.rawHand ? cloneRawHand(s.rawHand) : null,
+        freshForMs,
+      });
+      this.fistShapeHistory = [];
+    }
+
+    // --- dwell ---------------------------------------------------------------------------
+    if (
+      this.cfg.dwellMs > 0 &&
+      s.present &&
+      !rawHeld &&
+      !s.pinched &&
+      hasFreshOwner(s, processedAtMs)
+    ) {
+      if (this.dwellPausedAt !== null) {
+        // A possible click posture pauses dwell rather than earning dwell time. Brief pinch
+        // noise therefore does not destroy accessibility progress, while a real gesture can
+        // never complete both activation paths at once.
+        this.dwellSince += Math.max(0, now - this.dwellPausedAt);
+        this.dwellPausedAt = null;
+      }
       const a = this.dwellAnchor;
-      // Re-arming asks for a bigger movement than merely leaving the hold radius, and waits
-      // out a refractory period. Without both, a hand held perfectly still fires twice: the
-      // smoothing keeps creeping toward its final value long after the dwell completes, and
-      // that creep alone was enough to drift past the hold radius, re-arm, and fire again —
-      // an unrequested double click on whatever the visitor had just selected.
       const moved = a ? Math.hypot(s.x - a.x, s.y - a.y) : Infinity;
       const rearmAt = this.cfg.dwellRadius * REARM_FACTOR;
       if (!a || moved > (this.dwellArmed ? this.cfg.dwellRadius : rearmAt)) {
@@ -656,19 +1260,32 @@ export class HandPointer {
           s.dwellFired = true;
           this.dwellArmed = false;
           this.dwellFiredAt = now;
+          if (s.owner.id !== null) {
+            this.dwellEvents.push({
+              seq: s.sample.seq,
+              at: now,
+              ownerId: s.owner.id,
+              aim: { x: s.x, y: s.y },
+              freshForMs,
+            });
+            if (this.dwellEvents.length > MAX_EVENT_QUEUE) {
+              this.dwellEvents.splice(0, this.dwellEvents.length - MAX_EVENT_QUEUE);
+            }
+          }
         }
       } else {
         s.dwell = 0;
       }
     } else {
       s.dwell = 0;
+      if (rawHeld && this.dwellPausedAt === null) this.dwellPausedAt = now;
+      if (!rawHeld && (!s.present || !hasFreshOwner(s, processedAtMs))) {
+        this.dwellPausedAt = null;
+        this.dwellAnchor = null;
+      }
     }
 
-    // --- audit: name the phase, and say why no click came out of THIS frame ---------------
-    //
-    // The order below is a claim about causation, not about taste: report the most UPSTREAM
-    // thing that is wrong. A hand that spans forty pixels will also read as "too open", and
-    // saying so would send the next person to tune a threshold when the answer is a lens.
+    // --- audit rejection -----------------------------------------------------------------
     const gates = this.pinch.gates;
     s.gestureMs = this.rawSince ? now - this.rawSince : 0;
     s.phase = this.suppressed
@@ -691,18 +1308,13 @@ export class HandPointer {
     } else if (this.suppressed) {
       reject = "PINCH_HELD_TOO_LONG";
     } else if (!s.pinched && !rawHeld) {
-      // The true pixel figure, not the one `confidence` was given — see the note above.
       if (Number.isFinite(s.palmPx) && s.palmPx < MIN_PALM_PX) {
         reject = "HAND_TOO_SMALL";
         detail = `palm ${s.palmPx.toFixed(0)}px < ${MIN_PALM_PX}px floor`;
-      } else if (gates.settled <= gates.settleFrames) {
+      } else if (gates.settledMs < gates.settleMs) {
         reject = "LANDMARK_UNSTABLE";
-        detail = `settling ${gates.settled}/${gates.settleFrames} frames after a tracking gap`;
+        detail = `settling ${gates.settledMs.toFixed(0)}/${gates.settleMs.toFixed(0)}ms after a tracking gap`;
       } else if (s.phase === "CLOSING" && Number.isFinite(ratio) && ratio >= this.cfg.pinchOn) {
-        // Gated on CLOSING deliberately. A hand resting open is not being refused, it is not
-        // asking for anything — and counting every idle frame as a rejection would swamp the
-        // taxonomy with the one event that carries no information, in the HUD and in the
-        // recorded metrics alike.
         reject = "PINCH_SCORE_ABOVE_THRESHOLD";
         detail = `ratio ${ratio.toFixed(3)} ≥ on ${this.cfg.pinchOn}, closed ${(
           this.pinch.strength(ratio) * 100
@@ -710,22 +1322,193 @@ export class HandPointer {
       }
     }
     s.reject = reject;
-    // Only on a change: a steady open hand is not sixty rejections a second, it is one.
     if (reject && reject !== this.lastReject) noteReject(reject, detail, now);
     this.lastReject = reject;
-
     return s;
   }
+
+  private enqueue(event: PointerGestureEvent): void {
+    this.events.push(event);
+    if (this.events.length > MAX_EVENT_QUEUE) this.events.splice(0, this.events.length - MAX_EVENT_QUEUE);
+  }
+
+  private cancelActive(reason: PointerCancelReason, now: number): void {
+    const active = this.activePress;
+    if (!active) return;
+    const s = this.state;
+    this.enqueue({
+      type: "cancel",
+      seq: s.sample.seq,
+      at: now,
+      ownerId: active.ownerId,
+      via: active.via,
+      aim: { ...active.aim },
+      live: { x: s.liveX, y: s.liveY },
+      rawHand: s.rawHand ? cloneRawHand(s.rawHand) : null,
+      freshForMs: s.sample.freshForMs,
+      reason,
+    });
+    this.activePress = null;
+    // A cancelled close is not an open. Require positive open-hand evidence before another
+    // press, otherwise a one-frame occlusion or owner replacement can manufacture a second
+    // press from the same uninterrupted fist.
+    this.suppressed = true;
+    s.pinched = false;
+    s.pressVia = null;
+    s.cancelled = true;
+    s.cancelReason = reason;
+    s.released = false;
+    s.releasedByLoss = reason !== "hold-timeout";
+  }
+
+  private resetTrackingState(resetFace = false): void {
+    const s = this.state;
+    this.smooth.reset();
+    this.stabilizer.reset();
+    this.pinch.reset();
+    this.fist.reset();
+    if (resetFace) {
+      this.face.reset();
+      this.ownerFace.reset();
+    }
+    this.rawSince = 0;
+    this.fistNeutralSince = 0;
+    this.fistShapeHistory = [];
+    this.freezeUntil = 0;
+    this.history = [];
+    this.unpinned = true;
+    this.dwellAnchor = null;
+    this.dwellPausedAt = null;
+    this.dwellArmed = true;
+    this.lastAt = 0;
+    s.rawHeld = false;
+    s.pinchHeld = false;
+    s.fistHeld = false;
+    s.pressProgress = 0;
+    s.pinched = false;
+    s.pressVia = null;
+    s.dwell = 0;
+    s.phase = "IDLE";
+  }
+
+  /** Forget coordinates without discarding the physical owner or the face ruler. */
+  private resetSpatialState(): void {
+    const s = this.state;
+    this.smooth.reset();
+    this.stabilizer.reset();
+    this.history = [];
+    this.freezeUntil = 0;
+    this.unpinned = true;
+    this.settledAt = 0;
+    this.lastAt = 0;
+    this.dwellAnchor = null;
+    this.dwellSince = 0;
+    this.dwellPausedAt = null;
+    this.dwellArmed = true;
+    s.velocity = 0;
+    s.dwell = 0;
+    s.dwellFired = false;
+  }
+}
+
+function sameBox(a: BoxConfig, b: BoxConfig): boolean {
+  return (
+    a.widthFaces === b.widthFaces &&
+    a.heightFaces === b.heightFaces &&
+    a.dropFaces === b.dropFaces &&
+    a.shiftFaces === b.shiftFaces
+  );
+}
+
+function sameOneEuro(a: OneEuroConfig, b: OneEuroConfig): boolean {
+  return a.minCutoff === b.minCutoff && a.beta === b.beta && a.dCutoff === b.dCutoff;
+}
+
+function cloneRawHand(raw: RawHandState): RawHandState {
+  return {
+    frameX: raw.frameX,
+    frameY: raw.frameY,
+    palmSpan: raw.palmSpan,
+    body: raw.body ? { ...raw.body } : null,
+  };
 }
 
 /** A face this much narrower than the palm beside it is somebody else's — see `update`. */
 const MIN_FACE_PER_PALM = 0.9;
+const OPEN_PALM_MIN_SCORE = 0.4;
+const FIST_MIN_SCORE = 0.4;
+/** Only a clearly confident classifier may overrule sustained relative opening evidence. */
+const FIST_RELEASE_VETO_SCORE = 0.75;
+/**
+ * A released fist is commonly labelled `None`, not `Open_Palm`, especially when a visitor
+ * merely relaxes their hand instead of presenting a flat palm to the camera. The fist latch
+ * already requires sustained non-fist evidence; require this additional interval of clearly
+ * open thumb/index aperture before a neutral-labelled hand may end the click epoch.
+ */
+const FIST_NEUTRAL_RELEASE_MS = 180;
+/** Closed-shape history locked when a fist becomes a confirmed press. */
+const FIST_BASELINE_HISTORY_MS = 240;
+/** Thumb/index separation change, in palm widths, that is visibly more open than the press. */
+const FIST_APERTURE_RELAX_DELTA = 0.25;
+/** At least two non-thumb fingers must uncurl this much relative to the press baseline. */
+const FIST_CURL_RELAX_DELTA = 0.15;
+/** And one of those fingers must approach the historical absolute open boundary. */
+const FIST_CURL_RELAX_FLOOR = 0.9;
+const MAX_EVENT_QUEUE = 64;
+/** Camera permission/model load may be slow; decoded frames themselves should not be. */
+const CAMERA_STARTUP_TIMEOUT_MS = 4_000;
+/** A freshness watchdog cancels control promptly; only a sustained gap rebuilds hardware. */
+const CAMERA_STALL_RECONNECT_MS = 1_500;
+/** Finite retries: a dead or busy camera must eventually become an honest terminal error. */
+const CAMERA_RECONNECT_DELAYS_MS = [0, 500, 1_000, 2_000] as const;
+/** One lucky frame is not recovery. Only sustained decoded evidence restores the retry budget. */
+const CAMERA_RECOVERY_STABLE_MS = 2_000;
+const CAMERA_RECOVERY_STABLE_FRAMES = 12;
+/** A reconnect prompt/play operation may not leave the kiosk loading forever. */
+const CAMERA_RECONNECT_ACQUIRE_MS = 10_000;
+const CAMERA_PLAY_TIMEOUT_MS = 5_000;
 /** How much recent position history to keep, in ms. Only has to outlast `pressLookbackMs`. */
 const HISTORY_MS = 600;
 /** Re-arming dwell needs a real move, not the smoothing's settling creep. */
 const REARM_FACTOR = 2.5;
 /** ...and no dwell may follow another this soon, whatever the cursor did. */
 const DWELL_REFRACTORY_MS = 700;
+
+function percentile75(values: number[]): number | null {
+  const finite = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (finite.length < 3) return null;
+  return finite[Math.floor((finite.length - 1) * 0.75)] ?? null;
+}
+
+function fistShapeBaseline(samples: TimedFistShape[]): FistShape | null {
+  if (samples.length < 3) return null;
+  const aperture = percentile75(
+    samples.flatMap((sample) => (sample.aperture === null ? [] : [sample.aperture])),
+  );
+  const channels = [0, 1, 2, 3].map((index) =>
+    percentile75(
+      samples.flatMap((sample) => {
+        const value = sample.curls?.[index];
+        return value === undefined ? [] : [value];
+      }),
+    ),
+  );
+  const curls = channels.every((value): value is number => value !== null)
+    ? (channels as [number, number, number, number])
+    : null;
+  return aperture === null && curls === null ? null : { aperture, curls };
+}
+
+function fistCurlRelaxed(
+  baseline: [number, number, number, number] | null,
+  current: [number, number, number, number] | null,
+): boolean {
+  if (!baseline || !current) return false;
+  const relaxed = current.filter(
+    (value, index) => value - baseline[index]! >= FIST_CURL_RELAX_DELTA,
+  );
+  return relaxed.length >= 2 && relaxed.some((value) => value >= FIST_CURL_RELAX_FLOOR);
+}
 /**
  * How long a click posture must be held before it counts as a press at all.
  *
@@ -751,13 +1534,11 @@ export const PRESS_DEBOUNCE_MS = 350;
  * The longest a click posture can be held before it is treated as a mistake rather than an
  * intention.
  *
- * Nobody pinches for three seconds to press a button. If the system still thinks they are,
- * the reference it is judging against is wrong — so it lets go and rebuilds that reference
- * from whatever the hand is doing now. Without this the mis-read is permanent: a stuck click
- * cannot be cleared by opening the hand, because opening the hand is what it is already
- * failing to recognise.
+ * A scene grab or a long page scroll may legitimately last several seconds, so this is a
+ * backstop for a genuinely stuck classifier rather than a click-duration policy. Timing out is
+ * a cancellation and stays suppressed until canonical open evidence is observed.
  */
-const MAX_HOLD_MS = 3000;
+const MAX_HOLD_MS = 30_000;
 
 /**
  * Fist detection: MediaPipe's own gesture classifier, OR the hand's 3D geometry.
@@ -775,41 +1556,56 @@ const MAX_HOLD_MS = 3000;
  * nothing) — see `fistFromGeometry`. The score bar on the label came down as well: 0.5 was
  * refusing frames the model itself ranked as "fist, more likely than not".
  *
- * Frame counts rather than a score threshold do the hysteresis, because both signals flicker
- * frame to frame even when the posture is unambiguous to a human.
+ * Elapsed-time gates rather than a score threshold do the hysteresis, because both signals
+ * flicker even when the posture is unambiguous to a human. They run on decoded-sample
+ * timestamps so loading the Gaussian renderer cannot change their duration.
  */
-class FistLatch {
+export class FistLatch {
   private on = false;
-  private closed = 0;
-  private opened = 0;
+  private closedSinceMs: number | null = null;
+  private openedSinceMs: number | null = null;
+  private lastSampleAtMs: number | null = null;
   count = 0;
 
   constructor(
-    private onFrames = 2,
-    private offFrames = 3,
-    private readonly minScore = 0.4,
+    private onMs = DEFAULT_GESTURE_TIMING.fistOnMs,
+    private offMs = DEFAULT_GESTURE_TIMING.fistOffMs,
+    private readonly minScore = FIST_MIN_SCORE,
   ) {}
 
-  /** Frame counts mean different amounts of TIME at different frame rates; a calibration
-   *  measures the rate and re-derives them (`profile.ts` → `framesFor`). */
-  configure(cfg: { onFrames?: number; offFrames?: number }): void {
-    if (cfg.onFrames !== undefined) this.onFrames = Math.max(1, Math.round(cfg.onFrames));
-    if (cfg.offFrames !== undefined) this.offFrames = Math.max(1, Math.round(cfg.offFrames));
+  configure(cfg: { onMs?: number; offMs?: number }): void {
+    if (Number.isFinite(cfg.onMs ?? NaN)) this.onMs = Math.max(0, cfg.onMs!);
+    if (Number.isFinite(cfg.offMs ?? NaN)) this.offMs = Math.max(0, cfg.offMs!);
   }
 
-  update(label: string | null, score: number, geometric = false): boolean {
+  update(label: string | null, score: number, geometric: boolean, sampleAtMs: number): boolean {
+    const at = Number.isFinite(sampleAtMs)
+      ? Math.max(sampleAtMs, this.lastSampleAtMs ?? sampleAtMs)
+      : this.lastSampleAtMs;
+    if (at === null) return this.on;
+    this.lastSampleAtMs = at;
+
     const isFist = (label === "Closed_Fist" && score >= this.minScore) || geometric;
     if (isFist) {
-      this.closed += 1;
-      this.opened = 0;
+      if (this.closedSinceMs === null) this.closedSinceMs = at;
+      this.openedSinceMs = null;
     } else {
-      this.opened += 1;
-      this.closed = 0;
+      if (this.openedSinceMs === null) this.openedSinceMs = at;
+      this.closedSinceMs = null;
     }
-    if (!this.on && this.closed >= this.onFrames) {
+
+    if (
+      !this.on &&
+      this.closedSinceMs !== null &&
+      at - this.closedSinceMs >= this.onMs
+    ) {
       this.on = true;
       this.count += 1;
-    } else if (this.on && this.opened >= this.offFrames) {
+    } else if (
+      this.on &&
+      this.openedSinceMs !== null &&
+      at - this.openedSinceMs >= this.offMs
+    ) {
       this.on = false;
     }
     return this.on;
@@ -817,8 +1613,9 @@ class FistLatch {
 
   reset(): void {
     this.on = false;
-    this.closed = 0;
-    this.opened = 0;
+    this.closedSinceMs = null;
+    this.openedSinceMs = null;
+    this.lastSampleAtMs = null;
     this.count = 0;
   }
 }
@@ -870,18 +1667,203 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
   const lazyRef = useRef<HandPointer | null>(null);
   if (!lazyRef.current) lazyRef.current = new HandPointer(cfg);
   const pointerRef = lazyRef as { current: HandPointer };
-  live = pointerRef.current;
 
   useEffect(() => {
-    if (!enabled) return;
+    const pointer = pointerRef.current;
+    live = pointer;
+    const clearLive = () => {
+      if (live === pointer) live = null;
+    };
+    if (!enabled) {
+      pointer.invalidate(performance.now(), "source-stale");
+      pointer.drainEvents();
+      pointer.drainDwellEvents();
+      setPresent(false);
+      setStatus("idle");
+      setError(null);
+      clearLive();
+      return clearLive;
+    }
+
     let raf = 0;
     let stopped = false;
     let stream: MediaStream | null = null;
+    let stopFrameLoop: (() => void) | null = null;
+    let startupTimer = 0;
+    let stallTimer = 0;
+    let retryTimer = 0;
+    let sourceEpoch = 0;
+    let engineReady = false;
+    let engineLoadPromise: Promise<void> | null = null;
+    let engineGeneration = 0;
+    let reconnectFailures = 0;
+    let pendingWhileHidden = false;
+    let pendingRetryWhileHidden = false;
+    let pendingReason = "camera feed interrupted";
+    let healthySince = 0;
+    let healthyFrames = 0;
+    let hasActionableFrame = false;
+    let removeVisibilityListener: (() => void) | null = null;
+    let removeDeviceListener: (() => void) | null = null;
+    let waitingForDeviceChange = false;
     const engine = new VisionEngine();
+    const inferenceHealth = new InferenceHealthMonitor();
     const video = videoRef.current;
-    if (!video) return;
-    const pointer = pointerRef.current;
+    if (!video) {
+      clearLive();
+      return;
+    }
     let lastTs = 0;
+
+    const invalidateSource = (reason: VideoFrameStaleReason, atMs = performance.now()) => {
+      pointer.invalidate(atMs, reason === "video-stale" ? "source-stale" : reason);
+      setPresent((presentNow) =>
+        presentNow === pointer.state.present ? presentNow : pointer.state.present,
+      );
+    };
+
+    const clearSourceTimers = () => {
+      if (startupTimer) window.clearTimeout(startupTimer);
+      if (stallTimer) window.clearTimeout(stallTimer);
+      startupTimer = 0;
+      stallTimer = 0;
+    };
+
+    const stopOwnedStream = (owned: MediaStream | null) => {
+      if (!owned) return;
+      if (video.srcObject === owned) video.srcObject = null;
+      owned.getTracks().forEach((track) => track.stop());
+    };
+
+    const stopCurrentSource = () => {
+      // Remove the track-ended listener before stopping the track ourselves; teardown is not a
+      // new hardware failure and must not schedule another reconnect.
+      stopFrameLoop?.();
+      stopFrameLoop = null;
+      const owned = stream;
+      stream = null;
+      stopOwnedStream(owned);
+      healthySince = 0;
+      healthyFrames = 0;
+      hasActionableFrame = false;
+      inferenceHealth.reset();
+    };
+
+    const withDeadline = <T,>(promise: Promise<T>, ms: number, message: string): Promise<T> =>
+      new Promise<T>((resolve, reject) => {
+        const timer = window.setTimeout(() => reject(new Error(message)), ms);
+        promise.then(
+          (value) => {
+            window.clearTimeout(timer);
+            resolve(value);
+          },
+          (cause) => {
+            window.clearTimeout(timer);
+            reject(cause);
+          },
+        );
+      });
+
+    const errorMessage = (cause: unknown): string =>
+      cause instanceof Error ? cause.message : String(cause);
+
+    const retryableCameraError = (cause: unknown): boolean => {
+      if (!(cause instanceof DOMException)) return true;
+      return ![
+        "NotAllowedError",
+        "SecurityError",
+        "NotFoundError",
+        "OverconstrainedError",
+      ].includes(cause.name);
+    };
+
+    const terminalError = (
+      message: string,
+      closeEngine = true,
+      recoverOnDeviceChange = false,
+    ) => {
+      if (stopped) return;
+      sourceEpoch += 1;
+      clearSourceTimers();
+      if (retryTimer) window.clearTimeout(retryTimer);
+      retryTimer = 0;
+      pendingWhileHidden = false;
+      waitingForDeviceChange = recoverOnDeviceChange;
+      stopCurrentSource();
+      invalidateSource("video-stale");
+      if (closeEngine) {
+        engineGeneration += 1;
+        engine.close();
+        engineReady = false;
+        engineLoadPromise = null;
+      }
+      setError(message);
+      setStatus("error");
+    };
+
+    let openSource: (initial?: boolean, countsAsRetry?: boolean) => Promise<void>;
+
+    const scheduleReconnect = () => {
+      if (stopped || retryTimer) return;
+      if (document.visibilityState !== "visible") {
+        pendingWhileHidden = true;
+        pendingRetryWhileHidden = true;
+        return;
+      }
+      const delay = CAMERA_RECONNECT_DELAYS_MS[reconnectFailures];
+      if (delay === undefined) {
+        terminalError(`${pendingReason}; automatic camera reconnect failed`, true, true);
+        return;
+      }
+      setStatus("loading");
+      setError(
+        `${pendingReason}; reconnecting camera${delay > 0 ? ` in ${(delay / 1000).toFixed(1)}s` : ""}`,
+      );
+      retryTimer = window.setTimeout(() => {
+        retryTimer = 0;
+        void openSource(false, true);
+      }, delay);
+    };
+
+    const requestReconnect = (epoch: number, reason: string) => {
+      if (stopped || epoch !== sourceEpoch) return;
+      // Retire this epoch before stopping its track, so every late frame/play promise is inert.
+      sourceEpoch += 1;
+      clearSourceTimers();
+      stopCurrentSource();
+      invalidateSource("video-stale");
+      pendingReason = reason;
+      if (document.visibilityState !== "visible") {
+        pendingWhileHidden = true;
+        pendingRetryWhileHidden = true;
+        setStatus("loading");
+        setError(`${reason}; camera reconnect will resume when this page is visible`);
+        return;
+      }
+      scheduleReconnect();
+    };
+
+    const dispose = () => {
+      stopped = true;
+      sourceEpoch += 1;
+      cancelAnimationFrame(raf);
+      clearSourceTimers();
+      if (retryTimer) window.clearTimeout(retryTimer);
+      retryTimer = 0;
+      removeVisibilityListener?.();
+      removeVisibilityListener = null;
+      removeDeviceListener?.();
+      removeDeviceListener = null;
+      stopCurrentSource();
+      pointer.invalidate(performance.now(), "source-stale");
+      // No consumer should replay a lifecycle-teardown edge after this same ref mounts again.
+      pointer.drainEvents();
+      pointer.drainDwellEvents();
+      engineGeneration += 1;
+      engine.close();
+      if (typeof window !== "undefined") window.__handState = undefined;
+      clearLive();
+    };
 
     // A driver has installed a synthetic hand: run the whole pipeline off that instead of a
     // camera, so the interaction can be exercised exactly and repeatably. DEV only, and only
@@ -903,67 +1885,316 @@ export function useHandPointer(enabled = true, cfg: PointerConfig = DEFAULT_POIN
       }
       visionLog.start();
       raf = requestAnimationFrame(simTick);
-      return () => {
-        stopped = true;
-        cancelAnimationFrame(raf);
-      };
+      return dispose;
     }
 
-    (async () => {
-      try {
+    openSource = async (initial = false, countsAsRetry = false) => {
+      if (stopped) return;
+      if (document.visibilityState !== "visible") {
+        pendingWhileHidden = true;
+        pendingRetryWhileHidden ||= countsAsRetry;
+        pendingReason = initial ? "camera startup paused" : pendingReason;
         setStatus("loading");
-        if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error(
-            "camera API unavailable — open via http://localhost:5173 (or HTTPS); " +
-              "insecure http://<LAN-IP> origins block the webcam",
-          );
+        return;
+      }
+
+      if (countsAsRetry) {
+        if (reconnectFailures >= CAMERA_RECONNECT_DELAYS_MS.length) {
+          terminalError(`${pendingReason}; automatic camera reconnect failed`);
+          return;
         }
-        stream = await navigator.mediaDevices.getUserMedia({
+        // Count an attempt only once it actually starts. A timer postponed by a hidden page
+        // consumes no recovery budget.
+        reconnectFailures += 1;
+      }
+
+      clearSourceTimers();
+      stopCurrentSource();
+      const epoch = ++sourceEpoch;
+      pendingWhileHidden = false;
+      setStatus("loading");
+      if (initial) setError(null);
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        terminalError(
+          "camera API unavailable — open via http://localhost:5173 (or HTTPS); " +
+            "insecure http://<LAN-IP> origins block the webcam",
+        );
+        return;
+      }
+
+      let acquired: MediaStream | null = null;
+      try {
+        const acquisition = navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
           audio: false,
         });
-        if (stopped) return;
-        video.srcObject = stream;
-        await video.play();
-        await engine.load();
-        if (stopped) return;
-        setStatus("running");
+        // getUserMedia cannot be aborted. If a timed-out/retired attempt resolves later, stop
+        // only the stream it produced; never clear a newer epoch's video element.
+        void acquisition.then(
+          (late) => {
+            if (stopped || epoch !== sourceEpoch) stopOwnedStream(late);
+          },
+          () => undefined,
+        );
+        acquired = initial
+          ? await acquisition
+          : await withDeadline(
+              acquisition,
+              CAMERA_RECONNECT_ACQUIRE_MS,
+              "camera reconnect timed out while opening the device",
+            );
+        if (stopped || epoch !== sourceEpoch) {
+          stopOwnedStream(acquired);
+          return;
+        }
+        stream = acquired;
+        video.srcObject = acquired;
+        await withDeadline(
+          video.play(),
+          CAMERA_PLAY_TIMEOUT_MS,
+          "camera opened, but video playback did not start",
+        );
+        if (stopped || epoch !== sourceEpoch) {
+          stopOwnedStream(acquired);
+          return;
+        }
+
+        if (!engineReady) {
+          const loadGeneration = engineGeneration;
+          try {
+            engineLoadPromise ??= engine.load();
+            await engineLoadPromise;
+          } catch (cause) {
+            if (
+              stopped ||
+              loadGeneration !== engineGeneration ||
+              epoch !== sourceEpoch
+            ) {
+              stopOwnedStream(acquired);
+              return;
+            }
+            engineLoadPromise = null;
+            terminalError(`vision model failed to load: ${errorMessage(cause)}`, true);
+            return;
+          }
+          if (stopped || loadGeneration !== engineGeneration) {
+            // `load()` may finish after a StrictMode cleanup. Close the resources it just
+            // created instead of leaving a GPU/WASM recogniser alive off-screen. A terminal
+            // error increments the same generation, covering a late resolve after teardown.
+            engine.close();
+            engineReady = false;
+            stopOwnedStream(acquired);
+            return;
+          }
+          engineReady = true;
+          visionLog.video = video;
+          visionLog.start();
+          if (epoch !== sourceEpoch) {
+            // A visibility/source epoch changed while the shared model was loading. Keep the
+            // loaded engine for the newer attempt, but this attempt's stream has no authority.
+            stopOwnedStream(acquired);
+            return;
+          }
+        }
+
+        const videoTrack = acquired.getVideoTracks()[0];
+        if (!videoTrack || videoTrack.readyState !== "live") {
+          requestReconnect(epoch, "camera track ended before its first decoded frame");
+          return;
+        }
+        // This may be a replacement device selected by the browser after a disconnect. Publish
+        // it before the first decoded frame so App can revoke the old camera/display profile
+        // before any observation from the new optics becomes actionable.
+        publishCameraIdentity(cameraIdentityFromTrack(videoTrack));
+
         // The recorder needs the element to read the track's real settings off at the end.
         visionLog.video = video;
-        visionLog.start();
 
-        const tick = () => {
-          if (stopped) return;
-          raf = requestAnimationFrame(tick);
-          if (video.readyState < 2) return;
-          let ts = performance.now();
-          if (ts <= lastTs) ts = lastTs + 1; // MediaPipe needs strictly increasing stamps
-          lastTs = ts;
+        let receivedFirstFrame = false;
+        startupTimer = window.setTimeout(() => {
+          startupTimer = 0;
+          if (stopped || epoch !== sourceEpoch || receivedFirstFrame) return;
+          invalidateSource("video-stale");
+          requestReconnect(epoch, "camera opened, but no decoded video frame arrived");
+        }, CAMERA_STARTUP_TIMEOUT_MS);
 
-          const aspect = video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 16 / 9;
-          const res = engine.process(video, ts);
-          const s = pointer.update(res, aspect, performance.now());
-          // Sampled HERE rather than from the interaction loop, so the log has exactly one row
-          // per vision frame — the denominator of every recall figure in the audit.
-          visionLog.fps = s.fps;
-          visionLog.tick(s);
-          setPresent((p) => (p === s.present ? p : s.present));
-        };
-        raf = requestAnimationFrame(tick);
-      } catch (e) {
-        if (stopped) return;
-        setError(e instanceof Error ? e.message : String(e));
-        setStatus("error");
+        stopFrameLoop = startDecodedFrameLoop(video, {
+          onFrame: (stamp) => {
+            if (
+              stopped ||
+              epoch !== sourceEpoch ||
+              document.visibilityState !== "visible"
+            ) {
+              if (!stopped && epoch === sourceEpoch) {
+                invalidateSource("page-hidden", performance.now());
+              }
+              return;
+            }
+            try {
+              // MediaPipe rejects equal timestamps. The decoded-frame clock is monotonic in
+              // browsers, but the +1 guard also covers a media-track discontinuity.
+              let ts = stamp.receivedAtMs;
+              if (ts <= lastTs) ts = lastTs + 1;
+              lastTs = ts;
+
+              const aspect =
+                video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 16 / 9;
+              const inferenceStartedAtMs = performance.now();
+              const res = engine.process(video, ts);
+              const processedAtMs = performance.now();
+              const state = pointer.update(res, aspect, {
+                ...stamp,
+                processedAtMs,
+                inferenceMs: Math.max(0, processedAtMs - inferenceStartedAtMs),
+              });
+              const processing = inferenceHealth.update(state.sample.inferenceMs, processedAtMs);
+              if (!receivedFirstFrame) {
+                receivedFirstFrame = true;
+                clearSourceTimers();
+              } else if (stallTimer) {
+                window.clearTimeout(stallTimer);
+                stallTimer = 0;
+              }
+              if (processing.terminal) {
+                terminalError(
+                  `vision processing stayed too slow (${Math.round(state.sample.inferenceMs)} ms/frame; ` +
+                    `interactive limit ${CONTROL_MAX_INFERENCE_MS} ms)`,
+                  true,
+                );
+                return;
+              }
+              if (processing.overBudget) {
+                // Decoded video is alive, but these observations are too old to authorize an
+                // action. Do not let them restore a camera retry budget or claim RUNNING.
+                healthySince = 0;
+                healthyFrames = 0;
+              } else {
+                if (!hasActionableFrame) {
+                  hasActionableFrame = true;
+                  waitingForDeviceChange = false;
+                  setError(null);
+                  setStatus("running");
+                }
+                // `onStale` clears the health epoch. A resumed decoder must earn a fresh two
+                // seconds of continuous evidence before it can restore the finite retry budget.
+                if (healthySince === 0) {
+                  healthySince = processedAtMs;
+                  healthyFrames = 0;
+                }
+                healthyFrames += 1;
+                if (
+                  reconnectFailures > 0 &&
+                  healthyFrames >= CAMERA_RECOVERY_STABLE_FRAMES &&
+                  processedAtMs - healthySince >= CAMERA_RECOVERY_STABLE_MS
+                ) {
+                  reconnectFailures = 0;
+                }
+              }
+              // Sampled HERE rather than from the interaction loop, so the log has exactly one
+              // row per decoded camera frame — the denominator of every audit recall figure.
+              visionLog.fps = state.fps;
+              visionLog.tick(state);
+              setPresent((presentNow) =>
+                presentNow === state.present ? presentNow : state.present,
+              );
+            } catch (cause) {
+              // Stop this loop: repeatedly invoking a failed GPU/WASM recogniser at camera rate
+              // hides the original failure and can pin a CPU core.
+              invalidateSource("video-stale", performance.now());
+              terminalError(`vision processing failed: ${errorMessage(cause)}`, true);
+            }
+          },
+          onStale: (event) => {
+            if (stopped || epoch !== sourceEpoch) return;
+            invalidateSource(event.reason, event.atMs);
+            if (event.reason === "video-stale") {
+              healthySince = 0;
+              healthyFrames = 0;
+            }
+            if (event.reason === "track-ended") {
+              requestReconnect(epoch, "camera video track ended");
+            } else if (
+              event.reason === "video-stale" &&
+              receivedFirstFrame &&
+              !stallTimer
+            ) {
+              // Control already failed closed above. Give a transient decoder/main-thread pause
+              // room to recover before replacing the physical track.
+              stallTimer = window.setTimeout(() => {
+                stallTimer = 0;
+                if (stopped || epoch !== sourceEpoch) return;
+                requestReconnect(epoch, "camera feed stopped producing frames");
+              }, CAMERA_STALL_RECONNECT_MS);
+            }
+          },
+        });
+      } catch (cause) {
+        if (stopped || epoch !== sourceEpoch) {
+          stopOwnedStream(acquired);
+          return;
+        }
+        const message = errorMessage(cause);
+        if (!retryableCameraError(cause)) {
+          terminalError(
+            message,
+            true,
+            cause instanceof DOMException && cause.name === "NotFoundError",
+          );
+        } else {
+          requestReconnect(epoch, message);
+        }
       }
-    })();
-
-    return () => {
-      stopped = true;
-      cancelAnimationFrame(raf);
-      engine.close();
-      stream?.getTracks().forEach((t) => t.stop());
-      if (video) video.srcObject = null;
     };
+
+    const onDeviceChange = () => {
+      if (stopped || !waitingForDeviceChange) return;
+      // A terminal "no camera" state must not require a page refresh after someone reconnects
+      // the webcam. A new physical identity is published before its first actionable frame,
+      // which reopens calibration for that exact camera/display pair.
+      waitingForDeviceChange = false;
+      reconnectFailures = 0;
+      pendingReason = "camera device changed";
+      setStatus("loading");
+      setError("camera device changed; reopening camera");
+      void openSource(false, false);
+    };
+    navigator.mediaDevices?.addEventListener("devicechange", onDeviceChange);
+    removeDeviceListener = () =>
+      navigator.mediaDevices?.removeEventListener("devicechange", onDeviceChange);
+
+    const onVisibility = () => {
+      if (stopped) return;
+      if (document.visibilityState !== "visible") {
+        const retryWasPending = retryTimer !== 0 || pendingRetryWhileHidden;
+        if (retryTimer) window.clearTimeout(retryTimer);
+        retryTimer = 0;
+        // Hidden pages own no gesture authority, even on browsers that keep delivering video
+        // callbacks in the background. Retire the epoch now; visible resumes from a fresh source
+        // and must observe canonical open posture evidence before any new press can arm.
+        sourceEpoch += 1;
+        clearSourceTimers();
+        stopCurrentSource();
+        invalidateSource("page-hidden");
+        pendingWhileHidden = true;
+        pendingRetryWhileHidden = retryWasPending;
+        setStatus("loading");
+        if (!retryWasPending) setError(null);
+        return;
+      }
+      if (!pendingWhileHidden || retryTimer) return;
+      const resumeRetry = pendingRetryWhileHidden;
+      pendingWhileHidden = false;
+      pendingRetryWhileHidden = false;
+      if (resumeRetry) scheduleReconnect();
+      else void openSource(false, false);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    removeVisibilityListener = () => document.removeEventListener("visibilitychange", onVisibility);
+
+    void openSource(true);
+
+    return dispose;
   }, [enabled]);
 
   return { videoRef, status, error, pointer: pointerRef, present };

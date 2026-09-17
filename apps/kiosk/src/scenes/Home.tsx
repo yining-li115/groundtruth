@@ -4,6 +4,7 @@ import { KioskMenu } from "../components/KioskMenu";
 import { SpotlightGallery } from "../components/SpotlightGallery";
 import { NewsGrid } from "../components/NewsGrid";
 import { useKioskStore } from "../state/store";
+import { heroOrbit } from "../lib/heroInput";
 
 import { activePointer } from "../lib/cursorPosition";
 import { liquidColors } from "../experiments/liquid/assetColors";
@@ -20,8 +21,6 @@ const HeroFluid = lazy(() =>
 );
 
 export function Home() {
-  const setHeroOrbitActive = useKioskStore((s) => s.setHeroOrbitActive);
-
   // particle dispersal progress: 1 = assembled (top), → 0 as you scroll the hero runway.
   const progress = useRef(1);
   const [reduced] = useState(
@@ -34,18 +33,19 @@ export function Home() {
     const onScroll = () => {
       const d = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.8)));
       progress.current = 1 - d; // top assembled → scroll disperses
-      // While the hero is still pinned (i.e. not yet scrolled past), a one-finger drag
-      // orbits the particles instead of moving the cursor. Disabled in reduced-motion
-      // (no scene to rotate). The hero unpins at the same 0.8·vh where progress hits 0.
-      setHeroOrbitActive(!reduced && window.scrollY < window.innerHeight * 0.8);
+      // Preserve the classic comparison page's useful cursor-follow orbit after removing the
+      // phone/socket Cursor: the unified HandControl now drives this shared target instead.
+      heroOrbit.active = !reduced && window.scrollY < window.innerHeight * 0.8;
+      if (!heroOrbit.active) heroOrbit.touched = false;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      setHeroOrbitActive(false); // leaving home → cursor behaves normally again
+      heroOrbit.active = false;
+      heroOrbit.touched = false;
     };
-  }, [reduced, setHeroOrbitActive]);
+  }, [reduced]);
 
   return (
     <div className="min-h-screen" style={{ color: "var(--gt-text-primary)" }}>
@@ -131,7 +131,6 @@ export function Home() {
           onClick={() => {
             const s = useKioskStore.getState();
             s.setEntered(false);
-            s.setHasDriver(false);
           }}
           className="rounded-full px-4 py-1.5 text-sm font-semibold"
           style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}

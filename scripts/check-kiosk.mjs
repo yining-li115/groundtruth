@@ -285,6 +285,66 @@ async function main() {
       );
     }
 
+    // -------------------------------------------- detail-page previous / next wings
+    //
+    // These are not arrow-sized controls: the hand is allowed to land anywhere in the light
+    // bleeding in from the relevant edge. Keep the geometry and the hit-testing honest on both
+    // consumers of the shared DetailPager. In particular, enlarging the left wing must not
+    // steal the Home corner, and enlarging either wing must not steal a fist-scroll begun in
+    // the middle of the article.
+    console.log("\ndetail-page arrows have hand-sized hit regions with safe ownership\n");
+    for (const view of ["projects", "publications"]) {
+      await goto(`${BASE}/?view=${view}&enter=1&calibrate=0`, 4000);
+      const opened = await evaluate(`(() => {
+        const item = document.querySelectorAll('.menu__item')[1];
+        if (!item) return false;
+        item.click();
+        return true;
+      })()`);
+      await sleep(800);
+
+      const geometry = await evaluate(`(() => {
+        const prev = document.querySelector('.dp-wing--prev');
+        const next = document.querySelector('.dp-wing--next');
+        if (!prev || !next) return { error: 'missing wings' };
+        const pr = prev.getBoundingClientRect();
+        const nr = next.getBoundingClientRect();
+        const owns = (selector, x, y) =>
+          !!document.elementFromPoint(x, y)?.closest(selector);
+        return {
+          count: document.querySelectorAll('.dp-wing').length,
+          widthRatio: Math.min(pr.width, nr.width) / innerWidth,
+          heightRatio: Math.min(pr.height, nr.height) / innerHeight,
+          prevInnerEdge: owns('.dp-wing--prev', pr.left + pr.width * 0.86, pr.top + pr.height / 2),
+          prevUpperEdge: owns('.dp-wing--prev', pr.left + pr.width * 0.25, pr.top + pr.height * 0.12),
+          nextInnerEdge: owns('.dp-wing--next', nr.right - nr.width * 0.86, nr.top + nr.height / 2),
+          nextUpperEdge: owns('.dp-wing--next', nr.right - nr.width * 0.25, nr.top + nr.height * 0.12),
+          centreFree: !owns('.dp-wing', innerWidth / 2, innerHeight * 0.37),
+          homeWins: owns('.bc-home', 2, innerHeight * 0.63),
+        };
+      })()`);
+
+      ok(`${view}: a detail opens for pager checks`, opened === true && !geometry?.error,
+        String(geometry?.error ?? opened));
+      ok(
+        `${view}: pager is at least 21.5vw × 53vh`,
+        geometry?.count === 2 && geometry.widthRatio >= 0.215 && geometry.heightRatio >= 0.53,
+        `${Math.round((geometry?.widthRatio ?? 0) * 1000) / 10}vw × ` +
+          `${Math.round((geometry?.heightRatio ?? 0) * 1000) / 10}vh`,
+      );
+      ok(
+        `${view}: the enlarged visible wings are actually hittable to their edges`,
+        geometry?.prevInnerEdge === true && geometry.prevUpperEdge === true &&
+          geometry.nextInnerEdge === true && geometry.nextUpperEdge === true,
+        JSON.stringify(geometry),
+      );
+      ok(
+        `${view}: pager leaves article scrolling and Home ownership intact`,
+        geometry?.centreFree === true && geometry.homeWins === true,
+        JSON.stringify(geometry),
+      );
+    }
+
     // ---------------------------------------------------------------- scrolling
     console.log("\nthe pages can actually be scrolled by a drag\n");
     await goto(`${BASE}/?view=people&calibrate=0`, 5000);

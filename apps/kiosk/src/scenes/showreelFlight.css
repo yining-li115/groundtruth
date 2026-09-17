@@ -64,6 +64,51 @@
   pointer-events: auto;
 }
 
+/* Presence switches the showreel from its news tour into one automatic Explore grammar. This
+   is feedback, not a control: it never participates in hit-testing or steals the hand cursor. */
+.sf-explore {
+  position: absolute;
+  left: 2.5rem;
+  bottom: 2.5rem;
+  display: flex;
+  width: min(28rem, calc(100vw - 5rem));
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--gt-border);
+  border-radius: 1.2rem;
+  background: color-mix(in srgb, var(--gt-brand-black) 68%, transparent);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(1rem);
+  transition:
+    opacity 0.3s ease-out,
+    transform 0.3s ease-out;
+}
+
+.sf-explore.is-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sf-explore strong {
+  color: var(--gt-brand-white);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.sf-explore span {
+  color: var(--gt-brand-white);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  opacity: 0.72;
+}
+
 /*
  * Deliberately large. The pointer driving this is a hand three metres away, whose measured
  * standing jitter is a few pixels and whose aim is nothing like a mouse — Apple's guidance for
@@ -115,7 +160,31 @@
     animation: none;
   }
   .sf-enter,
-  .sf-invite {
+  .sf-invite,
+  .sf-explore {
     transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .sf-explore {
+    left: 1rem;
+    bottom: 1rem;
+    width: 20rem;
+  }
+
+  .sf-enter {
+    right: 1rem;
+    left: auto;
+    bottom: 1rem;
+    transform: translateY(1.5rem);
+  }
+
+  .sf-enter.is-on {
+    transform: translateY(0);
+  }
+
+  .sf-enter__btn {
+    min-width: 18rem;
   }
 }

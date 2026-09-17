@@ -20,13 +20,13 @@ groundtruth/
 │
 ├── apps/             ← 【三个可运行的程序】
 │   ├── kiosk/        ← 大屏幕展示端（玻璃后的那块屏）
-│   ├── controller/   ← 手机端（扫码后变成的"触控板"）
-│   └── relay/        ← 中转服务器（决定谁在控制、转发输入）
+│   ├── controller/   ← 保留的手机触控实验（不再接入生产 kiosk）
+│   └── relay/        ← 保留的手机实验中转服务（不再接入生产 kiosk）
 │
 ├── packages/         ← 【多个程序共用的东西】
 │   ├── tokens/       ← 设计令牌：所有颜色、主题（唯一能写颜色的地方）
 │   ├── ui/           ← 可复用组件库（如 Logo），配 Storybook
-│   └── protocol/     ← 手机↔服务器↔大屏 的通信"协议"类型 + 超时常量
+│   └── protocol/     ← controller↔relay 实验通信协议（生产 kiosk 不依赖）
 │
 ├── docs/             ← 【规格文档】设计系统、架构、内容模型、路线图
 ├── assets/           ← 【品牌源文件】TUM logo、官方颜色 PDF
@@ -73,10 +73,12 @@ groundtruth/
 
 | 我想… | 去哪 |
 |---|---|
-| 调光标灵敏度/惯性手感 | `apps/kiosk/src/config.ts`（`SENSITIVITY`）、`apps/kiosk/src/components/Cursor.tsx` |
-| 改二维码指向的网址 / 这台屏的房间号 | `apps/kiosk/src/config.ts`（`VITE_CONTROLLER_URL`、`VITE_SESSION_ID` 等环境变量） |
-| 改二维码长相/位置 | `apps/kiosk/src/components/KioskQR.tsx` |
-| 改 idle/interactive 的页面 | `apps/kiosk/src/App.tsx`（更完整的分区在后续 Phase 加） |
+| 调手势光标稳定性/识别门槛 | `apps/kiosk/src/lib/vision/handPointer.ts`、`pointerStabilizer.ts`、`gestureRuntime.ts` |
+| 改校准与设备配对 | `apps/kiosk/src/components/Calibration.tsx`、`apps/kiosk/src/lib/vision/profile*.ts` |
+| 改握拳点击/拖动滚动/场景抓取路由 | `apps/kiosk/src/lib/vision/interactionRouter.ts`、`apps/kiosk/src/components/HandControl.tsx` |
+| 改 Gaussian showreel 单手 LOOK/MOVE / 巡游安全路径 | `apps/kiosk/src/experiments/spark/sceneNavigation.ts`、`safeTour.ts`、`apps/kiosk/src/scenes/ShowreelFlight.tsx` |
+| 改保留的二维码实验 | `apps/kiosk/src/config.ts`、`apps/kiosk/src/components/KioskQR.tsx`（仅 `?exp=showreel2`） |
+| 改 idle/interactive 的页面 | `apps/kiosk/src/App.tsx` |
 
 ### D. 手机端（controller）行为
 

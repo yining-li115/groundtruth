@@ -89,7 +89,7 @@ export const OnDark: Story = {
 
 These map to what the kiosk/controller actually need early:
 
-1. `Cursor` — the on-screen pointer the kiosk renders (smooth inertia follow).
+1. `HandControl` — the kiosk's camera pointer/router (app-level, not a generic UI component).
 2. `RevealText` — word/line staggered text reveal (from React Bits).
 3. `MagneticButton` — magnetic hover (from Aceternity), used for QR/CTA prompts.
 4. `SectionTransition` — the deliberate cross-section transition wrapper.
@@ -108,9 +108,8 @@ Build these in `packages/ui`, consume them in `apps/kiosk` and `apps/controller`
 - **`BubbleMenu`** — an earlier nav iteration, **superseded by `StaggeredMenu`**. Kept
   for now; prune once StaggeredMenu is firmly settled.
 
-Not yet migrated: `Cursor` (lives in `apps/kiosk/src/components`) and `TrackpadSurface`
-(lives in `apps/controller/src/components`). They work in-app; move them into
-`packages/ui` when they stabilize (Phase 3). The hero point cloud lives in
+`HandControl` deliberately stays app-level because it owns camera/device lifecycle rather than
+presentation. `TrackpadSurface` remains in the isolated controller prototype. The hero point cloud lives in
 `apps/kiosk/src/experiments/showcase/` and is not a reusable component yet.
 
 ---

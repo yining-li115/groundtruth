@@ -1,7 +1,7 @@
 # User-test harness — a hand you can script
 
 `driver.mjs` drives the real kiosk with a synthetic hand, so the touchless interaction can be
-tested the way a person would use it: point somewhere, pinch, see what happened.
+tested the way a person would use it: point somewhere, close, open, see what happened.
 
 The camera is replaced; **nothing else is**. The thresholds, the press debounce, the 1€ filter,
 the interaction box, click routing and scrolling all run exactly as they ship. What this
@@ -12,9 +12,13 @@ separately from recordings of a real hand (`scripts/fixtures/pinch-trials.json`,
 ## The tests that live here
 
 - `home-board.mjs` (`npm run usertest:home`) — the home board: a 75-point coverage grid over
-  the five rows, both click postures, seam agreement (the row that lights must be the row that
-  opens), the left column staying inert, and the selection surviving the hand leaving. Uses the
+  the five rows using the production fist policy, seam agreement (the row that lights must be
+  the row that opens), close→open click versus held-fist scroll (including a scroll begun over
+  Back), the left column staying inert, and selection surviving the hand leaving. Uses the
   laboratory hand (below): it asks whether the PAGE is right.
+- `showreel-enter.mjs` (`npm run usertest:enter`) — Showreel open-hand Explore plus four
+  consecutive release-click epochs across Enter, Home, People, Back and Research. It proves a
+  held fist never clicks and a natural `None` release clicks exactly once.
 - `sweep.mjs` (`npm run usertest:sweep -- --hand shaky --camera far`) — every page and every
   detail view, driven by `hand.mjs`: a hand that sways, trembles and lurches as the fingers
   close, seen through a camera that jitters and drops frames. Separates the failures that feel
@@ -43,9 +47,9 @@ const k = await openKiosk({ url: "http://localhost:5173/?enter=1&view=people" })
 try {
   await k.aimPx(x, y);        // point at a screen pixel, waits for the cursor to arrive
   await k.aim(u, v);          // ...or in unit coordinates
-  await k.pinch();            // a full click: close, hold past the debounce, open, settle
-  await k.fist();             // the other click posture
-  await k.leanScroll(0.25);   // hold and lean down to scroll; negative leans up
+  await k.fist();             // production click: close, confirm, relax to None, settle
+  await k.pinch();            // optional pinch-policy click
+  await k.leanScroll(0.25);   // fist-grab by default; { gesture: "pinch" } overrides it
   await k.handAway();         // take the hand out of shot
   await k.handBack();
   const s = await k.state();  // { present, x, y, pinched, ratio, conf, ... }
@@ -60,10 +64,14 @@ try {
 
 - **`?enter=1`** skips the showreel and opens the site shell. Without it every page starts on
   the idle screen, because entering is a gesture.
-- **A click takes about a second to land.** `pinch()` already waits for the pixel transition
+- **A click commits when the hand opens, then the page transition runs.** `fist()` and `pinch()`
+  already wait for the pixel transition
   that swaps the view; if you check sooner you will see the old page and report a click that
   worked as broken.
-- **Aim, then pinch.** `aimPx` waits for the smoothing to arrive. Pinching mid-move makes the
+- `usertest:enter` deliberately removes the confirmed closed hand for several camera frames on
+  Enter and later page controls. The same pending epoch must resume and click only after a real
+  release; `usertest:home` performs the same blink during an active page scroll.
+- **Aim, then close and open.** `aimPx` waits for the smoothing to arrive. Closing mid-move makes the
   press count as a drag, and a drag is not a click.
 - **Read the page, not your assumptions.** Confirm what an element is with `evaluate` before
   deciding a click failed — plenty of things move, animate in, or only exist in a sub-view.

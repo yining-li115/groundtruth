@@ -10,10 +10,10 @@ import {
  * MediaPipe vision engine — loads the Gesture Recognizer (hand open/close) and the Face
  * Detector (head position) once, then runs both on a single webcam frame per tick.
  *
- * This is the "camera → numbers" layer for the touchless showreel interaction: hand
- * gestures drive the point cloud's dispersal, head position drives its orbit. It is
- * framework-agnostic on purpose (no React) so it can move from the /?exp=cv playground
- * into the real showreel unchanged.
+ * This is only the "decoded camera frame → detections" layer. Ownership, gesture state and
+ * interaction policy live downstream in `HandPointer`; keeping them out of this wrapper is
+ * what lets every surface consume the same stable owner instead of inventing its own
+ * interpretation of MediaPipe's per-frame result order.
  *
  * ASSET HOSTING: the WASM runtime and both models are served from the kiosk's OWN origin,
  * placed there by `scripts/fetch-mediapipe.mjs` (which dev and build run for you). They used
@@ -126,15 +126,28 @@ export function extendedFingers(lm: Landmark[]): Fingers {
  * up in a fist varies by person and it is the least reliably tracked digit anyway.
  */
 export function fistFromGeometry(world: Landmark[]): boolean {
-  if (world.length < 21) return false;
+  const ratios = fingerCurlRatios(world);
+  return ratios !== null && ratios.every((ratio) => ratio < CURL_RATIO);
+}
+
+/**
+ * Continuous non-thumb curl measurements used by the fist latch and its release hysteresis.
+ * Values below 1 have not reached past the PIP joint; an extended finger is roughly 1.6.
+ */
+export function fingerCurlRatios(world: Landmark[]): [number, number, number, number] | null {
+  if (world.length < 21) return null;
   const wrist = world[0]!;
   const d = (i: number) =>
     Math.hypot(world[i]!.x - wrist.x, world[i]!.y - wrist.y, world[i]!.z - wrist.z);
-  // Something has to be there: an all-zero skeleton (a synthetic hand, a failed reconstruction)
-  // has every tip at distance 0 and must not read as closed.
-  if (d(5) <= 0) return false;
-  // tip vs PIP, index → pinky. A tip that has not made it past its own second joint is curled.
-  return CURL_JOINTS.every(([tip, pip]) => d(tip) < d(pip) * CURL_RATIO);
+  const ratios = CURL_JOINTS.map(([tip, pip]) => {
+    const joint = d(pip);
+    const tipDistance = d(tip);
+    return joint > 1e-6 && Number.isFinite(joint) && Number.isFinite(tipDistance)
+      ? tipDistance / joint
+      : Number.NaN;
+  });
+  if (!ratios.every(Number.isFinite)) return null;
+  return ratios as [number, number, number, number];
 }
 const CURL_JOINTS: ReadonlyArray<readonly [number, number]> = [
   [8, 6],
@@ -146,7 +159,7 @@ const CURL_JOINTS: ReadonlyArray<readonly [number, number]> = [
  *  an extended finger is at roughly 1.6, so the margin is wide on both sides. */
 const CURL_RATIO = 1.0;
 
-/** Largest detected face, box normalised to [0,1] of the video frame (raw, un-mirrored). */
+/** One detected face, box normalised to [0,1] of the video frame (raw, un-mirrored). */
 export interface FaceResult {
   cx: number;
   cy: number;
@@ -156,10 +169,16 @@ export interface FaceResult {
 }
 
 export interface VisionResult {
-  /** highest-confidence hand — what the older single-hand interactions read */
+  /**
+   * @deprecated Per-frame array position is not an identity. Production interaction must use
+   * `hands` through `StableHandOwner`; retained only for fixture/backwards compatibility.
+   */
   hand: HandResult | null;
-  /** every tracked hand this frame, up to two */
+  /** Every tracked hand this frame, up to two. Ordering is explicitly unstable. */
   hands: HandResult[];
+  /** Every detected face. Production associates one of these with the stable hand owner. */
+  faces?: FaceResult[];
+  /** @deprecated Largest face, retained for experiments and old fixtures. */
   face: FaceResult | null;
   /**
    * The frame's TRUE pixel size, as the browser actually delivered it.
@@ -180,12 +199,16 @@ export class VisionEngine {
   async load(): Promise<void> {
     const fileset = await FilesetResolver.forVisionTasks(ASSET.wasm);
     // Load both tasks in parallel. Prefer the GPU delegate; MediaPipe silently falls back
-    // to CPU inside the WASM runtime if WebGL isn't available.
-    [this.gesture, this.face] = await Promise.all([
+    // to CPU inside the WASM runtime if WebGL isn't available. `allSettled` matters here: if
+    // one task succeeds and the other fails, Promise.all loses the fulfilled handle and leaks
+    // its GPU/WASM resources forever.
+    const [gesture, face] = await Promise.allSettled([
       GestureRecognizer.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: ASSET.gestureModel, delegate: "GPU" },
         runningMode: "VIDEO",
-        numHands: 2, // two-handed control: separation drives zoom, midpoint drives pan
+        // A second detection lets the owner tracker refuse a bystander instead of blindly
+        // accepting whichever hand MediaPipe happened to place at index zero this frame.
+        numHands: 2,
         // raise the bars so background / faces don't register as a phantom hand (which would
         // wrongly flip the showreel into "someone is here" and assemble the splat)
         minHandDetectionConfidence: 0.7,
@@ -197,6 +220,14 @@ export class VisionEngine {
         runningMode: "VIDEO",
       }),
     ]);
+    if (gesture.status === "rejected" || face.status === "rejected") {
+      if (gesture.status === "fulfilled") gesture.value.close();
+      if (face.status === "fulfilled") face.value.close();
+      if (gesture.status === "rejected") throw gesture.reason;
+      if (face.status === "rejected") throw face.reason;
+    }
+    this.gesture = gesture.value;
+    this.face = face.value;
   }
 
   /** Run both models on one video frame. `tsMs` must strictly increase across calls. */
@@ -205,10 +236,12 @@ export class VisionEngine {
     const g: GestureRecognizerResult = this.gesture.recognizeForVideo(video, tsMs);
     const f: FaceDetectorResult = this.face.detectForVideo(video, tsMs);
     const hands = allHands(g);
+    const faces = allFaces(f, video);
     return {
       hand: hands[0] ?? null,
       hands,
-      face: largestFace(f, video),
+      faces,
+      face: largestFace(faces),
       frame: { w: video.videoWidth, h: video.videoHeight },
     };
   }
@@ -240,29 +273,36 @@ function allHands(r: GestureRecognizerResult): HandResult[] {
   return out;
 }
 
-function largestFace(r: FaceDetectorResult, video: HTMLVideoElement): FaceResult | null {
+function allFaces(r: FaceDetectorResult, video: HTMLVideoElement): FaceResult[] {
   const dets = r.detections;
-  if (!dets?.length) return null;
+  if (!dets?.length) return [];
   const vw = video.videoWidth || 1;
   const vh = video.videoHeight || 1;
-  let best = dets[0]!;
-  let bestArea = -1;
+  const faces: FaceResult[] = [];
   for (const d of dets) {
     const b = d.boundingBox;
     if (!b) continue;
-    const area = b.width * b.height;
-    if (area > bestArea) {
-      bestArea = area;
-      best = d;
+    const face = {
+      cx: (b.originX + b.width / 2) / vw,
+      cy: (b.originY + b.height / 2) / vh,
+      w: b.width / vw,
+      h: b.height / vh,
+      score: d.categories?.[0]?.score ?? 1,
+    };
+    if (
+      [face.cx, face.cy, face.w, face.h, face.score].every(Number.isFinite) &&
+      face.w > 0 &&
+      face.h > 0
+    ) {
+      faces.push(face);
     }
   }
-  const b = best.boundingBox;
-  if (!b) return null;
-  return {
-    cx: (b.originX + b.width / 2) / vw,
-    cy: (b.originY + b.height / 2) / vh,
-    w: b.width / vw,
-    h: b.height / vh,
-    score: best.categories?.[0]?.score ?? 1,
-  };
+  return faces;
+}
+
+function largestFace(faces: FaceResult[]): FaceResult | null {
+  return faces.reduce<FaceResult | null>(
+    (best, face) => (!best || face.w * face.h > best.w * best.h ? face : best),
+    null,
+  );
 }

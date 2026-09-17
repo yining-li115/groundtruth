@@ -1,8 +1,8 @@
 name: CI
 
-# Quality gate: typecheck, validate content JSON, and build both front-ends on every
-# push and PR. Render deploys separately (render.yaml); this catches breakage early and
-# independently of deploy. A failed build here means the same build would fail on Render.
+# Quality gate: typecheck, deterministic interaction safety checks, content validation and both
+# front-end builds on every push and PR. Render deploys separately (render.yaml); this catches
+# breakage early and independently of deploy.
 on:
   push:
     branches: [main]
@@ -28,6 +28,15 @@ jobs:
 
       - name: Validate content JSON
         run: npm run check:content
+
+      - name: Check gesture recognition and calibration
+        run: npm run check:pointer
+
+      - name: Check exclusive interaction routing
+        run: npm run check:interaction
+
+      - name: Check scene navigation and tour takeover
+        run: npm run check:scene
 
       - name: Build controller
         run: npm run build -w @groundtruth/controller

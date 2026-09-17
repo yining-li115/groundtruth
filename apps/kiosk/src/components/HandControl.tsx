@@ -1,8 +1,26 @@
 import { useEffect, useRef } from "react";
-import { HOLD_RADIUS, useHandPointer } from "../lib/vision/handPointer";
-import { flightInput, steer, stopFlight } from "../lib/vision/flightInput";
+import { hasFreshOwner, useHandPointer } from "../lib/vision/handPointer";
+import {
+  beginSceneGrab,
+  cancelSceneGrab,
+  endSceneGrab,
+  flightInput,
+  sceneExploreAxes,
+  setSceneMode,
+  updateSceneGrab,
+} from "../lib/vision/flightInput";
+import {
+  InteractionRouter,
+  type InteractionAction,
+  type InteractionEndReason,
+  type RouterContext,
+  type RouterGestureEdge,
+  type RouterHit,
+} from "../lib/vision/interactionRouter";
 import { setCursorPosition } from "../lib/cursorPosition";
 import { dragScrollVelocity, scrollableAt, scrollTarget } from "../lib/scroll";
+import { RUNTIME_CLICK_GESTURE } from "../lib/vision/gestureRuntime";
+import { activeProfile, applyProfile } from "../lib/vision/profileStore";
 import { useKioskStore } from "../state/store";
 import {
   VISION_TRACE,
@@ -12,9 +30,17 @@ import {
   noteReject,
 } from "../lib/vision/trace";
 import { visionLog } from "../lib/vision/visionLog";
+import { heroOrbit } from "../lib/heroInput";
 import { VisionDebug } from "./VisionDebug";
 import { CamPreview } from "./CamPreview";
 import "./handControl.css";
+
+declare global {
+  interface Window {
+    /** DEV-only browser-test access to the exact scene-input singleton this component uses. */
+    __flightTest?: { flightInput: typeof flightInput };
+  }
+}
 
 /**
  * The kiosk's only input. Mounted once, for the whole app.
@@ -28,38 +54,19 @@ import "./handControl.css";
  * The gesture grammar is visionOS's, as far as one webcam can carry it:
  *
  *   move a hand           →  move the cursor          (indirect pointing, hand anywhere)
- *   pinch / make a fist   →  click                    ("pinch is the new click")
- *   pinch and drag        →  scroll                   (grab the page and move it)
+ *   pinch / make a fist, then open → click a control  (one complete close/open cycle)
+ *   keep it closed + move → scroll                    (grab the page and move it)
  *   rest on something     →  click, after a moment    (Dwell Control, Apple's own fallback)
  *
- * TAP FIRES ON RELEASE, NOT ON PRESS — the same rule as touch and as visionOS. A press
- * cannot know yet whether it is the start of a tap or the start of a drag, and guessing
- * "tap" means every attempt to scroll also activates whatever was underneath. Waiting until
- * the fingers open resolves it: no movement means it was a tap.
+ * UI ACTIVATION FIRES ON A REAL RELEASE. Until the hand opens, the same close can still become
+ * a scroll by moving beyond the drag threshold; once it does, opening can never click. The
+ * pointer accepts both an explicit Open_Palm and a sustained relaxed `None` hand, so release
+ * no longer depends on the classifier producing one textbook pose.
  *
- * A release caused by LOSING the hand is not a tap. Someone lowering their arm or walking
- * off must not leave a click behind them on the way out.
+ * A lost hand never completes a scroll or scene grab. It also cannot repeat an already accepted
+ * control activation: the router stays disarmed until a new, positive open epoch.
  */
 
-/**
- * How far the hand must travel while held before it counts as a drag, in screen fractions.
- *
- * Measured against where the hand WAS when the press landed, never against the frozen aim —
- * see `liveX` on the pointer state. Generous, because this is a whole arm held in the air:
- * a threshold tuned for a fingertip on glass turns every tap into a drag and silently eats
- * the click.
- *
- * DELIBERATELY BELOW the scroll deadzone. The two were equal, which left no room between
- * them: a small, hesitant lean — someone trying to scroll and not committing — was too small
- * to be a drag and too small to scroll, so it arrived as a CLICK on whatever was underneath.
- * Measured on the research page: lean 0.04, release, and the topic changed. Whatever a
- * visitor is doing when they lean on a held hand, they are not asking to activate something,
- * so the gesture stops counting as a tap well before it starts counting as a scroll.
- *
- * THE SAME NUMBER pins the cursor: below it the pointer keeps the cursor at the press position
- * (`holdRadius` in handPointer.ts), so a held fist that is not a drag does not shiver.
- */
-const DRAG_START = HOLD_RADIUS;
 /** How far the fingers must close, on the 0..1 scale toward the threshold, to count as a real
  *  attempt rather than a hand relaxing. */
 const NEAR_MISS_DEPTH = 0.55;
@@ -81,27 +88,6 @@ const IDLE_RETURN_MS = (() => {
 /** Elements a hover effect should be applied to, whether or not they opted in. */
 const HOVERABLE = '[data-hover], button, a, [role="button"], input, label';
 
-/**
- * Overrides, for standing in front of the real screen and changing the answer without a
- * rebuild: `?click=fist` (or `pinch`, or `either`), `?dwell=900` (0 turns dwell off).
- *
- * Which posture to trust is a hardware question, not a taste one — it depends on the camera
- * and how far away the visitor stands — so it has to be answerable at the wall.
- */
-const CLICK_GESTURE = (() => {
-  const v = PARAMS?.get("click");
-  return v === "pinch" || v === "fist" || v === "either" ? v : undefined;
-})();
-const DWELL_MS = (() => {
-  const v = Number(PARAMS?.get("dwell"));
-  return Number.isFinite(v) && PARAMS?.get("dwell") !== null ? v : undefined;
-})();
-/** `?reach=0.7`: shrink the box — how much hand movement the screen costs — without remeasuring. */
-const REACH_SCALE = (() => {
-  const v = Number(PARAMS?.get("reach"));
-  return Number.isFinite(v) && v > 0 && v <= 1 ? v : undefined;
-})();
-
 export function HandControl() {
   const { videoRef, status, error, pointer } = useHandPointer(true);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -112,6 +98,8 @@ export function HandControl() {
   const nearMiss = useRef<{ armed: boolean; at: number[] }>({ armed: false, at: [] });
   const hovered = useRef<Element | null>(null);
   const diagRef = useRef<HTMLDivElement>(null);
+  const routerRef = useRef<InteractionRouter<Element, HTMLElement> | null>(null);
+  if (!routerRef.current) routerRef.current = new InteractionRouter<Element, HTMLElement>();
 
   // Publish the camera's health. With the phone gone there is no second way in, so a screen
   // whose camera failed must be able to say so instead of standing there inviting gestures
@@ -121,27 +109,42 @@ export function HandControl() {
   }, [status]);
 
   useEffect(() => {
-    if (CLICK_GESTURE) pointer.current.configure({ clickGesture: CLICK_GESTURE });
-    if (DWELL_MS !== undefined) pointer.current.configure({ dwellMs: DWELL_MS });
-    if (REACH_SCALE !== undefined) pointer.current.configure({ reachScale: REACH_SCALE });
+    // `applyProfile` may have run before this pointer existed (for example after a React/HMR
+    // remount). Replay the complete live mapping and runtime defaults at the ownership boundary.
+    applyProfile(activeProfile(), false);
+    if (RUNTIME_CLICK_GESTURE === "fist" && useKioskStore.getState().pinchTrouble) {
+      useKioskStore.getState().setPinchTrouble(false);
+    }
   }, [pointer]);
 
   useEffect(() => {
     let raf = 0;
-    /** where the press landed, in screen fractions — the aim a tap will be delivered at */
-    let pressAt: { x: number; y: number } | null = null;
-    /** where the hand was when the press landed — the origin a drag is measured from */
-    let dragFrom: { x: number; y: number } | null = null;
-    /** what this drag scrolls: the scrollable element it started over, or the page */
-    let scrollEl: HTMLElement | null = null;
-    let dragging = false;
-    /** whether this grab had anything to scroll — see the note where it is set */
-    let canScroll = false;
+    const router = routerRef.current!;
+    // The browser harness must observe and seed this exact imported singleton. Dynamically
+    // importing the source path from a Vite page can create a second module instance after HMR
+    // (`flightInput.ts` versus `flightInput.ts?t=...`), producing convincing false failures.
+    // Keep the seam unavailable in production and when no deliberate synthetic hand is present.
+    const flightTestHook =
+      import.meta.env.DEV && window.__handSim ? { flightInput } : null;
+    if (flightTestHook) window.__flightTest = flightTestHook;
     let lastPresent = performance.now();
     let lastFrame = performance.now();
-    const click = (x: number, y: number) => {
-      // The cursor is pointer-events:none, so this reaches the UI beneath it.
-      const el = document.elementFromPoint(x, y);
+    let exploreSessionId: number | null = null;
+    let exploreOwnerId: number | null = null;
+    let nextExploreSessionId = Math.max(1, flightInput.sessionId + 1);
+
+    /** End only the presence-driven Explore session owned by this mounted input loop. */
+    const stopExplore = (reason: Parameters<typeof cancelSceneGrab>[0]) => {
+      if (exploreSessionId !== null) {
+        cancelSceneGrab(reason, {
+          sessionId: exploreSessionId,
+          ownerId: exploreOwnerId,
+        });
+      }
+      exploreSessionId = null;
+      exploreOwnerId = null;
+    };
+    const click = (el: Element, x: number, y: number) => {
       // AUDIT ONLY. A click that is dispatched onto nothing, or onto a plain div with no
       // interactive ancestor, is a complete success by every measure inside the vision
       // pipeline and a total failure from in front of the screen — the last place the chain
@@ -151,10 +154,7 @@ export function HandControl() {
         // recorded either way; scoring it as a success would let the end-to-end figure count
         // gestures the visitor experienced as nothing happening.
         let verdict: "hit" | "inert" | "nothing";
-        if (!el) {
-          verdict = "nothing";
-          noteReject("NO_CLICK_TARGET", `${x.toFixed(0)},${y.toFixed(0)}`);
-        } else if (!el.closest(HOVERABLE)) {
+        if (!el.closest(HOVERABLE)) {
           verdict = "inert";
           noteReject("CLICK_ON_INERT_TARGET", describeElement(el));
         } else {
@@ -170,7 +170,7 @@ export function HandControl() {
       // detail were a 23px square of nothing in the middle of a 64px target, while still
       // lighting up on hover, so it read as the tracking failing rather than the button. The
       // event bubbles to whatever handler owns the control, exactly as a real click does.
-      el?.dispatchEvent(
+      el.dispatchEvent(
         new MouseEvent("click", {
           bubbles: true,
           cancelable: true,
@@ -187,6 +187,77 @@ export function HandControl() {
       }
     };
 
+    const targetValid = (
+      target: Element | null,
+      point?: { x: number; y: number },
+    ): boolean => {
+      if (!target?.isConnected) return false;
+      if (target.getAttribute("aria-disabled") === "true") return false;
+      if (target.closest("[hidden], [inert], [aria-hidden='true']")) return false;
+      if (
+        (target instanceof HTMLButtonElement || target instanceof HTMLInputElement) &&
+        target.disabled
+      ) {
+        return false;
+      }
+      const style = getComputedStyle(target);
+      const visible =
+        style.display !== "none" &&
+        style.visibility !== "hidden" &&
+        style.pointerEvents !== "none" &&
+        target.getClientRects().length > 0;
+      if (!visible) return false;
+      if (point) {
+        const top = document.elementFromPoint(
+          point.x * window.innerWidth,
+          point.y * window.innerHeight,
+        );
+        // The aimed control must still be the top layer at confirmation time. Children of the
+        // target are valid because a span or SVG inside a button is still that same control.
+        if (!top || (top !== target && !target.contains(top))) return false;
+      }
+      return true;
+    };
+
+    const mapCancelReason = (reason: string): InteractionEndReason => {
+      switch (reason) {
+        case "hand-lost":
+        case "track-ended":
+          return "hand-lost";
+        case "source-stale":
+        case "page-hidden":
+          return "stale";
+        case "owner-changed":
+          return "owner-changed";
+        case "hold-timeout":
+          return "timeout";
+        case "mapping-changed":
+          return "cancelled";
+        default:
+          return "cancelled";
+      }
+    };
+
+    const applyActions = (actions: InteractionAction<Element>[]) => {
+      for (const action of actions) {
+        if (action.type === "click") {
+          click(
+            action.target,
+            action.point.x * window.innerWidth,
+            action.point.y * window.innerHeight,
+          );
+        } else if (action.type === "scene-begin") {
+          beginSceneGrab(action);
+        } else if (action.type === "scene-update") {
+          updateSceneGrab(action);
+        } else if (action.reason === "released") {
+          endSceneGrab("released", action);
+        } else {
+          cancelSceneGrab(action.reason, action);
+        }
+      }
+    };
+
     const loop = () => {
       raf = requestAnimationFrame(loop);
       const s = pointer.current.state;
@@ -195,6 +266,7 @@ export function HandControl() {
       const nowMs = performance.now();
       const dt = Math.min(0.1, (nowMs - lastFrame) / 1000);
       lastFrame = nowMs;
+      const handActive = s.present && hasFreshOwner(s, nowMs);
       if (VISION_TRACE) {
         interactionTrace.velocity = s.velocity;
         interactionTrace.gestureMs = s.gestureMs;
@@ -203,15 +275,21 @@ export function HandControl() {
       const h = window.innerHeight;
       const px = s.x * w;
       const py = s.y * h;
+      let routed = router.snapshot();
+      const store = useKioskStore.getState();
+      // Calibration shows its own camera-space evidence and deliberately rejects UI gestures.
+      // Hiding the normal cursor there avoids presenting a pointer that cannot activate the
+      // buttons beneath it.
+      const cursorVisible = handActive && store.calibrated;
 
       // --- the cursor itself ---
       const node = cursorRef.current;
       if (node) {
         node.style.transform = `translate3d(${px}px, ${py}px, 0)`;
-        node.dataset.present = String(s.present);
+        node.dataset.present = String(cursorVisible);
         node.dataset.pinched = String(s.pinched);
-        node.dataset.dragging = String(dragging);
-        node.style.opacity = s.present ? String(0.3 + s.conf.value * 0.7) : "0";
+        node.dataset.dragging = String(routed.kind === "UI_SCROLL");
+        node.style.opacity = cursorVisible ? String(0.3 + s.conf.value * 0.7) : "0";
       }
       if (dwellRef.current) {
         const C = 2 * Math.PI * 21;
@@ -235,7 +313,8 @@ export function HandControl() {
          * Smoothed and dead-zoned, because the raw strength is a noisy sensor reading and a
          * ring that shimmers on an open hand is worse than no ring.
          */
-        const raw = pointer.current.pinchStrength();
+        const pinchFeedback = RUNTIME_CLICK_GESTURE !== "fist";
+        const raw = pinchFeedback ? pointer.current.pinchStrength() : 0;
         closing.current += ((raw < 0.12 ? 0 : raw) - closing.current) * 0.25;
         const arming = s.pressProgress === 0 && !s.pinched ? closing.current : 0;
         // PRESS: the posture is being held toward the moment it counts. Without it a hold that
@@ -254,15 +333,18 @@ export function HandControl() {
          * (12/12 against 2/12 in the harness), so that is what the hint switches to.
          */
         const m = nearMiss.current;
-        if (closing.current > NEAR_MISS_DEPTH && !s.pinched) m.armed = true;
-        else if (m.armed && closing.current < 0.12) {
+        if (pinchFeedback && closing.current > NEAR_MISS_DEPTH && !s.pinched) m.armed = true;
+        else if (pinchFeedback && m.armed && closing.current < 0.12) {
           m.armed = false;
           m.at.push(nowMs);
           m.at = m.at.filter((t) => nowMs - t < NEAR_MISS_WINDOW_MS);
           const store2 = useKioskStore.getState();
           if (m.at.length >= 2 && !store2.pinchTrouble) store2.setPinchTrouble(true);
+        } else if (!pinchFeedback) {
+          m.armed = false;
+          m.at.length = 0;
         }
-        if (s.pinched) {
+        if (pinchFeedback && s.pinched) {
           // It read. Whatever it was doing wrong, it is not doing it now.
           m.armed = false;
           m.at.length = 0;
@@ -277,11 +359,18 @@ export function HandControl() {
         }
       }
       setCursorPosition(px, py);
+      if (heroOrbit.active) {
+        if (handActive) {
+          heroOrbit.aim(s.x, s.y);
+          heroOrbit.touched = true;
+        } else {
+          heroOrbit.touched = false;
+        }
+      }
 
       // --- presence drives the whole kiosk's mode ---
-      const store = useKioskStore.getState();
-      if (s.present !== store.handPresent) store.setHandPresent(s.present);
-      if (s.present) lastPresent = performance.now();
+      if (handActive !== store.handPresent) store.setHandPresent(handActive);
+      if (handActive) lastPresent = performance.now();
       else if (store.entered && performance.now() - lastPresent > IDLE_RETURN_MS) {
         // Nobody has been here for a while: go back to being a showreel, on the home view,
         // so the next visitor doesn't inherit the last one's half-read page.
@@ -290,7 +379,7 @@ export function HandControl() {
       }
 
       // --- hover, since a kiosk has no real pointer and gets no :hover ---
-      if (s.present) {
+      if (handActive && store.calibrated) {
         const under = document.elementFromPoint(px, py);
         const hot = under?.closest(HOVERABLE) ?? null;
         const mark = (el: Element) => {
@@ -320,98 +409,237 @@ export function HandControl() {
         hovered.current = null;
       }
 
-      // --- press / drag / release ---
-      if (s.pressed) {
-        // Two different positions on purpose: the aim a tap will be delivered at, and where
-        // the hand actually was, which is what a drag is measured from.
-        pressAt = { x: s.x, y: s.y };
-        dragFrom = { x: s.liveX, y: s.liveY };
-        // Decided once, where the grab landed, so a drag cannot hand itself to a different
-        // container halfway through.
-        scrollEl = scrollableAt(px, py);
-        // Could this gesture have been a scroll at all? If neither an element under the grab
-        // nor the page itself can move, then drifting during a pinch cannot have been an
-        // attempt to scroll — so it must not be allowed to swallow the click. On the home page
-        // (which does not scroll) a 20px wobble produced no click, no scroll and no feedback.
-        canScroll =
-          !!scrollEl || document.documentElement.scrollHeight > window.innerHeight + 8;
-        dragging = false;
-        if (VISION_TRACE) {
-          interactionTrace.canScroll = canScroll;
-          interactionTrace.dragFrac = 0;
-          interactionTrace.dragPx = 0;
-          noteAction(`press via ${s.pressVia ?? "?"} at ${(s.x * w).toFixed(0)},${(s.y * h).toFixed(0)}`);
-          visionLog.event("press", s.pressVia ?? "?");
-        }
-      } else if (s.pinched && pressAt && dragFrom) {
-        // Drag detection runs everywhere, not only inside the site. It is what lets a press be
-        // taken back: move away before letting go and it is not a tap. Gating this on being in
-        // the site meant a press on the showreel could never be cancelled — grab Enter, change
-        // your mind, move half a screen away, release, and you were in anyway.
-        const moved = Math.hypot(s.liveX - dragFrom.x, s.liveY - dragFrom.y);
-        if (VISION_TRACE) {
-          interactionTrace.dragFrac = moved;
-          interactionTrace.dragPx = moved * Math.hypot(w, h);
-        }
-        if (!dragging && moved > DRAG_START) {
-          dragging = true;
+      // --- one exclusive gesture session: calibration, UI, or Gaussian scene -------------
+      const context: RouterContext = {
+        environment: !store.calibrated ? "calibration" : store.entered ? "site" : "showreel",
+        sceneReady: flightInput.ready,
+      };
+      const actions: InteractionAction<Element>[] = [];
+
+      const raw = s.rawHand;
+      const ownerHands =
+        s.owner.selectedIndex >= 0 && s.hands[s.owner.selectedIndex]
+          ? [s.hands[s.owner.selectedIndex]!]
+          : [];
+      // Establish the newest safety boundary before committing any durable edge queued since the
+      // previous display frame. A release followed by owner/source loss in the same rAF batch must
+      // be cancelled, not turned into a click merely because the release happened to be dequeued
+      // first. InteractionRouter accepts older one-shot edges after this observation by sequence.
+      actions.push(
+        ...router.observe(
+          {
+            seq: s.sample.seq,
+            // Router/scene watchdogs measure total observation age from capture. Using
+            // completion time here would grant slow inference a second full freshness window.
+            at: s.sample.receivedAtMs,
+            ownerId: s.owner.id,
+            sourceFresh: s.sample.sourceFresh,
+            ownerVisible: s.owner.visible,
+            fresh: hasFreshOwner(s, nowMs),
+            freshForMs: s.sample.freshForMs,
+            // The opening silhouette may shift the mapped wrist. Observe a durable release frame
+            // as neutral before its edge commits, so sample-first safety ordering cannot turn that
+            // shape change into scroll; the edge carries the last genuinely held live position.
+            posture: s.released ? "unknown" : s.posture,
+            pointer: { x: s.x, y: s.y },
+            live: { x: s.liveX, y: s.liveY },
+            rawHand: raw
+              ? { frameX: raw.frameX, frameY: raw.frameY, palmSpan: raw.palmSpan }
+              : null,
+            // Visual feedback follows the same stable owner as the gesture. Showing every
+            // detection here would make a bystander's hand look capable of taking control.
+            hands: ownerHands,
+          },
+          context,
+        ),
+      );
+
+      // Edges are queued by the camera loop. Polling the old one-frame `pressed/released`
+      // booleans could miss an entire tap when camera FPS exceeded display FPS.
+      for (const event of pointer.current.drainEvents()) {
+        const rawHand = event.rawHand
+          ? {
+              frameX: event.rawHand.frameX,
+              frameY: event.rawHand.frameY,
+              palmSpan: event.rawHand.palmSpan,
+            }
+          : null;
+        const common = {
+          seq: event.seq,
+          at: event.at,
+          ownerId: event.ownerId,
+          aim: event.aim,
+          live: event.live,
+          rawHand,
+          freshForMs: event.freshForMs,
+        };
+        const edge: RouterGestureEdge =
+          event.type === "cancel"
+            ? { ...common, type: "cancel", reason: mapCancelReason(event.reason) }
+            : { ...common, type: event.type };
+
+        let hit: RouterHit<Element, HTMLElement> | undefined;
+        if (
+          edge.type === "press" &&
+          Number.isFinite(edge.aim.x) &&
+          Number.isFinite(edge.aim.y)
+        ) {
+          const hitX = edge.aim.x * w;
+          const hitY = edge.aim.y * h;
+          const under = document.elementFromPoint(hitX, hitY);
+          const clickTarget = under?.closest(HOVERABLE) ?? null;
+          const scrollEl = scrollableAt(hitX, hitY);
+          const root = document.documentElement;
+          const pageCanScroll =
+            root.scrollHeight > window.innerHeight + 8 ||
+            root.scrollWidth > window.innerWidth + 8;
+          const canScroll = context.environment === "site" && (!!scrollEl || pageCanScroll);
+          hit = {
+            clickTarget,
+            scrollTarget: scrollEl,
+            canScroll,
+            // Production Showreel is presence-driven Explore. A fist on the background is a
+            // pause, not a second clutch grammar competing with the open-hand joystick.
+            scene: false,
+          };
           if (VISION_TRACE) {
-            interactionTrace.counts.drags += 1;
-            // Crossing the threshold is not yet a lost click — `canScroll` decides that on
-            // release. Logged separately so "the hand wobbled" and "the wobble cost the
-            // click" never end up as the same number.
-            noteReject("RECLASSIFIED_AS_DRAG", `moved ${moved.toFixed(3)} > ${DRAG_START}`);
-            visionLog.event("drag", moved.toFixed(3));
-          }
-        }
-        if (dragging && store.entered) {
-          // Lean, don't drag: how far the hand has moved from where it grabbed sets a SPEED,
-          // and the surface keeps going while it stays there. See `dragScrollVelocity`.
-          const vy = dragScrollVelocity(s.liveY - dragFrom.y);
-          const vx = dragScrollVelocity(s.liveX - dragFrom.x);
-          if (vx !== 0 || vy !== 0) scrollTarget(scrollEl, vx * dt, vy * dt);
-        }
-      } else if (s.released) {
-        if (VISION_TRACE) {
-          visionLog.event("release", s.releasedByLoss ? "by loss" : "opened");
-          if (pressAt && dragging && canScroll) {
-            noteReject(
-              "POINTER_MOTION_SUPPRESSED_CLICK",
-              `drag ${interactionTrace.dragFrac.toFixed(3)} over a scrollable surface`,
+            interactionTrace.canScroll = canScroll;
+            interactionTrace.dragFrac = 0;
+            interactionTrace.dragPx = 0;
+            noteAction(
+              `press via ${event.via} at ${hitX.toFixed(0)},${hitY.toFixed(0)}`,
             );
-          } else if (pressAt && s.releasedByLoss) {
-            noteReject("CLICK_SUPPRESSED", "released by hand loss");
+            visionLog.event("press", event.via);
           }
+        } else if (VISION_TRACE) {
+          visionLog.event(
+            event.type === "cancel" ? "release" : event.type,
+            event.type === "cancel" ? event.reason : "opened",
+          );
         }
-        // A release caused by losing the hand is not a tap — see the note at the top.
-        if (pressAt && !(dragging && canScroll) && !s.releasedByLoss) {
-          click(pressAt.x * w, pressAt.y * h);
-        }
-        pressAt = null;
-        dragFrom = null;
-        scrollEl = null;
-        dragging = false;
+
+        const lockedClickTarget =
+          edge.type === "release" ? router.snapshot().clickTarget : null;
+        const edgeTargetValid =
+          edge.type === "press"
+            ? hit?.clickTarget === null ||
+              hit?.clickTarget === undefined ||
+              targetValid(hit.clickTarget, edge.aim)
+            : edge.type === "release"
+              ? lockedClickTarget === null || targetValid(lockedClickTarget, edge.aim)
+              : true;
+        actions.push(
+          ...router.handleEdge(
+            edge,
+            context,
+            hit,
+            edgeTargetValid,
+            nowMs,
+          ),
+        );
       }
 
-      // --- flying the showreel ---
-      if (!store.entered && s.present) {
-        // The tour hands over the moment a hand is seen. `present` is what freezes it, so it
-        // is set even while the camera is holding still — the visitor is in charge from the
-        // first frame, and a tour that carried on playing under someone's hand would read as
-        // the screen ignoring them.
-        flightInput.handCount = s.hands.length;
-        flightInput.hands = s.hands;
-        // Aiming at a control is not flying, and neither is clicking.
-        const under = document.elementFromPoint(px, py);
-        const onUi = !!under?.closest(`${HOVERABLE}, [data-no-fly]`);
-        steer(s.x, s.y, { holdStill: onUi || s.pinched });
-      } else if (flightInput.present) {
-        // Nobody there: full stop, so the flight eases back to its composed tour instead of
-        // coasting on the last intent it was given.
-        stopFlight();
-        pressAt = null;
-        dragFrom = null;
-        dragging = false;
+      actions.push(...router.tick(nowMs, context));
+      applyActions(actions);
+
+      routed = router.snapshot();
+
+      // --- Showreel takeover ---------------------------------------------------------------
+      // Presence freezes the news/tour in CampusFlight. Camera authority remains stricter:
+      // one fresh, stable owner; an explicitly open hand; no UI underneath; and an armed
+      // router epoch. This keeps "raise a hand to explore" immediate without allowing a
+      // button press, a half-closed hand or stale coordinates to move the Gaussian camera.
+      if (
+        exploreSessionId !== null &&
+        (!flightInput.active || flightInput.sessionId !== exploreSessionId)
+      ) {
+        exploreSessionId = null;
+        exploreOwnerId = null;
+      }
+
+      const liveUnder = handActive ? document.elementFromPoint(px, py) : null;
+      const overSceneUi = !!liveUnder?.closest(
+        `${HOVERABLE}, [data-no-fly], [data-scene-ui]`,
+      );
+      const canExplore =
+        context.environment === "showreel" &&
+        context.sceneReady &&
+        handActive &&
+        s.owner.id !== null &&
+        s.posture === "open" &&
+        !s.pinched &&
+        s.pressProgress === 0 &&
+        routed.kind === "POINTING" &&
+        routed.armed &&
+        !overSceneUi;
+
+      if (canExplore) {
+        if (exploreSessionId !== null && exploreOwnerId !== s.owner.id) {
+          stopExplore("owner-changed");
+        }
+        if (exploreSessionId === null && !flightInput.active) {
+          setSceneMode("explore");
+          const sessionId = Math.max(nextExploreSessionId, flightInput.sessionId + 1);
+          nextExploreSessionId = sessionId + 1;
+          if (
+            beginSceneGrab({
+              sessionId,
+              ownerId: s.owner.id!,
+              seq: s.sample.seq,
+              freshAt: s.sample.receivedAtMs,
+              freshForMs: s.sample.freshForMs,
+              hands: ownerHands,
+            })
+          ) {
+            exploreSessionId = sessionId;
+            exploreOwnerId = s.owner.id;
+          }
+        }
+        const activeExploreOwner = exploreOwnerId;
+        if (
+          exploreSessionId !== null &&
+          activeExploreOwner !== null &&
+          activeExploreOwner === s.owner.id
+        ) {
+          const axes = sceneExploreAxes(s.liveX, s.liveY);
+          updateSceneGrab({
+            sessionId: exploreSessionId,
+            ownerId: activeExploreOwner,
+            seq: s.sample.seq,
+            freshAt: s.sample.receivedAtMs,
+            freshForMs: s.sample.freshForMs,
+            dx: axes.dx,
+            dy: axes.dy,
+            vx: 0,
+            vy: 0,
+            hands: ownerHands,
+          });
+        }
+      } else if (exploreSessionId !== null) {
+        const reason =
+          context.environment !== "showreel"
+            ? "mode-changed"
+            : !context.sceneReady
+              ? "scene-unavailable"
+              : !s.present || s.owner.id === null
+                ? "hand-lost"
+                : !handActive
+                  ? "stale"
+                  : exploreOwnerId !== s.owner.id
+                    ? "owner-changed"
+                    : "cancelled";
+        stopExplore(reason);
+      }
+
+      if (routed.kind === "UI_SCROLL") {
+        // Lean, don't drag: displacement from the locked origin sets a continuous speed.
+        const vx = dragScrollVelocity(routed.scrollDx);
+        const vy = dragScrollVelocity(routed.scrollDy);
+        if (vx !== 0 || vy !== 0) scrollTarget(routed.scrollTarget, vx * dt, vy * dt);
+      }
+      if (VISION_TRACE) {
+        interactionTrace.dragFrac = Math.hypot(routed.scrollDx, routed.scrollDy);
+        interactionTrace.dragPx = interactionTrace.dragFrac * Math.hypot(w, h);
       }
 
       // --- the chain, stated out loud (dev only) ---
@@ -422,7 +650,7 @@ export function HandControl() {
       if (import.meta.env.DEV && diagRef.current) {
         const th = pointer.current.pinchThresholds;
         diagRef.current.textContent =
-          `hand ${s.present ? "✓" : "✗"} · ${s.conf.reason} · ${s.fps.toFixed(0)}fps` +
+          `hand ${handActive ? "✓" : "✗"} · ${s.conf.reason} · ${s.fps.toFixed(0)}fps` +
           ` · ${s.pinched ? `PINCH(${s.pressVia})` : "open"}` +
           // The numbers that decide it. A stuck click was invisible without them: the state
           // said PINCH and nothing said why, or what an open hand would have to do to escape.
@@ -430,16 +658,35 @@ export function HandControl() {
           ` str ${(pointer.current.pinchStrength() * 100).toFixed(0)}%` +
           ` (on<${th.on.toFixed(2)} off>${th.off.toFixed(2)})` +
           ` · entered ${store.entered ? "✓" : "✗"}` +
-          ` · flight ${flightInput.present ? "ON" : "off"}` +
-          ` yaw ${flightInput.yaw} dolly ${flightInput.dolly}`;
+          ` · route ${routed.kind}` +
+          ` · scene ${flightInput.active ? flightInput.mode : "off"}` +
+          ` Δ ${flightInput.dx.toFixed(2)},${flightInput.dy.toFixed(2)}`;
       }
 
-      // --- dwell is a complete click on its own ---
-      if (s.dwellFired) {
-        const target = document.elementFromPoint(px, py);
-        if (target?.closest(HOVERABLE)) {
+      // Dwell is a complete click on its own. It crosses from the camera clock to the display
+      // clock through a queue, just like press/release: a one-camera-frame boolean is otherwise
+      // observed eight times by a 120Hz display fed by a 15fps camera.
+      for (const event of pointer.current.drainDwellEvents()) {
+        const eventFresh =
+          nowMs >= event.at &&
+          nowMs - event.at <= event.freshForMs &&
+          event.ownerId === s.owner.id &&
+          hasFreshOwner(s, nowMs);
+        if (
+          !eventFresh ||
+          context.environment !== "site" ||
+          routed.kind !== "POINTING" ||
+          !routed.armed
+        ) {
+          continue;
+        }
+        const dwellX = event.aim.x * w;
+        const dwellY = event.aim.y * h;
+        const target = document.elementFromPoint(dwellX, dwellY);
+        const hot = target?.closest(HOVERABLE) ?? null;
+        if (hot && targetValid(hot)) {
           if (VISION_TRACE) interactionTrace.counts.dwellClicks += 1;
-          click(px, py);
+          click(hot, dwellX, dwellY);
         }
       }
     };
@@ -447,6 +694,11 @@ export function HandControl() {
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
+      applyActions(router.dispose(performance.now()));
+      stopExplore("unmount");
+      if (flightTestHook && window.__flightTest === flightTestHook) {
+        delete window.__flightTest;
+      }
       hovered.current?.classList.remove("is-hover", "gt-hover");
       hovered.current = null;
     };
@@ -473,9 +725,9 @@ export function HandControl() {
       {/* The camera as the pointer sees it — `?cam=1`. Renders nothing otherwise. */}
       <CamPreview video={videoRef} pointer={pointer} />
 
-      {status === "error" ? (
+      {status === "error" || (status === "loading" && error) ? (
         <div className="gt-hand-error" role="status">
-          Camera unavailable — {error ?? "unknown"}
+          {status === "error" ? "Camera unavailable" : "Camera reconnecting"} — {error ?? "unknown"}
         </div>
       ) : null}
     </>

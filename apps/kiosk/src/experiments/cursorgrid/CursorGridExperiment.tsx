@@ -13,7 +13,7 @@ import { BG } from "./assetColors";
  * - the SEAMS between panes show the light RAW (unblurred) — the bright rims around
  *   lit tiles come for free, exactly like the reference.
  *
- * Cursor source is `activePointer` (real mouse in dev, the phone-driven kiosk cursor on
+ * Cursor source is `activePointer` (real mouse in dev, the camera-driven hand cursor on
  * the wall) — the same plumbing the home cursor-fluid uses.
  */
 

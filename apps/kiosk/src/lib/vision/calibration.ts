@@ -1,7 +1,7 @@
 import { JOINT, type FaceResult, type Landmark } from "./mediapipe";
 
 /**
- * Automatic calibration for hand pointing — no setup step, no visitor cooperation.
+ * Body-relative hand pointing plus a bounded, per-camera/display installation calibration.
  *
  * The problem this solves: a fixed mapping from "where the hand is in the camera frame" to
  * "where the cursor is on the screen" is wrong for everyone except the one person it was
@@ -10,7 +10,9 @@ import { JOINT, type FaceResult, type Landmark } from "./mediapipe";
  * it). Stand further and the same sweep moves the cursor a few centimetres. Be shorter and
  * the whole mapping sits too high.
  *
- * Rather than calibrate per distance, the mapping is defined so distance cancels out:
+ * The operator calibration records only a safe reach box for the installation. It does not
+ * tune a visitor's hand or recognition thresholds. Distance is handled continuously because
+ * the live mapping is defined so it cancels out:
  *
  *   1. SCALE comes from the visitor's own face. Face width is near enough a physical
  *      constant across adults (~15 cm), so its width in frame IS the scale of everything
@@ -22,8 +24,8 @@ import { JOINT, type FaceResult, type Landmark } from "./mediapipe";
  *      box points halfway across the screen whether the visitor is at one metre or three,
  *      is tall or short, stands centred or off to one side.
  *
- *   3. The PINCH THRESHOLD rides a rolling estimate of that hand's own open posture, so hand
- *      shape and finger length stop mattering too.
+ *   3. Gesture recognition is deliberately separate: the production default is a whole-hand
+ *      fist, while the optional pinch uses fixed palm-normalised thresholds fitted offline.
  *
  * What this deliberately does NOT fix: whether the camera can RESOLVE a hand at all at a
  * given distance. That is optics, not geometry, and no amount of calibration invents detail
@@ -224,19 +226,33 @@ export class FaceAnchor {
   private w = 0;
   private h = 0;
   private lastSeen = 0;
+  private lastUpdate: number | null = null;
   private has = false;
+  private readonly tauMs: number;
 
   constructor(
-    /** per-frame approach rate; the head is slow, so this can be low */
-    private readonly ease = 0.15,
+    /**
+     * Approach rate at the historical 30 fps reference cadence. Kept in this form for API
+     * compatibility; `update` converts it to a wall-clock time constant for every sample.
+     */
+    ease = 0.15,
     /** how long to keep using the last anchor after the face is lost, in ms */
     private readonly holdMs = 2000,
-  ) {}
+  ) {
+    const referenceMs = 1000 / 30;
+    const clampedEase = Math.max(0, Math.min(1, ease));
+    this.tauMs =
+      clampedEase <= 0
+        ? Number.POSITIVE_INFINITY
+        : clampedEase >= 1
+          ? 0
+          : -referenceMs / Math.log1p(-clampedEase);
+  }
 
   /** True when the returned anchor is remembered rather than currently seen. */
   held = false;
 
-  update(face: FaceResult | null, now: number): FaceResult | null {
+  update(face: FaceResult | null, now: number, retainForOwner = false): FaceResult | null {
     if (face && face.w > 0) {
       if (!this.has) {
         this.cx = face.cx;
@@ -245,17 +261,31 @@ export class FaceAnchor {
         this.h = face.h;
         this.has = true;
       } else {
-        this.cx += (face.cx - this.cx) * this.ease;
-        this.cy += (face.cy - this.cy) * this.ease;
-        this.w += (face.w - this.w) * this.ease;
-        this.h += (face.h - this.h) * this.ease;
+        // The former fixed `ease` was applied once per frame: the same head trajectory was
+        // filtered twice as hard on a loaded 15 fps laptop as on a 30 fps one. Interpret that
+        // value at its original 30 fps cadence and derive the exact continuous-time response.
+        const dtMs =
+          this.lastUpdate !== null && Number.isFinite(now)
+            ? Math.max(0, now - this.lastUpdate)
+            : 1000 / 30;
+        const alpha = this.tauMs === 0 ? 1 : -Math.expm1(-dtMs / this.tauMs);
+        this.cx += (face.cx - this.cx) * alpha;
+        this.cy += (face.cy - this.cy) * alpha;
+        this.w += (face.w - this.w) * alpha;
+        this.h += (face.h - this.h) * alpha;
       }
       this.lastSeen = now;
+      this.lastUpdate = now;
       this.held = false;
       return { cx: this.cx, cy: this.cy, w: this.w, h: this.h, score: face.score };
     }
 
-    if (this.has && now - this.lastSeen < this.holdMs) {
+    this.lastUpdate = now;
+    // While the same physical hand owner is still visible, dropping this anchor would swap to
+    // a frame-centred palm fallback in one sample. A motionless hand would then move the cursor
+    // simply because its face had been occluded for two seconds. With no newer body evidence,
+    // the last owner-specific anchor is the only continuous and therefore safest mapping.
+    if (this.has && (retainForOwner || now - this.lastSeen < this.holdMs)) {
       this.held = true;
       return { cx: this.cx, cy: this.cy, w: this.w, h: this.h, score: 0 };
     }
@@ -267,6 +297,8 @@ export class FaceAnchor {
   reset(): void {
     this.has = false;
     this.held = false;
+    this.lastSeen = 0;
+    this.lastUpdate = null;
   }
 }
 
@@ -307,12 +339,24 @@ const POINT: "wrist" | "palm" = (() => {
   return new URLSearchParams(location.search).get("point") === "palm" ? "palm" : "wrist";
 })();
 
-/** Palm width in frame x-units — how big the hand is on the sensor, i.e. how much detail we have. */
-export function palmWidthNorm(lm: Landmark[] | undefined): number {
+/**
+ * Palm width in frame x-units — how big the hand is on the sensor, i.e. how much detail we
+ * have. MediaPipe normalises x by frame width and y by frame height, so y must be divided by
+ * width/height before the two axes can participate in one Euclidean distance. Without that
+ * correction the exact same tilted hand looks wider on 16:9 than on 4:3 cameras.
+ */
+export function palmWidthNorm(lm: Landmark[] | undefined, aspect = 1): number {
   const b = lm?.[JOINT.indexMcp];
   const c = lm?.[JOINT.pinkyMcp];
   if (!b || !c) return Number.NaN;
-  return Math.hypot(b.x - c.x, b.y - c.y);
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return Math.hypot(b.x - c.x, (b.y - c.y) / safeAspect);
+}
+
+/** Convert a frame-height-normalised y coordinate into the x-normalised units used by 3D input. */
+export function frameYInXUnits(y: number, aspect: number): number {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return y / safeAspect;
 }
 
 /** A hand position mapped into the box, as screen-space unit coordinates. */
@@ -418,6 +462,13 @@ export function confidence(
  */
 export const PINCH_ON = 0.74;
 export const PINCH_OFF = 0.88;
+/** Temporal gates are wall-clock durations, independent of the vision frame rate. */
+export const PINCH_GRACE_MS = 165;
+export const PINCH_SETTLE_MS = 265;
+/** Positive closed-aperture evidence required to latch a new pinch. */
+export const PINCH_ON_MS = 100;
+/** Positive open-aperture evidence required to release an already-held pinch. */
+export const PINCH_OFF_MS = 100;
 
 /**
  * Pinch detection: a fixed threshold with hysteresis, and nothing clever.
@@ -436,40 +487,52 @@ export const PINCH_OFF = 0.88;
  */
 export class PinchDetector {
   private on = false;
-  /** consecutive frames with no usable hand */
-  private missing = 0;
+  /** First decoded-sample time in the current tracking gap. */
+  private missingSinceMs: number | null = null;
+  private missingMs = 0;
   count = 0;
 
-  /** good frames seen since the last tracking gap */
-  private settled = 0;
+  /** First decoded-sample time in the current uninterrupted run of usable landmarks. */
+  private validSinceMs: number | null = null;
+  private settledMs = 0;
+  /** Guards the temporal gates against a clock that jumps backwards. */
+  private lastSampleAtMs: number | null = null;
+  /** First sample in a continuous run above the release threshold. */
+  private openSinceMs: number | null = null;
+  /** First sample in a continuous run below the press threshold. */
+  private closedSinceMs: number | null = null;
 
   constructor(
     private onAt = PINCH_ON,
     private offAt = PINCH_OFF,
-    /** how many hand-less frames to ride out before releasing a held pinch (~5 = 165ms @30fps) */
-    private graceFrames = 5,
+    /** How long to ride out missing landmarks before releasing a held pinch. */
+    private graceMs = PINCH_GRACE_MS,
     /**
-     * How many consecutive good frames must follow a tracking gap before a NEW pinch may
-     * latch.
+     * How long usable landmarks must remain continuous after a tracking gap before a NEW
+     * pinch may latch. This is elapsed decoded-sample time, not a frame count: rendering a Gaussian
+     * scene can halve inference FPS without silently doubling the gate.
      *
      * The first frames after the hand is reacquired are the least trustworthy ones the model
      * ever produces — the pose is being reconstructed from scratch, and a half-formed skeleton
      * reads as a closed hand. Replaying a recorded arm sweep, where tracking dropped in and
      * out through half the frames, this alone accounted for five phantom clicks in ten
-     * seconds: moving the cursor was firing it. Waiting a few frames costs nothing, because
+     * seconds: moving the cursor was firing it. Waiting briefly costs nothing, because
      * nobody completes a deliberate pinch inside a tenth of a second anyway.
      */
-    private settleFrames = 8,
+    private settleMs = PINCH_SETTLE_MS,
+    /** One landmark spike above `offAt` is not an intentional open hand. */
+    private offMs = PINCH_OFF_MS,
+    /** One landmark spike below `onAt` is not an intentional pinch. */
+    private onMs = PINCH_ON_MS,
   ) {}
 
   /**
-   * Re-point the detector at measured numbers.
+   * Re-point the detector at explicit runtime or experiment numbers.
    *
-   * The thresholds are the whole classifier, and the shipped pair was fitted against one
-   * camera and one pair of hands at half a metre. A calibration measures THIS visitor's open
-   * and closed clouds on THIS camera and lands the pair in the gap between them; the two gates
-   * are frame counts that mean different amounts of time at different frame rates, so they are
-   * re-derived from the measured rate too (`profile.ts` → `framesFor`).
+   * The installation profile intentionally does not call this: per-visitor open/closed clouds
+   * were unstable and made a camera/display calibration expire with the person who performed
+   * it. This hook remains for the hand lab, URL diagnostics and deterministic tests. Temporal
+   * gates remain wall-clock durations and likewise do not belong to a camera profile.
    *
    * Deliberately does NOT reset the latch: changing the numbers under a held pinch should
    * change what happens next, not fabricate a release.
@@ -477,17 +540,22 @@ export class PinchDetector {
   configure(cfg: {
     on?: number;
     off?: number;
-    graceFrames?: number;
-    settleFrames?: number;
+    graceMs?: number;
+    settleMs?: number;
+    offMs?: number;
+    onMs?: number;
   }): void {
     if (Number.isFinite(cfg.on ?? NaN)) this.onAt = cfg.on!;
     if (Number.isFinite(cfg.off ?? NaN)) this.offAt = cfg.off!;
-    if (cfg.graceFrames !== undefined) this.graceFrames = Math.max(1, Math.round(cfg.graceFrames));
-    if (cfg.settleFrames !== undefined) this.settleFrames = Math.max(0, Math.round(cfg.settleFrames));
+    if (Number.isFinite(cfg.graceMs ?? NaN)) this.graceMs = Math.max(0, cfg.graceMs!);
+    if (Number.isFinite(cfg.settleMs ?? NaN)) this.settleMs = Math.max(0, cfg.settleMs!);
+    if (Number.isFinite(cfg.offMs ?? NaN)) this.offMs = Math.max(0, cfg.offMs!);
+    if (Number.isFinite(cfg.onMs ?? NaN)) this.onMs = Math.max(0, cfg.onMs!);
   }
 
   /**
-   * Feed one frame's aperture/palm ratio — NaN when no hand was tracked.
+   * Feed one decoded sample's aperture/palm ratio — NaN when no hand was tracked — and the
+   * monotonic timestamp attached to that sample.
    *
    * A lost hand releases, but only after a short grace period, and both halves are deliberate.
    * Holding a pinch through a lost hand is the worse failure: a mouse button stuck down on a
@@ -495,20 +563,62 @@ export class PinchDetector {
    * is wrong too — single dropped frames are common, and each one would end the hold and let
    * the next frame count a brand-new pinch, turning one press into a double click.
    */
-  update(ratio: number): boolean {
+  update(ratio: number, sampleAtMs: number): boolean {
+    // A malformed timestamp must never advance a gate. Clamping a rare backwards timestamp
+    // likewise fails closed while preserving an already-held posture until real evidence says
+    // otherwise.
+    const at = Number.isFinite(sampleAtMs)
+      ? Math.max(sampleAtMs, this.lastSampleAtMs ?? sampleAtMs)
+      : this.lastSampleAtMs;
+    if (at === null) return this.on;
+    this.lastSampleAtMs = at;
+
     if (!Number.isFinite(ratio)) {
-      this.missing += 1;
-      this.settled = 0;
-      if (this.missing > this.graceFrames) this.on = false;
+      this.openSinceMs = null;
+      this.closedSinceMs = null;
+      if (this.missingSinceMs === null) this.missingSinceMs = at;
+      this.missingMs = Math.max(0, at - this.missingSinceMs);
+      this.validSinceMs = null;
+      this.settledMs = 0;
+      if (this.missingMs >= this.graceMs) this.on = false;
       return this.on;
     }
-    this.missing = 0;
-    this.settled += 1;
-    if (!this.on && this.settled > this.settleFrames && ratio < this.onAt) {
-      this.on = true;
-      this.count += 1;
-    } else if (this.on && ratio > this.offAt) {
+
+    // If usable landmarks return after a sparse gap, account for the whole elapsed gap before
+    // clearing it. This matters when the renderer leaves no intermediate decoded samples.
+    if (
+      this.missingSinceMs !== null &&
+      at - this.missingSinceMs >= this.graceMs
+    ) {
       this.on = false;
+    }
+    this.missingSinceMs = null;
+    this.missingMs = 0;
+    if (this.validSinceMs === null) this.validSinceMs = at;
+    this.settledMs = Math.max(0, at - this.validSinceMs);
+
+    if (!this.on) {
+      this.openSinceMs = null;
+      if (this.settledMs >= this.settleMs && ratio < this.onAt) {
+        if (this.closedSinceMs === null) this.closedSinceMs = at;
+        if (at - this.closedSinceMs + 1e-6 >= this.onMs) {
+          this.on = true;
+          this.count += 1;
+          this.closedSinceMs = null;
+        }
+      } else {
+        this.closedSinceMs = null;
+      }
+    } else if (ratio > this.offAt) {
+      this.closedSinceMs = null;
+      if (this.openSinceMs === null) this.openSinceMs = at;
+      if (at - this.openSinceMs + 1e-6 >= this.offMs) {
+        this.on = false;
+        this.openSinceMs = null;
+      }
+    } else {
+      this.openSinceMs = null;
+      this.closedSinceMs = null;
     }
     return this.on;
   }
@@ -520,17 +630,16 @@ export class PinchDetector {
   /**
    * The gate state, for the audit HUD. READ-ONLY and behaviour-free.
    *
-   * `settled` below `settleFrames` is a real, invisible refusal: for eight frames after the
-   * hand is reacquired no pinch can latch at all, however deliberate. That is roughly a
-   * quarter of a second, it happens every time tracking blinks, and until now nothing on the
-   * screen or in the logs said it was happening.
+   * `settledMs` below `settleMs` is a real, invisible refusal: for roughly a quarter second
+   * after the hand is reacquired no pinch can latch at all, however deliberate. It happens
+   * every time tracking blinks, and the HUD makes that refusal visible.
    */
-  get gates(): { settled: number; settleFrames: number; missing: number; graceFrames: number } {
+  get gates(): { settledMs: number; settleMs: number; missingMs: number; graceMs: number } {
     return {
-      settled: this.settled,
-      settleFrames: this.settleFrames,
-      missing: this.missing,
-      graceFrames: this.graceFrames,
+      settledMs: this.settledMs,
+      settleMs: this.settleMs,
+      missingMs: this.missingMs,
+      graceMs: this.graceMs,
     };
   }
 
@@ -552,8 +661,12 @@ export class PinchDetector {
 
   reset(): void {
     this.on = false;
-    this.missing = 0;
-    this.settled = 0;
+    this.missingSinceMs = null;
+    this.missingMs = 0;
+    this.validSinceMs = null;
+    this.settledMs = 0;
+    this.lastSampleAtMs = null;
+    this.openSinceMs = null;
     this.count = 0;
   }
 }

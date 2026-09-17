@@ -29,7 +29,7 @@ export interface SectionColor {
   fg: string;
 }
 
-export const SECTION_COLOR: Record<Exclude<View, "home" | "showreel">, SectionColor> = {
+export const SECTION_COLOR: Record<Exclude<View, "home">, SectionColor> = {
   research: { bg: "var(--gt-brand-electric)", fg: "var(--gt-brand-white)" },
   people: { bg: "var(--gt-accent-green)", fg: "var(--gt-brand-black)" },
   projects: { bg: "var(--gt-accent-orange)", fg: "var(--gt-brand-black)" },
@@ -38,7 +38,7 @@ export const SECTION_COLOR: Record<Exclude<View, "home" | "showreel">, SectionCo
 };
 
 /** The order the bands stand in. Also the order the menu sweeps them. */
-export const SECTION_ORDER: Array<Exclude<View, "home" | "showreel">> = [
+export const SECTION_ORDER: Array<Exclude<View, "home">> = [
   "research",
   "people",
   "projects",

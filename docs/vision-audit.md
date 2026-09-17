@@ -1,14 +1,18 @@
-# Fault-isolation audit — the hand-control pipeline
+# Fault-isolation audit — archived baseline and measurement protocol
 
-**Status: instrumentation landed, measurements NOT yet taken.** Nothing about the interaction
-changed. No threshold moved. This document is the trace, the evidence available offline, and
-the protocol for the physical runs that have to happen at the wall.
+> **Status (2026-09-17): historical audit, not the current runtime contract.** The stage table,
+> findings and wording such as “currently” below describe the instrumented pre-consolidation
+> pipeline. The resulting defects have since driven the single production chain documented in
+> `docs/gesture-input.md`: unique decoded frames, elapsed-time recognition, stable hand+face
+> ownership, adaptive freshness, exclusive routing, a wrist pointer with per-owner stabilization,
+> v4 installation-only calibration and explicit Showreel LOOK/MOVE. Do not use this file to infer
+> current defaults or profile fields.
 
-The one thing it does change is a conclusion. The project currently believes that a pinch fails
-because a webcam metres away cannot resolve two fingertips. **The recorded evidence does not
-support that**, and §6 shows why. The evidence supports a different and more tractable claim:
-the pinch feature does not close, at any distance, and the distance question has never been
-measured at all.
+The recorded evidence remains useful for one unresolved experiment. It does **not** support the
+old claim that a webcam metres away necessarily fails because it cannot resolve two fingertips.
+At 0.5 m, a deliberately held pinch still failed to collapse the chosen 3D feature (§6), while no
+1.0–2.5 m dataset existed. Production therefore defaults to **fist**; pinch remains an explicit
+`?click=pinch` experiment until measurements justify changing that policy.
 
 ---
 
@@ -26,11 +30,11 @@ in `App.tsx` (CLAUDE.md §4) — that invariant is intact and nothing here touch
 | 5 | landmarks | `mediapipe.ts` → `allHands` | 21 normalised points + 21 world points (metres) + handedness + canned gesture label. `hands[0]` is taken as *the* hand. |
 | 6 | gesture features | `handPointer.ts` → `handRatio`; **new:** `lib/vision/features.ts` → `pinchFeatures` | production feature = `‖thumbTip−indexTip‖₃ / ‖indexMCP−pinkyMCP‖₃`, world space. |
 | 7 | raw pinch classifier | `calibration.ts` → `PinchDetector.update` | fixed threshold + hysteresis, `ON 0.74` / `OFF 0.88`. |
-| 7b | raw fist classifier | `handPointer.ts` → `FistLatch` | MediaPipe's own `Closed_Fist` label, `score ≥ 0.5`, 2 frames on / 3 off. |
+| 7b | raw fist classifier | `handPointer.ts` → `FistLatch` | MediaPipe's own `Closed_Fist` label, `score ≥ 0.4`, 66ms on / 100ms off on decoded-sample time. |
 | 8 | temporal filtering | see §4.3 | **none on the pinch signal itself.** The 1€ filter (`oneEuro.ts`) smooths *position* only. |
-| 9 | gesture FSM | `handPointer.ts` → `HandPointer.update` | `PRESS_DEBOUNCE_MS = 350`, `MAX_HOLD_MS = 3000`, press-freeze 180ms with a 420ms look-back. |
-| 10 | drag / click decision | `components/HandControl.tsx` loop | click fires on **release**; `DRAG_START = 0.025` of screen; a drag only eats the click when something under the grab can scroll. |
-| 11 | target hit test | `HandControl.click()` | `document.elementFromPoint(x, y)` at the frozen aim. |
+| 9 | gesture FSM | `handPointer.ts` → `HandPointer.update` | `PRESS_DEBOUNCE_MS = 350`, `MAX_HOLD_MS = 30000`, press-freeze 180ms with a 420ms look-back. |
+| 10 | click / drag decision | `interactionRouter.ts` | confirmed close locks a pending control/scroll transaction; held movement past `DRAG_START = 0.025` becomes scroll, otherwise a valid open release clicks once. |
+| 11 | target hit test | `HandControl` | `document.elementFromPoint(x, y)` locks the control at the frozen aim on press and revalidates the same target there on release. |
 | 12 | DOM event | `HandControl.click()` | a synthesised, bubbling `MouseEvent("click")` — not `el.click()`, so SVG targets work. |
 
 Mapping and mirroring sit alongside stages 5–6: `calibration.ts` builds the interaction box from
@@ -50,7 +54,7 @@ program.
 | acquisition | `HAND_NOT_FOUND` | `handPointer.update`, `res.hands[0]` null |
 | acquisition | `NO_INTERACTION_BOX` | `interactionBox` **and** `fallbackBox` both null |
 | acquisition | `HAND_TOO_SMALL` | palm span below `MIN_PALM_PX = 42`, measured on the **true** frame width |
-| recognition | `LANDMARK_UNSTABLE` | `PinchDetector.settleFrames` — 8 frames (~265ms) after any tracking gap in which no new pinch may latch |
+| recognition | `LANDMARK_UNSTABLE` | `PinchDetector.settleMs` — 265ms of decoded-sample time after a tracking gap in which no new pinch may latch |
 | recognition | `PINCH_SCORE_ABOVE_THRESHOLD` | `ratio ≥ PINCH_ON`, and only while the fingers are actually closing |
 | recognition | `PINCH_TOO_SHORT` | raw posture ended inside `PRESS_DEBOUNCE_MS` |
 | recognition | `PINCH_HELD_TOO_LONG` | `MAX_HOLD_MS` force-release |
@@ -107,21 +111,25 @@ needs them. Left in place, marked in the source, and the true value is now measu
 phase does not do.*~~ Fixed once the calibration screen landed, since that phase changes
 on-screen behaviour deliberately.
 
-**F2 — `videoWidth === 0` is a silent, complete failure.** Observed in headless Chrome: the
+**F2 — `videoWidth === 0` was a silent, complete failure. FIXED, Sep 2026.** Observed in headless Chrome: the
 track reports `readyState: "live"` and `getSettings()` returns a confident `1280×720`, while
 `video.readyState` is 0 and `videoWidth` is 0 — not one frame ever decoded. The pointer loop
 correctly skips (`readyState < 2`), so **nothing is tracked, and `handStatus` still reports
-`running`**. On the wall this is a dead screen that believes it is working. The HUD now shows
-`0×0` and `0.0fps` explicitly; a production-side guard is a recommendation, not yet a change.
+`running`**. On the wall this was a dead screen that believed it was working. The current source
+has a first-frame timeout plus frozen/ended/hidden watchdog invalidation; the paragraph records
+the observation that motivated it.
 
-**F3 — two models and two hands, every frame.** `FaceDetector` runs alongside the recogniser on
-every frame, and `numHands: 2` while the pointer reads only `hands[0]`. Everything downstream is
-tuned in real time (350ms debounce, 8-frame settle, 1€ filter), so frame rate is not a comfort
-metric — it is a parameter. Measure it before assuming 30.
+**F3 — display refresh used to repeat model work. FIXED; two models/two candidates remain.**
+`FaceDetector` still runs alongside the recogniser and `numHands: 2` still supplies candidates,
+but `requestVideoFrameCallback` now runs them once per unique decoded frame. Recognition gates are
+elapsed milliseconds, and stable ownership consumes the candidates; the old `hands[0]`/frame-count
+coupling described by this finding is gone.
 
-**F4 — `hands[0]` has no stable owner.** The array is MediaPipe's, not sorted by us. In a public
-corridor a bystander's hand or the visitor's second hand can take index 0 between frames, and
-the pinch feature jumps with it. The HUD now warns when more than one hand is tracked.
+**F4 — `hands[0]` had no stable owner. FIXED, Sep 2026.** The array is MediaPipe's, not sorted by us. In a public
+corridor a bystander's hand or the visitor's second hand could take index 0 between frames, and
+the pinch feature jumped with it. `StableHandOwner` now tracks by position/scale continuity,
+`StableOwnerFace` associates its face ruler, and an owner boundary cancels rather than transfers
+an interaction.
 
 ### 3.4 Still to measure at the wall
 
@@ -172,11 +180,11 @@ switch.
 |---|---|---|
 | `PINCH_ON` | 0.74 | the ratio |
 | `PINCH_OFF` | 0.88 | the ratio (hysteresis band = 0.14) |
-| `graceFrames` | 5 (~165ms @30fps) | how long a held pinch survives a lost hand |
-| `settleFrames` | 8 (~265ms) | **blocks any new latch** after a tracking gap |
-| `FistLatch` | 2 on / 3 off frames, score ≥ 0.5 | the fist label |
+| `PINCH_GRACE_MS` | 165ms | how long a held pinch survives a lost hand |
+| `PINCH_SETTLE_MS` | 265ms | **blocks any new latch** after a tracking gap |
+| `FistLatch` | 66ms on / 100ms off, score ≥ 0.4 | the fist label |
 | `PRESS_DEBOUNCE_MS` | 350 | the boolean posture, not the signal |
-| `MAX_HOLD_MS` | 3000 | force-release backstop |
+| `MAX_HOLD_MS` | 30000 | force-cancel backstop |
 | `pressFreezeMs` / `pressLookbackMs` | 180 / 420 | cursor position at the press |
 | `enterMs` / `leaveMs` | 250 / 1200 | presence |
 | 1€ filter | `minCutoff 0.4`, `beta 10` | **position only** |
@@ -363,8 +371,8 @@ app entirely, and it holds one recogniser at a time. The single-instance rule is
    distance warnings may have been structurally unable to fire. F2 means a dead pipeline can
    report itself healthy. Neither has been observed on the real hardware yet.
 3. **Stage 3–4, effective resolution at the model input (untested, large potential).** §9.
-4. **Stage 7's settle gate (real, invisible, probably small).** 8 frames — about a quarter of a
-   second — after every tracking blink in which no pinch can latch, however deliberate. It was
+4. **Stage 7's settle gate (real, invisible, probably small).** 265ms of decoded-sample time
+   after every tracking blink in which no pinch can latch, however deliberate. It was
    never visible anywhere until this audit; now it has a name and a counter.
 5. **Stage 10, the drag reclassification (real, bounded).** Already known and already mitigated
    by `canScroll`. The instrumentation now separates "wobbled" from "wobble cost the click", so

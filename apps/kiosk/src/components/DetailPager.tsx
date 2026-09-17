@@ -13,8 +13,8 @@ import "./detailPager.css";
  * So each is now a half-ellipse of light bled in from its edge — the same construction as the
  * Home corner, and for the same reason: a soft target the shake cannot leave, and a scrim in
  * the page's own colour underneath it so the abstract scrolling past is dissolved rather than
- * overlapped. They sit at mid-height, above the Home corner's reach on the left, so the three
- * lights on a detail page never share a pixel.
+ * overlapped. They occupy the upper-middle edge; the left wing only meets the Home corner at
+ * its faint outer tail, where the higher Home layer deliberately retains hit ownership.
  *
  * Disabled at either end rather than hidden: a wing that vanishes when there is no further
  * paper reads as a control that broke, one that dims reads as a shelf with nothing on it.

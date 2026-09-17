@@ -3,7 +3,7 @@
  * User test: the home board, driven by a synthetic hand.
  *
  * The home page is the one screen every visitor meets, and the only one where a failure is
- * fatal — if a row cannot be hit, or a pinch lands on the wrong one, the wall is a poster.
+ * fatal — if a row cannot be hit, or a fist lands on the wrong one, the wall is a poster.
  * So this drives the REAL page (the app shell, `?enter=1`) through the real pointer: the
  * thresholds, the press debounce, the 1€ filter, the hover marking and the pixel transition
  * all run exactly as they ship. Only the camera is replaced.
@@ -11,11 +11,12 @@
  * What it asks:
  *   1. geometry     — are the rows as large as the design claims?
  *   2. coverage     — is EVERY point of a row live, including its corners and its arrow?
- *   3. activation   — does a pinch (and a fist) open the section the row names, and does
+ *   3. activation   — does the production fist gesture open every section, and does
  *                     Back come home?
- *   4. inertness    — does anything on the left side navigate when pinched? (It must not.)
- *   5. boundaries   — does the same pixel report the same row from above and from below?
- *   6. persistence  — does losing the hand for a moment change what is selected?
+ *   4. scrolling    — on a real reading page, does a held fist + upward lean move the page?
+ *   5. inertness    — does anything on the left side navigate when closed on? (It must not.)
+ *   6. boundaries   — does the same pixel report the same row from above and from below?
+ *   7. persistence  — does losing the hand for a moment change what is selected?
  *
  * Run with the dev server up:  node scripts/usertest/home-board.mjs
  */
@@ -31,7 +32,10 @@ import { openKiosk, sleep } from "./driver.mjs";
  * is worse than no harness.
  */
 const BASE = (process.env.KIOSK_URL ?? "http://localhost:5173").replace(/\/+$/, "");
-const URL = `${BASE}/?enter=1&calibrate=0`;
+// The wall ships with fist as its click posture. Test that exact policy here; pinch recognition
+// has its own deterministic fixtures, while this browser suite proves every production target
+// can be used repeatedly with natural Closed_Fist -> None cycles.
+const URL = `${BASE}/?enter=1&calibrate=0&click=fist`;
 const ROWS = ["research", "people", "projects", "publications", "teaching"];
 
 const findings = [];
@@ -147,11 +151,11 @@ async function main() {
     if (!dead.length && !wrong.length && !unmarked.length)
       note("INFO", "every probed point is live, owned by its own row, and lights it");
 
-    // ---------------------------------------------------------------- 5. boundaries
+    // ---------------------------------------------------------------- 6. boundaries
     /**
      * On a shared edge between two rows, which row lights is genuinely ambiguous — the cursor
      * sits on a one-pixel line and a hand wobbles by far more than that, so either answer is
-     * honest. What must NEVER differ is the row that lights and the row a pinch would open:
+     * honest. What must NEVER differ is the row that lights and the row a fist would open:
      * that is the failure a visitor experiences as "I clicked the one that was highlighted and
      * got the other one". So the seam is approached from both sides and the two are compared
      * at the cursor's own sub-pixel position.
@@ -195,17 +199,69 @@ async function main() {
     for (let i = 0; i < ROWS.length; i += 1) {
       const r = geo.rows[i];
       await k.aimPx(Math.round(r.x + r.w * 0.5), Math.round(r.y + r.h * 0.5));
-      await k.pinch();
+      await k.fist();
       const got = await k.evaluate(VIEW);
       if (got !== ROWS[i]) {
         note("FAIL", `row ${i + 1} (${ROWS[i]}) opened '${got}'`);
       } else {
         note("INFO", `row ${i + 1} → ${ROWS[i]} ✓`);
       }
+
+      // Teaching is ordinary document content: no fake button beneath the hand and no nested
+      // carousel to absorb the gesture. It is therefore the cleanest production proof that a
+      // close on content becomes a scroll, while the exact same close on a control above became
+      // a click. Moving the hand upward follows the touch/direct-manipulation sign convention
+      // and must move the document down.
+      if (got === "teaching") {
+        const probe = await k.evaluate(`(() => {
+          const blocked = '[data-hover], button, a, [role="button"], input, label';
+          const candidates = [
+            { x: innerWidth * 0.56, y: innerHeight * 0.66 },
+            { x: innerWidth * 0.68, y: innerHeight * 0.58 },
+            { x: innerWidth * 0.46, y: innerHeight * 0.72 },
+          ];
+          const point = candidates.find(({ x, y }) => {
+            const el = document.elementFromPoint(x, y);
+            return el && !el.closest(blocked);
+          });
+          const root = document.documentElement;
+          return point ? {
+            ...point,
+            before: window.scrollY,
+            max: Math.max(0, root.scrollHeight - innerHeight),
+          } : null;
+        })()`);
+        if (!probe) {
+          note("FAIL", "Teaching has no inert content point for the scroll gesture");
+        } else if (probe.max < 80) {
+          note("FAIL", `Teaching has only ${Math.round(probe.max)}px of scroll range`);
+        } else {
+          await k.aimPx(probe.x, probe.y);
+          await k.leanScroll(-0.2, { holdMs: 1100 });
+          await sleep(250);
+          const after = await k.evaluate(`window.scrollY`);
+          if (after <= probe.before + 30) {
+            note(
+              "FAIL",
+              `fist + upward lean did not scroll Teaching down (${Math.round(probe.before)} → ${Math.round(after)}px)`,
+            );
+          } else {
+            note(
+              "INFO",
+              `fist + upward lean scrolls Teaching (${Math.round(probe.before)} → ${Math.round(after)}px)`,
+            );
+          }
+        }
+      }
+
       // Back home, through the control every page carries.
       const back = await k.evaluate(`(() => {
         const b = document.querySelector('.bc-home');
         if (!b) return null;
+        if (${JSON.stringify(ROWS[i])} === 'teaching') {
+          window.__teachingBackClicks = 0;
+          b.addEventListener('click', () => { window.__teachingBackClicks += 1; }, true);
+        }
         const r = b.getBoundingClientRect();
         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
       })()`);
@@ -215,38 +271,65 @@ async function main() {
         await sleep(3500);
         continue;
       }
+
+      // The decisive click-vs-scroll case is a close begun ON a control while its page can
+      // scroll. Closing Back must not activate it yet; moving the still-closed hand must turn
+      // that same transaction into scroll, and opening must never resurrect the pending click.
+      // This is exactly the grammar that an immediate-on-close implementation destroys.
+      if (got === "teaching") {
+        const beforeControlScroll = await k.evaluate(`window.scrollY`);
+        await k.aimPx(back.x, back.y);
+        const scrollGesture = await k.leanScroll(0.2, { holdMs: 900, blinkMs: 90 });
+        await sleep(250);
+        const afterControlScroll = await k.evaluate(`({
+          y: window.scrollY,
+          view: ${VIEW},
+          clicks: window.__teachingBackClicks ?? 0,
+        })`);
+        if (
+          afterControlScroll?.view !== "teaching" ||
+          afterControlScroll?.clicks !== 0 ||
+          afterControlScroll?.y >= beforeControlScroll - 30
+        ) {
+          note(
+            "FAIL",
+            `a fist drag begun on Back did not remain a pure scroll: ${JSON.stringify({ before: beforeControlScroll, ...afterControlScroll })}`,
+          );
+        } else {
+          note(
+            "INFO",
+            `Back stays pending while held, becomes scroll, and does not click on release (${Math.round(beforeControlScroll)} → ${Math.round(afterControlScroll.y)}px)`,
+          );
+        }
+        if (
+          scrollGesture?.blinkState?.pinched !== true ||
+          typeof scrollGesture?.blinkState?.ownerId !== "number" ||
+          scrollGesture?.blinkState?.ownerVisible !== false
+        ) {
+          note(
+            "FAIL",
+            `the active scroll did not survive its short tracking blink: ${JSON.stringify(scrollGesture?.blinkState)}`,
+          );
+        } else {
+          note("INFO", "the held scroll survives a brief closed-fist tracking blink");
+        }
+      }
+
       await k.aimPx(back.x, back.y);
-      await k.pinch();
+      await k.fist();
       const home = await k.evaluate(VIEW);
       if (home !== "home") note("FAIL", `Back from ${ROWS[i]} landed on '${home}'`);
-    }
-
-    // The other click posture. Whichever one a visitor happens to make, the row must open —
-    // the wall can be switched between them at run time (`?click=fist`), so both are tested.
-    {
-      const r = geo.rows[1];
-      await k.aimPx(Math.round(r.x + r.w * 0.5), Math.round(r.y + r.h * 0.5));
-      await k.fist();
-      const got = await k.evaluate(VIEW);
-      if (got !== ROWS[1]) note("FAIL", `a fist on row 2 opened '${got}'`);
-      else note("INFO", `a fist opens a row too (row 2 → ${ROWS[1]})`);
-      const back = await k.evaluate(`(() => {
-        const b = document.querySelector('.bc-home');
-        if (!b) return null;
-        const r = b.getBoundingClientRect();
-        return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-      })()`);
-      if (back) {
-        await k.aimPx(back.x, back.y);
-        await k.pinch();
-      }
-      if ((await k.evaluate(VIEW)) !== "home") {
-        await k.evaluate(`location.href = ${JSON.stringify(URL)}`);
-        await sleep(3500);
+      if (got === "teaching") {
+        const backClicks = await k.evaluate(`window.__teachingBackClicks ?? 0`);
+        if (backClicks !== 1) {
+          note("FAIL", `a stationary close→open on Back clicked ${backClicks} times`);
+        } else {
+          note("INFO", "a stationary close→open on Back clicks exactly once");
+        }
       }
     }
 
-    // ---------------------------------------------------------------- 4. inertness
+    // ---------------------------------------------------------------- 5. inertness
     const spots = await k.evaluate(`(() => {
       const pick = (sel) => {
         const e = document.querySelector(sel);
@@ -258,17 +341,17 @@ async function main() {
     })()`);
     for (const s of spots) {
       await k.aimPx(s.x, s.y);
-      await k.pinch();
+      await k.fist();
       const got = await k.evaluate(VIEW);
       if (got !== "home") {
-        note("FAIL", `pinching ${s.sel} navigated to '${got}' — the left side must be inert`);
+        note("FAIL", `closing on ${s.sel} navigated to '${got}' — the left side must be inert`);
         await k.evaluate(`location.href = ${JSON.stringify(URL)}`);
         await sleep(3500);
       }
     }
-    note("INFO", `left column: ${spots.length} spots pinched, none of them navigates`);
+    note("INFO", `left column: ${spots.length} spots closed on, none of them navigates`);
 
-    // ---------------------------------------------------------------- 6. persistence
+    // ---------------------------------------------------------------- 7. persistence
     const r2 = geo.rows[3];
     await k.aimPx(Math.round(r2.x + r2.w * 0.5), Math.round(r2.y + r2.h * 0.5));
     const before = await k.evaluate(MARKED);

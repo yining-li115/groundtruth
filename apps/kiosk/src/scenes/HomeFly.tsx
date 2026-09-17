@@ -14,7 +14,7 @@ import { STOP_ACCENTS } from "../experiments/fly/assetColors";
  * Home variant B — the campus-splat fly-through as the REAL interactive home
  * (candidate design; the classic point-cloud home stays as variant A, switchable via
  * the debug tab both scenes show at the bottom). Full shell functionality is kept:
- * StaggeredMenu navigation, brand block + logo, the global QR/cursor from App.
+ * StaggeredMenu navigation and the brand block + logo.
  *
  * The opening frame mirrors the classic hero exactly: campus large centre-right, the
  * full slogan (two lines, always fully lit) bottom-left.
@@ -118,7 +118,6 @@ export function HomeFly() {
           onClick={() => {
             const s = useKioskStore.getState();
             s.setEntered(false);
-            s.setHasDriver(false);
           }}
           className="rounded-full px-4 py-1.5 text-sm font-semibold"
           style={{ background: "var(--gt-accent)", color: "var(--gt-brand-white)", cursor: "pointer" }}

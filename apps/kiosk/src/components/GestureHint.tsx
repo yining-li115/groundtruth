@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import {
+  clickGestureInstruction,
+  useClickGesture,
+} from "../lib/vision/useClickGesture";
 import { useKioskStore } from "../state/store";
 import "./gestureHint.css";
 
@@ -24,6 +28,7 @@ export function GestureHint() {
   const entered = useKioskStore((s) => s.entered);
   const handPresent = useKioskStore((s) => s.handPresent);
   const pinchTrouble = useKioskStore((s) => s.pinchTrouble);
+  const clickGesture = useClickGesture();
   const [bright, setBright] = useState(false);
 
   useEffect(() => {
@@ -41,7 +46,15 @@ export function GestureHint() {
     return (
       <div className="gh-bar is-on is-bright is-trouble" role="status" aria-live="polite">
         <span>
-          Not reading that pinch — <b>close your whole hand into a fist</b> instead
+          {clickGesture === "pinch" ? (
+            <>
+              Not reading that pinch — <b>open fully, then make one slower clear pinch</b>
+            </>
+          ) : (
+            <>
+              Not reading that pinch — <b>close your whole hand into a fist</b> instead
+            </>
+          )}
         </span>
       </div>
     );
@@ -54,11 +67,11 @@ export function GestureHint() {
       aria-live="polite"
     >
       <span>
-        <b>Make a fist</b> (or pinch) — hold briefly — to click
+        <b>{clickGestureInstruction(clickGesture)}</b> — hold briefly, then open — to click
       </span>
       <span className="gh-sep" />
       <span>
-        <b>Hold it</b> and push the page up or down to scroll
+        <b>Keep it closed</b> and push the page up or down to scroll
       </span>
     </div>
   );

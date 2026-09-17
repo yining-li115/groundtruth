@@ -35,7 +35,7 @@ import "./handlab.css";
  * Vision Pro's whole grammar rests on pinch, but it reads the hand from twelve cameras half a
  * metre away; we have one, at two to three metres. That gap is not a detail to be tuned later.
  *
- * An earlier attempt at pinch here was abandoned as unworkable (see `useHandFlight`), but it
+ * An earlier scene-navigation experiment abandoned pinch as unworkable, but it
  * measured the aperture in FRAME units, where stepping backwards is arithmetically identical
  * to pinching. This lab measures in world space and as a ratio to palm width, which is the
  * measurement that earlier verdict deserved — so the question is genuinely open again.
@@ -238,14 +238,14 @@ export function HandLabExperiment() {
           const idx = hand?.landmarks[JOINT.indexTip];
           const wrist = hand?.landmarks[JOINT.wrist];
 
-          const pinched = latchRef.current.update(ratio);
+          const pinched = latchRef.current.update(ratio, ts);
 
           // --- auto-calibration: face gives the scale, the box follows the body ---
           const aspect = video.videoHeight > 0 ? video.videoWidth / video.videoHeight : 16 / 9;
           const box = interactionBox(res.face, aspect, BOX);
           boxRef.current = box;
           const palm = palmCenter(hand?.landmarks);
-          const palmPx = palmWidthNorm(hand?.landmarks) * (video.videoWidth || 1);
+          const palmPx = palmWidthNorm(hand?.landmarks, aspect) * (video.videoWidth || 1);
           const mapped = box && palm ? mapToBox(box, palm) : null;
 
           const l = liveRef.current;

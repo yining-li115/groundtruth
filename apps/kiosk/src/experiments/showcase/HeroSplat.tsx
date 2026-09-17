@@ -12,7 +12,7 @@ import {
 /**
  * Home-hero Gaussian-splat stage — the real TUM campus gaussians in place of the old
  * procedural point cloud, with the SAME hero behaviour: scrolling down blows the splats
- * to screen-right (progressRef 1 → 0), a one-finger drag / the cursor orbits it
+ * to screen-right (progressRef 1 → 0), a dev drag or experimental hand control orbits it
  * (heroOrbit), and it idle-sways until touched. Renders on an alpha canvas so the light
  * page background shows through (no dark stage — the home stays light-themed).
  *
@@ -55,7 +55,7 @@ const posAt = (theta: number): [number, number, number] => [
 
 export function HeroSplat({ progressRef }: { progressRef: { current: number } }) {
   const ref = useRef<HTMLDivElement>(null);
-  // dev-mouse drag orbit (the kiosk cursor drives heroOrbit; a real mouse drags here)
+  // Dev-mouse drag orbit; retained vision experiments can also drive `heroOrbit`.
   const drag = useRef({ active: false, yaw: 0, pitch: 0 });
 
   useEffect(() => {
@@ -147,7 +147,7 @@ export function HeroSplat({ progressRef }: { progressRef: { current: number } })
             disperse.uniform.value += (target - disperse.uniform.value) * PROGRESS_EASE;
           }
 
-          // orbit-follow: ease toward the phone-driven heroOrbit (+ dev-mouse drag);
+          // Orbit-follow: ease toward the shared experimental target plus dev-mouse drag.
           // idle sway is the "you can drag me" hint, fading once the visitor takes over.
           smYaw += (heroOrbit.yaw + drag.current.yaw - smYaw) * ORBIT_EASE;
           smPitch += (heroOrbit.pitch + drag.current.pitch - smPitch) * ORBIT_EASE;
@@ -189,7 +189,7 @@ export function HeroSplat({ progressRef }: { progressRef: { current: number } })
       })
       .catch((e: unknown) => console.error("[herosplat] load failed", e));
 
-    // dev-mouse drag → same orbit the kiosk cursor drives (wheel untouched, page scrolls)
+    // Dev-mouse drag → the same shared orbit target (wheel untouched, page scrolls).
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       drag.current.active = true;

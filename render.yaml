@@ -99,8 +99,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      - key: VITE_RELAY_URL
-        value: https://gt-relay.onrender.com
       # The QR the kiosk renders points the phone at the controller site (CONTROLLER_LINK).
       - key: VITE_CONTROLLER_URL
         value: https://gt-controller.onrender.com

@@ -111,20 +111,54 @@
   color: var(--gt-gray-50);
 }
 
-/* The corner test. Big, because the whole point of the test is the corners being reachable —
-   a small dot would be measuring aim instead of reach. */
-.cal-corner {
-  position: fixed;
-  width: clamp(5rem, 9vmin, 11rem);
-  height: clamp(5rem, 9vmin, 11rem);
-  margin: calc(clamp(5rem, 9vmin, 11rem) / -2);
-  border-radius: 50%;
+/* A compact status map, deliberately inside the instructions rather than spread across the
+   screen. These marks say which CAMERA-SPACE holds were confirmed; they are not cursor targets. */
+.cal-directions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(4.4rem, 1fr));
+  grid-template-rows: repeat(3, 2.8rem);
+  gap: 0.4rem;
+  width: min(22rem, 76vw);
+  margin-top: 0.4rem;
+  pointer-events: none;
+}
+.cal-direction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
   border: 2px solid color-mix(in srgb, var(--gt-brand-white) 55%, transparent);
   background: color-mix(in srgb, var(--gt-brand-white) 8%, transparent);
+  color: var(--gt-gray-20);
+  font-size: clamp(0.72rem, 0.85vmin, 0.95rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   transition: background 0.25s ease-out, border-color 0.25s ease-out, transform 0.25s ease-out;
 }
-/* The corner being asked for right now, in step 1. */
-.cal-corner.is-next {
+.cal-direction--up {
+  grid-column: 2;
+  grid-row: 1;
+}
+.cal-direction--left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.cal-direction--center {
+  grid-column: 2;
+  grid-row: 2;
+}
+.cal-direction--right {
+  grid-column: 3;
+  grid-row: 2;
+}
+.cal-direction--down {
+  grid-column: 2;
+  grid-row: 3;
+}
+/* The position being asked for right now, in step 1. */
+.cal-direction.is-next {
   border-color: var(--gt-brand-white);
   animation: cal-pulse 1.4s ease-in-out infinite;
 }
@@ -139,9 +173,10 @@
     opacity: 1;
   }
 }
-.cal-corner.is-on {
+.cal-direction.is-on {
   border-color: var(--gt-brand-electric);
   background: color-mix(in srgb, var(--gt-brand-electric) 55%, transparent);
+  color: var(--gt-brand-white);
   transform: scale(1.12);
 }
 
@@ -159,6 +194,14 @@
   justify-content: center;
   gap: 1rem;
   margin-top: clamp(1.5rem, 3vh, 3rem);
+}
+.cal-actions__label {
+  flex-basis: 100%;
+  color: var(--gt-gray-50);
+  font-size: clamp(0.68rem, 0.76vmin, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .cal-btn {
   padding: clamp(0.9rem, 1.3vmin, 1.8rem) clamp(2rem, 3vmin, 4rem);
@@ -208,7 +251,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cal-corner,
+  .cal-direction,
   .cal-btn,
   .cal-bar {
     transition: none;

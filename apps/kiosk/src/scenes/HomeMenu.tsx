@@ -1,5 +1,6 @@
 import { Logo } from "@groundtruth/ui";
 import { navigate } from "../lib/navigate";
+import { clickGestureInstruction, useClickGesture } from "../lib/vision/useClickGesture";
 import { useKioskStore } from "../state/store";
 import { SECTION_COLOR, SECTION_ORDER } from "./sectionColors";
 import "./homeMenu.css";
@@ -36,6 +37,7 @@ const LABEL: Record<(typeof SECTION_ORDER)[number], { title: string; sub: string
 
 export function HomeMenu() {
   const handPresent = useKioskStore((s) => s.handPresent);
+  const clickInstruction = clickGestureInstruction(useClickGesture()).toLowerCase();
 
   return (
     <div className="hm">
@@ -66,7 +68,7 @@ export function HomeMenu() {
         </p>
 
         <p className={`hm__hint ${handPresent ? "is-on" : ""}`}>
-          Point at a band · make a fist (or pinch) to open
+          Point at a band · {clickInstruction}, then open to select
         </p>
       </div>
 

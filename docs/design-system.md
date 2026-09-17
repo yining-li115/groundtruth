@@ -268,6 +268,6 @@ to `theme.light`.
 - Smooth scroll via Lenis everywhere on the kiosk.
 - Text reveals: stagger by word or line on section entry.
 - Transitions between sections: deliberate, ~0.6–1.0s, never instant cuts.
-- Cursor (driven by phone): smooth follow with slight lag/inertia, not 1:1 snapping —
-  this both feels premium and hides network jitter.
+- Hand cursor: adaptive still-hand deadzone plus time-consistent smoothing; intentional motion
+  stays responsive while landmark noise never becomes visible cursor motion.
 - Honor `prefers-reduced-motion` on the controller (see CLAUDE.md rule 5).

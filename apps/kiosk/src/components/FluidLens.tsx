@@ -10,7 +10,7 @@ import "./fluidLens.css";
 /**
  * FluidLens — a glass magnifier that follows the kiosk cursor and refracts the page beneath it.
  * Inspired by React Bits' FluidGlass (lens mode) but re-built for our stack (CLAUDE.md rule 9):
- * driven by OUR cursor (`activePointer`, so the phone-driven kiosk cursor or a dev mouse moves
+ * driven by OUR cursor (`activePointer`, so the camera-driven hand cursor or a dev mouse moves
  * it), and — since WebGL can't sample DOM — it refracts an html2canvas snapshot of the target.
  *
  * The glass is a custom screen-space shader (not MeshTransmissionMaterial, which rendered as an

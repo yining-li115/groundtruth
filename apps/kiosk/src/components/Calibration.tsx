@@ -1,249 +1,287 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { activePointer } from "../lib/vision/handPointer";
 import { DEFAULT_BOX, mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
-import { fitCorners, shrinkBox, type ReachSample } from "../lib/vision/reachFit";
+import { activePointer } from "../lib/vision/handPointer";
+import {
+  advanceGestureProof,
+  validationZone,
+  type CalibrationZone,
+} from "../lib/vision/calibrationValidation";
 import {
   PROFILE_VERSION,
-  fitJitter,
-  fitPinch,
+  conservativeInstallationBox,
   type CalibrationProfile,
 } from "../lib/vision/profile";
-import { applyProfile, restoreProfile } from "../lib/vision/profileStore";
+import {
+  activeProfile,
+  applyProfile,
+  displayFacts,
+  displaySignature,
+  restoreProfile,
+} from "../lib/vision/profileStore";
+import {
+  fitAxisReach,
+  type AxisReachSamples,
+  type ReachSample,
+} from "../lib/vision/reachFit";
+import {
+  clickGestureInstruction,
+  clickGestureNoun,
+  useClickGesture,
+} from "../lib/vision/useClickGesture";
 import { visionLog } from "../lib/vision/visionLog";
+import {
+  activeCameraIdentity,
+  cameraIdentityRevision,
+  cameraSignature,
+} from "../lib/vision/cameraPairing";
 import { useKioskStore } from "../state/store";
 import "./calibration.css";
 
 /**
- * Measuring the room, once, so nothing downstream has to guess it.
+ * Installation calibration, deliberately separated from visitor recognition.
  *
- * WHY THIS EXISTS. Every constant in the gesture pipeline was fitted honestly and every one of
- * them was fitted against one camera, at one distance, on one pair of hands. That is a
- * reasonable default and a bad law, and the failure it produces is specific: inside a metre the
- * hand-tuned interaction box maps the bottom edge of the SCREEN onto the bottom edge of the
- * camera FRAME, so reaching for anything down there — the Home corner, say — puts the palm half
- * out of shot and tracking simply stops. The corner is not hard to hit. It is unreachable, and
- * nothing says so. (`reachFit.ts` has the numbers.)
+ * The stored profile contains only facts that remain true after the person who calibrated the
+ * kiosk walks away: camera identity, display identity and a conservative mapping seed. Gesture
+ * thresholds and cursor noise are runtime state; persisting either would tune the next visitor
+ * to somebody else's hand.
  *
- * WHAT IT MEASURES, and what each one replaces:
- *
- *   1. reach   → the interaction box, in face widths, fitted to four COMFORTABLE positions
- *                the visitor holds a hand at — toward each corner, as far as is easy, and
- *                checked to be in shot before it is kept (`fitCorners`)
- *   2. stillness → the 1€ filter's cutoff and the dwell radius, chosen by replaying the real
- *                filter over this camera's real noise
- *   3. pinch   → this person's own open and closed clouds, and thresholds landed in the gap
- *                between them — or the finding that there IS no gap, in which case the click
- *                switches to a fist and says so
- *   4. reach test → proof. The four corners are visited with the calibrated pointer; a corner
- *                that cannot be held is not a calibration, and the box shrinks and tries again.
- *
- * WHEN IT RUNS. Once per camera, not once per visitor. What it measures is mostly a fact about
- * the installation — this lens, this mounting, this angle — and the per-visitor part (distance,
- * hand size) is already handled by the face-width ruler the whole box is expressed in. Asking
- * every passer-by to calibrate would destroy the thing the project is built on: nothing to
- * install, nothing to scan, raise a hand and the screen is yours. So the first time this
- * machine opens the page it measures; every time after that it reads what it measured.
- * `?calibrate=1` forces it, `?calibrate=0` skips it.
+ * No step asks for a screen corner. Five comfortable, axis-aligned holds establish the visible
+ * range, the configured selection gesture is proved three times, and the final step validates
+ * the actual mapped screen zones. A profile is saved only after all three proofs pass.
  */
 
-type Phase =
-  | "resolving" // finding the camera and any stored profile — renders nothing
-  | "seek" // waiting for a face and a hand
-  | "corners" // hold a hand toward each of the four corners — the reach, one edge at a time
-  | "still" // record the noise floor
-  | "open" // record the open-hand cloud
-  | "close" // record the closing cloud
-  | "reach" // verify the corners with the calibrated pointer
-  | "done";
+type Phase = "resolving" | "seek" | "positions" | "gesture" | "validate" | "done";
+type PositionId = CalibrationZone;
 
-/**
- * NOTHING HERE IS A COUNTDOWN, and the first version's were the bug.
- *
- * Each step used to run a fixed clock that started the instant a hand was seen — which is the
- * instant BEFORE the visitor has read what to do. The progress bar filled while somebody was
- * still looking at the sentence telling them what to do, and the step ended having recorded a
- * hand held politely still. A measurement that runs on a timer measures the reading speed of
- * whoever is standing there.
- *
- * So every step now waits out a lead-in first (long enough to read one short line), then
- * records until the THING IT NEEDS has happened — four corners held, enough contiguous
- * stillness, enough pinches. The bar shows that, not elapsed time, so it stops
- * being a deadline and starts being feedback. The caps below exist only so a step cannot
- * trap someone forever; reaching one is a result, not a failure.
- */
-const LEAD_IN_MS = 1600;
-/**
- * THE CORNERS, NOT A CIRCLE. The reach used to be measured by having the visitor draw a circle
- * and fitting a box to the cloud. The review that ended that had the argument right: nothing
- * in the calibration needs a sweep. The box is a rectangle, a rectangle is its four corners,
- * and the circle was just a slow and tiring way of producing the same four numbers from the
- * least reliable frames the camera sees — a hand moving at the limit of its reach, which at
- * any distance inside a metre ran straight out of the picture. So the visitor now holds a
- * hand toward each corner instead, as far that way as is comfortable, and each one is a still
- * sample taken only once the hand has stopped AND is safely inside the frame.
- */
-/** how long the hand has to be still at a corner before that corner is taken */
-const CORNER_HOLD_MS = 900;
-/** RMS wander in RAW frame units below which a hand at a corner counts as held (≈1% of the frame) */
-const CORNER_STILL_TOLERANCE = 0.01;
-/**
- * How far inside the picture a held corner has to be, as a fraction of the frame. Wider than
- * `EDGE_MARGIN` in the fit on purpose: the fit's margin is where tracking degrades, this one is
- * where the visitor is TOLD to come back before the sample is ever taken.
- */
+interface Recording {
+  ownerId: number | null;
+  positions: Partial<Record<PositionId, ReachSample>>;
+  positionIdx: number;
+  recentRaw: ReachSample[];
+  recentMapped: Array<{ x: number; y: number }>;
+  fps: number;
+  frame: { w: number; h: number };
+  lastFrameSeq: number;
+  lastSampleAt: number;
+  sourceFresh: boolean;
+  recording: boolean;
+  held: number;
+  gestureArmed: boolean;
+  gestureClosed: boolean;
+  gestureCycles: number;
+  gestureRetries: number;
+  validated: PositionId[];
+  validationCandidate: PositionId | null;
+  validationHeld: number;
+  box: BoxConfig | null;
+  installationDisplay: string;
+  installationCamera: string;
+  installationDisplayRevision: number;
+  installationCameraRevision: number;
+  lastInstallationCheckAt: number;
+}
+
+const LEAD_IN_MS = 1_600;
+const POSITION_HOLD_MS = 800;
+const POSITION_STILL_TOLERANCE = 0.01;
 const FRAME_MARGIN = 0.08;
-/** a beat between one corner being taken and the next being asked for */
-const CORNER_BEAT_MS = 700;
-/** contiguous milliseconds of a genuinely still hand */
-const STILL_NEEDED_MS = 2200;
-const STILL_CAP_MS = 15_000;
-/** contiguous milliseconds of a genuinely open hand */
-const OPEN_NEEDED_MS = 1600;
-const OPEN_CAP_MS = 12_000;
-/** how many open→closed→open cycles make a cloud worth fitting */
-const PINCH_CYCLES = 4;
-const CLOSE_CAP_MS = 22_000;
-const REACH_MS = 15_000;
-/** RMS wander, in screen fractions, below which a hand counts as held still */
-const STILL_TOLERANCE = 0.02;
-/** How far from a corner target the cursor counts as having arrived, in screen fractions. */
-const REACH_RADIUS = 0.09;
-/** Corner targets, inset from the very edge — the last few percent belong to nothing. */
-const CORNER_INSET = 0.05;
-/**
- * Where the HELD positions are mapped to — past the edge of the screen, not onto the targets.
- *
- * Mapping the four held positions exactly onto the 5%-inset targets sounds right and is a box
- * one size too big: to put the cursor on a corner the visitor then has to return their hand
- * to precisely where they held it, at the limit of the reach they chose, and with a shaky
- * pointer and a face-anchored box that breathes a little, "precisely" is a coin toss. Mapping
- * them 8% BEYOND the edge instead means the corner is reached with the hand still short of
- * where it was held — every point on the screen is inside the movement they already made,
- * with room to spare. The cost is a smaller box and a higher gain, which is the trade this
- * whole calibration exists to make on the visitor's behalf.
- */
-const CORNER_FIT_INSET = -0.08;
-const CORNERS = [
-  { id: "tl", x: CORNER_INSET, y: 0.06, name: "top-left" },
-  { id: "tr", x: 1 - CORNER_INSET, y: 0.06, name: "top-right" },
-  { id: "bl", x: CORNER_INSET, y: 0.94, name: "bottom-left" },
-  { id: "br", x: 1 - CORNER_INSET, y: 0.94, name: "bottom-right" },
+const POSITION_BEAT_MS = 650;
+const POSITION_FIT_INSET = -0.08;
+const GESTURE_CYCLES = 3;
+const GESTURE_CAP_MS = 18_000;
+const VALIDATE_CAP_MS = 25_000;
+const VALIDATE_HOLD_MS = 420;
+const MAPPED_STILL_TOLERANCE = 0.02;
+/** Never join two short holds across a decoder/inference pause. */
+const MAX_EVIDENCE_GAP_MS = 250;
+
+const POSITIONS: ReadonlyArray<{
+  id: PositionId;
+  name: string;
+  instruction: string;
+}> = [
+  { id: "center", name: "centre", instruction: "Hold your hand comfortably in front of you" },
+  { id: "left", name: "left", instruction: "Move comfortably to your left" },
+  { id: "right", name: "right", instruction: "Move comfortably to your right" },
+  { id: "up", name: "up", instruction: "Move comfortably upward" },
+  { id: "down", name: "down", instruction: "Move comfortably downward" },
 ];
-/** The order the corners are asked for in step 1: round the screen, not across it. */
-const CORNER_ORDER = [CORNERS[0]!, CORNERS[1]!, CORNERS[3]!, CORNERS[2]!];
-/** How much to give up when a corner cannot be held, and how many times to try. */
-const SHRINK = 0.88;
-const MAX_RETRIES = 2;
 
 const PARAMS = typeof window === "undefined" ? null : new URLSearchParams(location.search);
 const FORCE = PARAMS?.get("calibrate") === "1";
 const DISABLED = PARAMS?.get("calibrate") === "0";
 
-/** Identify the camera actually in use, so the profile is stored against it and not against
- *  "whatever camera this browser lists first". */
-function cameraIdentity(): { deviceId: string; label: string } {
-  const el = visionLog.video;
-  const stream = el?.srcObject instanceof MediaStream ? el.srcObject : null;
-  const track = stream?.getVideoTracks()[0];
-  const settings = track?.getSettings();
-  return { deviceId: settings?.deviceId ?? "", label: track?.label ?? "" };
+function newRecording(
+  installationDisplay = displaySignature(),
+  installationCamera = cameraSignature(),
+  installationDisplayRevision = 0,
+  installationCameraRevision = cameraIdentityRevision(),
+): Recording {
+  return {
+    ownerId: null,
+    positions: {},
+    positionIdx: 0,
+    recentRaw: [],
+    recentMapped: [],
+    fps: 30,
+    frame: { w: 0, h: 0 },
+    lastFrameSeq: -1,
+    lastSampleAt: 0,
+    sourceFresh: false,
+    recording: false,
+    held: 0,
+    gestureArmed: false,
+    gestureClosed: false,
+    gestureCycles: 0,
+    gestureRetries: 0,
+    validated: [],
+    validationCandidate: null,
+    validationHeld: 0,
+    box: null,
+    installationDisplay,
+    installationCamera,
+    installationDisplayRevision,
+    installationCameraRevision,
+    lastInstallationCheckAt: 0,
+  };
 }
 
 export function Calibration({ onDone }: { onDone: () => void }) {
+  const clickGesture = useClickGesture();
   const [phase, setPhase] = useState<Phase>("resolving");
   const [progress, setProgress] = useState(0);
-  const [note, setNote] = useState<string>("");
+  const [note, setNote] = useState("");
   const [reached, setReached] = useState<string[]>([]);
-  /** false during a step's lead-in — the beat that exists so the instruction can be read
-   *  before anything is recorded. Shown, because a bar that is not moving and a bar that is
-   *  not listening look identical otherwise. */
   const [recording, setRecording] = useState(false);
   const [result, setResult] = useState<CalibrationProfile | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previousProfile = useRef<CalibrationProfile | null>(activeProfile());
+  const rec = useRef<Recording>(newRecording());
+  const displayRevision = useRef(0);
+  const finishTimer = useRef(0);
 
-  // Everything the recording collects. Refs, not state: this fills at the camera's frame rate
-  // and re-rendering the tree sixty times a second would be its own performance problem.
-  const rec = useRef({
-    corners: [] as ReachSample[],
-    cornerIdx: 0,
-    /** raw-frame positions of the hand over the last few frames, for the corner hold */
-    recentRaw: [] as ReachSample[],
-    still: [] as Array<{ x: number; y: number; t: number }>,
-    open: [] as number[],
-    close: [] as number[],
-    fps: 30,
-    frame: { w: 0, h: 0 },
-    palmPx: 0,
-    lastFrameCount: -1,
-    /** the lead-in is over and samples are being kept */
-    recording: false,
-    /** contiguous stillness / openness accumulated so far, in ms */
-    held: 0,
-    /** the last few mapped positions, for deciding whether the hand is actually still */
-    recent: [] as Array<{ x: number; y: number }>,
-    /** pinch-cycle detection: the widest the hand has read, and where we are in a cycle */
-    ratioMax: 0,
-    closed: false,
-    cycles: 0,
-    box: null as BoxConfig | null,
-    clippedBy: { left: false, right: false, top: false, bottom: false },
-    retries: 0,
-  });
+  // A signature checked only at the end cannot detect A → B → A inside one sampling window.
+  // Keep an event epoch as well; any display transition invalidates all evidence gathered before
+  // it, even when the final geometry happens to match again.
+  useEffect(() => {
+    const changed = () => {
+      displayRevision.current += 1;
+    };
+    window.addEventListener("resize", changed);
+    window.addEventListener("orientationchange", changed);
+    window.screen?.orientation?.addEventListener?.("change", changed);
+    return () => {
+      window.removeEventListener("resize", changed);
+      window.removeEventListener("orientationchange", changed);
+      window.screen?.orientation?.removeEventListener?.("change", changed);
+    };
+  }, []);
 
+  const resetUi = useCallback((message = "") => {
+    setReached([]);
+    setResult(null);
+    setProgress(0);
+    setRecording(false);
+    setNote(message);
+  }, []);
+
+  /** Re-check the physical pairing before leaving the Ready summary. */
   const finish = useCallback(
     (profile: CalibrationProfile | null) => {
+      if (finishTimer.current) window.clearTimeout(finishTimer.current);
+      const currentCamera = activeCameraIdentity();
+      const currentDisplayKey = displaySignature();
+      const currentCameraKey = cameraSignature(currentCamera);
+      if (
+        rec.current.installationDisplay !== currentDisplayKey ||
+        rec.current.installationCamera !== currentCameraKey ||
+        (profile !== null &&
+          (displaySignature(profile.display) !== currentDisplayKey ||
+            cameraSignature(profile.camera) !== currentCameraKey))
+      ) {
+        const restored = restoreProfile(currentCamera.deviceId, currentCamera.label);
+        previousProfile.current = restored;
+        rec.current = newRecording(
+          currentDisplayKey,
+          currentCameraKey,
+          displayRevision.current,
+          cameraIdentityRevision(),
+        );
+        resetUi("The camera or display changed. Setup has restarted for this pairing.");
+        if (!FORCE && restored) onDone();
+        else setPhase("seek");
+        return;
+      }
       if (profile) applyProfile(profile);
+      else applyProfile(previousProfile.current, false);
+
+      const expectedDisplay = displaySignature();
+      const expectedCamera = cameraSignature();
       setResult(profile);
       setPhase("done");
-      // A beat to read the summary, then hand the screen over.
-      window.setTimeout(onDone, profile ? 2600 : 400);
+      finishTimer.current = window.setTimeout(() => {
+        const camera = activeCameraIdentity();
+        const nextDisplay = displaySignature();
+        const nextCamera = cameraSignature(camera);
+        if (nextDisplay !== expectedDisplay || nextCamera !== expectedCamera) {
+          const restored = restoreProfile(camera.deviceId, camera.label);
+          previousProfile.current = restored;
+          rec.current = newRecording(
+            nextDisplay,
+            nextCamera,
+            displayRevision.current,
+            cameraIdentityRevision(),
+          );
+          resetUi("The camera or display changed. Setup has restarted for this pairing.");
+          if (!FORCE && restored) onDone();
+          else setPhase("seek");
+          return;
+        }
+        onDone();
+      }, profile ? 2_600 : 400);
     },
-    [onDone],
+    [onDone, resetUi],
   );
 
-  // ---- resolve: is there already a profile for this camera? -------------------------------
+  useEffect(
+    () => () => {
+      if (finishTimer.current) window.clearTimeout(finishTimer.current);
+    },
+    [],
+  );
+
+  // Resolve the actual camera track before looking up a profile. On a first visit that may mean
+  // waiting for the browser permission prompt; a timer cannot tell permission from failure.
   useEffect(() => {
-    if (DISABLED) {
-      // `?calibrate=0` turns off the SCREEN, not the calibration: an automated check that skips
-      // the setup step should still run against the numbers this machine measured, or it is
-      // testing a configuration nobody uses.
-      const { deviceId, label } = cameraIdentity();
-      restoreProfile(deviceId, label);
-      onDone();
-      return;
-    }
     let cancelled = false;
     let timer = 0;
-    /**
-     * Wait for the camera to RESOLVE, not for a stopwatch to run out.
-     *
-     * A camera cannot be identified until the browser has granted access to it, and on a fresh
-     * machine over HTTPS that means somebody has to answer a permission prompt. This used to
-     * give up after twelve seconds — so anybody who read the prompt, or whose prompt was behind
-     * another window, was silently dropped past the setup and into the site with the shipped
-     * defaults. Nothing was stored, so it would ask again on the next load; on a wall that runs
-     * for weeks, "the next load" is not a plan.
-     *
-     * Waiting costs nothing, which is the part that makes this obvious in hindsight: while this
-     * is unresolved the component renders NOTHING, so the showreel is already playing
-     * underneath. There is no held-hostage screen to rescue anyone from. The only thing that
-     * legitimately ends the wait is the camera actually failing — no device, or access refused —
-     * and that is a signal, not a duration.
-     */
     const tick = () => {
       if (cancelled) return;
-      const { deviceId, label } = cameraIdentity();
+      const camera = activeCameraIdentity();
       const status = useKioskStore.getState().handStatus;
-      if (deviceId || label) {
-        if (!FORCE && restoreProfile(deviceId, label)) {
-          onDone(); // measured before, on this camera — say nothing, show nothing
+      if (camera.deviceId || camera.label) {
+        const restored = restoreProfile(camera.deviceId, camera.label);
+        previousProfile.current = restored;
+        rec.current = newRecording(
+          displaySignature(),
+          cameraSignature(camera),
+          displayRevision.current,
+          cameraIdentityRevision(),
+        );
+        if (DISABLED || (!FORCE && restored)) {
+          onDone();
           return;
         }
         setPhase("seek");
         return;
       }
-      // No camera at all is not a reason to hold the screen hostage: the wall falls back to
-      // playing its showreel, which is a perfectly respectable thing for it to be doing.
+      // Synthetic browser tests have no MediaStream track identity. Their explicit skip is
+      // authoritative and must not leave the app on a blank resolving screen forever.
+      if (DISABLED && (activePointer()?.state.sample.seq ?? 0) > 0) {
+        applyProfile(null, false);
+        onDone();
+        return;
+      }
       if (status === "error") {
         onDone();
         return;
@@ -257,26 +295,76 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     };
   }, [onDone]);
 
-  // ---- the recording loop -----------------------------------------------------------------
   useEffect(() => {
     if (phase === "resolving" || phase === "done") return;
     let raf = 0;
     let phaseStart = performance.now();
     let current: Phase = phase;
 
+    const clearTransientEvidence = (r: Recording) => {
+      r.recording = false;
+      r.held = 0;
+      r.recentRaw = [];
+      r.recentMapped = [];
+      r.lastSampleAt = 0;
+      r.gestureArmed = false;
+      r.gestureClosed = false;
+      r.validationCandidate = null;
+      r.validationHeld = 0;
+    };
+
     const advance = (next: Phase) => {
       const r = rec.current;
       current = next;
       phaseStart = performance.now();
-      r.recording = false;
-      r.held = 0;
-      r.recent = [];
-      r.recentRaw = [];
-      r.ratioMax = 0;
-      r.closed = false;
-      r.cycles = 0;
+      clearTransientEvidence(r);
+      if (next === "gesture") {
+        r.gestureArmed = false;
+        r.gestureClosed = false;
+        r.gestureCycles = 0;
+      }
       setProgress(0);
+      setNote("");
+      setRecording(false);
       setPhase(next);
+    };
+
+    const restartForPairing = (message: string) => {
+      const camera = activeCameraIdentity();
+      const display = displaySignature();
+      const cameraKey = cameraSignature(camera);
+      const restored = restoreProfile(camera.deviceId, camera.label);
+      previousProfile.current = restored;
+      rec.current = newRecording(
+        display,
+        cameraKey,
+        displayRevision.current,
+        cameraIdentityRevision(),
+      );
+      resetUi(message);
+      if (!FORCE && restored) {
+        current = "done";
+        onDone();
+      } else {
+        current = "seek";
+        phaseStart = performance.now();
+        setPhase("seek");
+      }
+    };
+
+    const restartForOwner = (message: string) => {
+      applyProfile(previousProfile.current, false);
+      const prior = rec.current;
+      rec.current = newRecording(
+        prior.installationDisplay,
+        prior.installationCamera,
+        prior.installationDisplayRevision,
+        prior.installationCameraRevision,
+      );
+      current = "seek";
+      phaseStart = performance.now();
+      resetUi(message);
+      setPhase("seek");
     };
 
     const loop = () => {
@@ -287,41 +375,118 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       const now = performance.now();
       const r = rec.current;
 
-      // One sample per VISION frame, not per render frame. The pointer updates at the camera's
-      // rate and this loop runs at the display's; counting the same frame twice would weight
-      // whatever the hand happened to be doing while the browser was fast.
-      const fresh = s.counts.frames !== r.lastFrameCount;
-      r.lastFrameCount = s.counts.frames;
-      if (s.fps > 1) r.fps = s.fps;
-      if (s.frame.w > 0) r.frame = { w: s.frame.w, h: s.frame.h };
-      if (Number.isFinite(s.palmPx)) r.palmPx = s.palmPx;
+      if (
+        cameraIdentityRevision() !== r.installationCameraRevision ||
+        displayRevision.current !== r.installationDisplayRevision
+      ) {
+        restartForPairing("The camera or display changed. Setup has restarted for this pairing.");
+        return;
+      }
 
-      const palm = palmCenter(s.hands[0]);
+      // A terminal camera/model failure is an installation outcome, not a setup screen the
+      // unattended wall can remain trapped behind. Restore this pairing's previous/default
+      // profile and let the showreel continue; transient loading/stale states still wait here.
+      if (current !== "done" && useKioskStore.getState().handStatus === "error") {
+        current = "done";
+        finish(null);
+        return;
+      }
+
+      if (now - r.lastInstallationCheckAt >= 500) {
+        r.lastInstallationCheckAt = now;
+        const nextDisplay = displaySignature();
+        const nextCamera = cameraSignature();
+        if (nextDisplay !== r.installationDisplay || nextCamera !== r.installationCamera) {
+          restartForPairing("The camera or display changed. Setup has restarted for this pairing.");
+          return;
+        }
+      }
+
+      if (!s.sample.sourceFresh) {
+        if (r.sourceFresh) {
+          r.sourceFresh = false;
+          clearTransientEvidence(r);
+        }
+        setRecording(false);
+        setNote("The camera feed paused. Hold your position; measuring will restart when it resumes.");
+        drawPreview(canvasRef.current, r, s.box, current, null);
+        return;
+      }
+      if (!r.sourceFresh) {
+        r.sourceFresh = true;
+        clearTransientEvidence(r);
+        phaseStart = now;
+        setNote("");
+      }
+
+      const frameSeq = s.sample.seq;
+      const fresh = frameSeq !== r.lastFrameSeq;
+      const sampleAt = s.sample.receivedAtMs;
+      const rawSampleDt = fresh && r.lastSampleAt > 0 ? sampleAt - r.lastSampleAt : 0;
+      const continuous = rawSampleDt >= 0 && rawSampleDt <= MAX_EVIDENCE_GAP_MS;
+      const sampleDt = fresh && continuous ? Math.min(100, rawSampleDt) : 0;
+      if (fresh) {
+        r.lastFrameSeq = frameSeq;
+        r.lastSampleAt = sampleAt;
+        if (!continuous && rawSampleDt > 0) clearTransientEvidence(r);
+      }
+      if (s.fps > 1) r.fps = s.fps;
+      if (s.frame.w > 0 && s.frame.h > 0) r.frame = { w: s.frame.w, h: s.frame.h };
+
+      const palm = palmCenter(
+        s.owner.selectedIndex >= 0 ? s.hands[s.owner.selectedIndex] : undefined,
+      );
       const face = s.face;
-      const tracked = !!palm && !!face && face.w > 0;
+      const ownerVisible = s.owner.id !== null && s.owner.visible && !!palm;
+      const tracked = ownerVisible && !!face && face.w > 0;
+
+      // A missing ID merely pauses evidence. A positively different ID restarts positions; once
+      // a bounded box exists, re-proving gesture + mapped range is enough for installation v4.
+      if (
+        current !== "seek" &&
+        r.ownerId !== null &&
+        s.owner.id !== null &&
+        s.owner.id !== r.ownerId
+      ) {
+        if (current === "positions") {
+          restartForOwner("The tracked hand changed. Raise one hand and setup will restart.");
+          return;
+        }
+        r.ownerId = s.owner.id;
+        r.gestureCycles = 0;
+        r.gestureArmed = false;
+        r.gestureClosed = false;
+        r.validated = [];
+        r.validationCandidate = null;
+        r.validationHeld = 0;
+        setReached([]);
+        advance("gesture");
+        setNote("The tracked hand changed. Prove the selection gesture again.");
+        return;
+      }
 
       switch (current) {
         case "seek": {
-          // Both, and steadily: a corner recorded against a face the detector is still finding
-          // is a corner measured against a moving ruler.
-          if (tracked && s.present) advance("corners");
+          if (tracked && s.present && s.owner.id !== null) {
+            r.ownerId = s.owner.id;
+            advance("positions");
+          }
           break;
         }
 
-        case "corners": {
+        case "positions": {
           const elapsed = now - phaseStart;
           r.recording = elapsed >= LEAD_IN_MS;
-          const target = CORNER_ORDER[r.cornerIdx];
+          const target = POSITIONS[r.positionIdx];
           if (!target) break;
-          // Inside the picture, with room to spare? A hand out here is one the camera is about
-          // to lose, and it is told so BEFORE anything is recorded.
           const inShot =
             !!palm &&
             palm.x > FRAME_MARGIN &&
             palm.x < 1 - FRAME_MARGIN &&
             palm.y > FRAME_MARGIN &&
             palm.y < 1 - FRAME_MARGIN;
-          if (r.recording && fresh && tracked && palm && face && inShot) {
+
+          if (r.recording && fresh && continuous && tracked && palm && face && inShot) {
             r.recentRaw.push({
               u: (palm.x - face.cx) / face.w,
               v: (palm.y - face.cy) / face.w,
@@ -330,148 +495,187 @@ export function Calibration({ onDone }: { onDone: () => void }) {
               faceW: face.w,
             });
             if (r.recentRaw.length > 12) r.recentRaw.shift();
-            // Stillness in RAW frame units — the mapping is the thing being measured, so it
-            // cannot be what "still" is judged through.
-            if (spread(r.recentRaw) < CORNER_STILL_TOLERANCE) r.held += 1000 / Math.max(10, r.fps);
+            if (spread(r.recentRaw) < POSITION_STILL_TOLERANCE) r.held += sampleDt;
             else r.held = 0;
-          } else if (r.recording) {
+          } else if (r.recording && fresh) {
             r.held = 0;
             r.recentRaw = [];
           }
+
           setProgress(
             r.recording
-              ? Math.min(1, (r.cornerIdx + Math.min(1, r.held / CORNER_HOLD_MS)) / CORNER_ORDER.length)
+              ? Math.min(
+                  1,
+                  (r.positionIdx + Math.min(1, r.held / POSITION_HOLD_MS)) /
+                    POSITIONS.length,
+                )
               : 0,
           );
           setNote(
             !r.recording
               ? ""
               : !tracked
-                ? "Keep your hand where the camera can see it."
+                ? "Keep your face and hand where the camera can see them."
                 : !inShot
-                  ? "Too far — the hand is at the edge of the picture. Come back in a little and hold there."
+                  ? "Too far — come back inside the camera picture and hold there."
                   : r.held === 0 && r.recentRaw.length > 6
                     ? "Hold it still…"
                     : "",
           );
-          if (r.held >= CORNER_HOLD_MS && r.recentRaw.length >= 4) {
-            // The corner is the mean of the held run, not its last frame.
+
+          if (r.held >= POSITION_HOLD_MS && r.recentRaw.length >= 4) {
             const n = r.recentRaw.length;
-            const mean = r.recentRaw.reduce(
-              (a, p) => ({ u: a.u + p.u / n, v: a.v + p.v / n, x: a.x + p.x / n, y: a.y + p.y / n, faceW: a.faceW + p.faceW / n }),
+            r.positions[target.id] = r.recentRaw.reduce(
+              (mean, point) => ({
+                u: mean.u + point.u / n,
+                v: mean.v + point.v / n,
+                x: mean.x + point.x / n,
+                y: mean.y + point.y / n,
+                faceW: mean.faceW + point.faceW / n,
+              }),
               { u: 0, v: 0, x: 0, y: 0, faceW: 0 },
             );
-            r.corners.push(mean);
-            r.cornerIdx += 1;
+            r.positionIdx += 1;
             r.held = 0;
             r.recentRaw = [];
-            setReached(r.corners.map((_, i) => CORNER_ORDER[i]!.id));
-            // A beat, so the next instruction can be read before its hold starts counting.
-            phaseStart = now - LEAD_IN_MS + CORNER_BEAT_MS;
+            setReached(Object.keys(r.positions));
+            phaseStart = now - LEAD_IN_MS + POSITION_BEAT_MS;
             r.recording = false;
-            if (r.cornerIdx >= CORNER_ORDER.length) {
+
+            if (r.positionIdx >= POSITIONS.length) {
+              const held = completePositions(r.positions);
               const aspect = r.frame.h > 0 ? r.frame.w / r.frame.h : 16 / 9;
-              const fit = fitCorners(r.corners, aspect, { inset: CORNER_FIT_INSET });
-              if (!fit) {
-                setNote(
-                  "Those four were too close together to measure from. Once more, a little further apart — still easy.",
-                );
-                r.corners = [];
-                r.cornerIdx = 0;
+              const fit = held
+                ? fitAxisReach(held, aspect, { inset: POSITION_FIT_INSET })
+                : null;
+              const safeBox = fit ? conservativeInstallationBox(fit.box) : null;
+              if (!safeBox) {
+                r.positions = {};
+                r.positionIdx = 0;
                 setReached([]);
-                advance("seek");
+                phaseStart = now;
+                setNote(
+                  "Those holds did not establish a safe range. Try again and make each direction distinct, without stretching to the frame edge.",
+                );
                 break;
               }
-              r.box = fit.box;
-              r.clippedBy = fit.clippedBy;
-              // Apply it immediately and WITHOUT saving: everything after this — the noise
-              // floor, the corner test — has to be measured through the mapping that will
-              // actually ship, not through the default it is replacing.
-              applyProfile(provisional(r.box, fit.clippedBy, r), false);
-              setNote("");
+              r.box = safeBox;
+              pointer.configure({ box: safeBox });
               setReached([]);
-              advance("still");
+              advance("gesture");
             }
           }
           break;
         }
 
-        case "still": {
+        case "gesture": {
           const elapsed = now - phaseStart;
           r.recording = elapsed >= LEAD_IN_MS;
-          if (r.recording && fresh && palm && s.box) {
-            // The RAW mapping, deliberately: `liveX/liveY` have already been through the 1€
-            // filter, and measuring the noise after filtering it is measuring the filter.
-            const m = mapToBox(s.box, palm);
-            r.recent.push({ x: m.u, y: m.v });
-            if (r.recent.length > 12) r.recent.shift();
-            // Only STILL frames count, and a moving hand resets the run. Otherwise this reads
-            // whatever noise a drifting arm happens to add and calls it the sensor's.
-            if (spread(r.recent) < STILL_TOLERANCE) {
-              r.held += 1000 / Math.max(10, r.fps);
-              r.still.push({ x: m.u, y: m.v, t: now });
+          if (r.recording && fresh && continuous && ownerVisible) {
+            // Begin from an observed open hand, so a fist already held while this phase appears
+            // cannot be credited as a deliberate close-open cycle.
+            if (!r.gestureArmed) {
+              if (!s.pinched && s.posture === "open") r.gestureArmed = true;
             } else {
-              r.held = 0;
-              r.still = [];
+              const proof = advanceGestureProof(
+                { confirmedClosed: r.gestureClosed, cycles: r.gestureCycles },
+                s.pinched,
+                s.posture,
+              );
+              r.gestureClosed = proof.confirmedClosed;
+              r.gestureCycles = proof.cycles;
             }
+          } else if (r.recording && fresh) {
+            r.gestureArmed = false;
+            r.gestureClosed = false;
           }
-          setProgress(r.recording ? Math.min(1, r.held / STILL_NEEDED_MS) : 0);
-          setNote(r.recording && r.held === 0 && r.recent.length > 6 ? "Hold it steady…" : "");
-          if (r.held >= STILL_NEEDED_MS || elapsed > STILL_CAP_MS) advance("open");
-          break;
-        }
-
-        case "open": {
-          const elapsed = now - phaseStart;
-          r.recording = elapsed >= LEAD_IN_MS;
-          if (r.recording && fresh && Number.isFinite(s.ratio)) {
-            r.open.push(s.ratio);
-            r.held += 1000 / Math.max(10, r.fps);
-          }
-          setProgress(r.recording ? Math.min(1, r.held / OPEN_NEEDED_MS) : 0);
-          if (r.held >= OPEN_NEEDED_MS || elapsed > OPEN_CAP_MS) advance("close");
-          break;
-        }
-
-        case "close": {
-          const elapsed = now - phaseStart;
-          r.recording = elapsed >= LEAD_IN_MS;
-          if (r.recording && fresh && Number.isFinite(s.ratio)) {
-            r.close.push(s.ratio);
-            // Count actual open→closed→open cycles rather than seconds. Four deliberate
-            // pinches is a cloud; four seconds of a hand that never closed is not, and the
-            // difference matters most for exactly the visitor whose pinch does not read.
-            r.ratioMax = Math.max(r.ratioMax, s.ratio);
-            if (!r.closed && s.ratio < r.ratioMax - 0.25) r.closed = true;
-            else if (r.closed && s.ratio > r.ratioMax - 0.1) {
-              r.closed = false;
-              r.cycles += 1;
-            }
-          }
-          setProgress(r.recording ? Math.min(1, r.cycles / PINCH_CYCLES) : 0);
+          setProgress(r.recording ? Math.min(1, r.gestureCycles / GESTURE_CYCLES) : 0);
           setNote(
-            r.recording && elapsed > LEAD_IN_MS + 8000 && r.cycles === 0
-              ? "Nothing is registering — that is a result too. A fist will be used instead."
-              : "",
+            r.recording && !r.gestureArmed
+              ? "Open your hand clearly to begin."
+              : r.gestureRetries > 0
+              ? `No reliable ${clickGestureNoun(clickGesture)} cycle was detected. Keep the whole hand visible and try three slower close–open cycles, or skip to retain the previous settings.`
+              : r.recording && elapsed > LEAD_IN_MS + 7_000 && r.gestureCycles === 0
+                ? `The ${clickGestureNoun(clickGesture)} is not reading reliably. Keep the whole hand inside the camera picture and move slowly.`
+                : "",
           );
-          if (r.cycles >= PINCH_CYCLES || elapsed > CLOSE_CAP_MS) {
-            const built = build(r);
-            applyProfile(built, false);
-            setResult(built);
-            advance("reach");
+          if (r.gestureCycles >= GESTURE_CYCLES) {
+            r.validated = [];
+            setReached([]);
+            advance("validate");
+          } else if (elapsed > GESTURE_CAP_MS) {
+            r.gestureArmed = false;
+            r.gestureClosed = false;
+            r.gestureCycles = 0;
+            r.gestureRetries += 1;
+            r.recording = false;
+            phaseStart = now;
+            setProgress(0);
           }
           break;
         }
 
-        case "reach": {
-          setReached((prev) => {
-            const hit = CORNERS.filter(
-              (c) => Math.hypot(s.x - c.x, s.y - c.y) < REACH_RADIUS,
-            ).map((c) => c.id);
-            const next = hit.filter((id) => !prev.includes(id));
-            return next.length ? [...prev, ...next] : prev;
-          });
-          setProgress(Math.min(1, (now - phaseStart) / REACH_MS));
+        case "validate": {
+          if (fresh && continuous && tracked && palm && s.box) {
+            const mapped = mapToBox(s.box, palm);
+            const candidate = validationZone(mapped.u, mapped.v, r.validated);
+            if (candidate) {
+              if (r.validationCandidate !== candidate) {
+                r.validationCandidate = candidate;
+                r.validationHeld = 0;
+                r.recentMapped = [];
+              }
+              r.recentMapped.push({ x: mapped.u, y: mapped.v });
+              if (r.recentMapped.length > 12) r.recentMapped.shift();
+              if (spread(r.recentMapped) < MAPPED_STILL_TOLERANCE) {
+                r.validationHeld += sampleDt;
+              } else {
+                r.validationHeld = 0;
+              }
+              if (r.validationHeld >= VALIDATE_HOLD_MS) {
+                r.validated.push(candidate);
+                r.validationCandidate = null;
+                r.validationHeld = 0;
+                r.recentMapped = [];
+                setReached([...r.validated]);
+              }
+            } else {
+              r.validationCandidate = null;
+              r.validationHeld = 0;
+              r.recentMapped = [];
+            }
+          } else if (fresh) {
+            r.validationCandidate = null;
+            r.validationHeld = 0;
+            r.recentMapped = [];
+          }
+
+          setProgress(
+            Math.min(
+              1,
+              (r.validated.length + r.validationHeld / VALIDATE_HOLD_MS) / POSITIONS.length,
+            ),
+          );
+          if (r.validated.length === POSITIONS.length) {
+            // Commit only evidence collected under this exact installation token. A display can
+            // move in the sub-500ms interval between periodic checks; never persist old evidence
+            // under the newly observed pairing.
+            if (
+              displaySignature() !== r.installationDisplay ||
+              cameraSignature() !== r.installationCamera
+            ) {
+              restartForPairing(
+                "The camera or display changed. Setup has restarted for this pairing.",
+              );
+              return;
+            }
+            current = "done";
+            finish(buildProfile(r));
+          } else if (now - phaseStart > VALIDATE_CAP_MS) {
+            setNote(
+              "Not all screen regions are reachable yet. Move through centre, left, right, up and down; no corner is required.",
+            );
+          }
           break;
         }
 
@@ -482,68 +686,39 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       setRecording(r.recording);
       drawPreview(canvasRef.current, r, s.box, current, palm);
     };
+
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [phase]);
+  }, [clickGesture, finish, onDone, phase, resetUi]);
 
-  // ---- the corner test's verdict, kept out of the frame loop -------------------------------
-  useEffect(() => {
-    if (phase !== "reach") return;
-    const r = rec.current;
-    if (reached.length === CORNERS.length) {
-      finish(build(r));
-      return;
-    }
-    if (progress < 1) return;
-    // A corner nobody could hold is not a calibration. Give up some reach and try again — the
-    // centre was measured and is fine, it is the extent that was too generous.
-    if (r.retries < MAX_RETRIES && r.box) {
-      r.retries += 1;
-      r.box = shrinkBox(r.box, SHRINK);
-      applyProfile(build(r), false);
-      setReached([]);
-      setNote(`Tightening the reach (attempt ${r.retries + 1} of ${MAX_RETRIES + 1})…`);
-      setPhase("seek");
-      window.setTimeout(() => setPhase("reach"), 60);
-      return;
-    }
-    // Out of retries. Keep what was measured — it is still far better than the default that
-    // put the bottom of the screen outside the picture — and say which corners never answered.
-    setNote("");
-    finish(build(r));
-  }, [phase, reached, progress, finish]);
-
-  /** Wipe every recording and go back to the beginning. */
   const restart = useCallback(() => {
-    rec.current = {
-      ...rec.current,
-      corners: [],
-      cornerIdx: 0,
-      recentRaw: [],
-      still: [],
-      open: [],
-      close: [],
-      recording: false,
-      held: 0,
-      recent: [],
-      ratioMax: 0,
-      closed: false,
-      cycles: 0,
-      box: null,
-      retries: 0,
-    };
-    setReached([]);
-    setResult(null);
-    setNote("");
-    setProgress(0);
+    if (finishTimer.current) window.clearTimeout(finishTimer.current);
+    applyProfile(previousProfile.current, false);
+    rec.current = newRecording(
+      displaySignature(),
+      cameraSignature(),
+      displayRevision.current,
+      cameraIdentityRevision(),
+    );
+    resetUi();
     setPhase("seek");
-  }, []);
+  }, [resetUi]);
 
   if (phase === "resolving") return null;
 
-  const copy = COPY[phase];
-  const cornerName = CORNER_ORDER[rec.current.cornerIdx]?.name ?? "";
-  const title = phase === "corners" ? `Move your hand toward the ${cornerName}` : copy.title;
+  const baseCopy = COPY[phase];
+  const position = POSITIONS[rec.current.positionIdx];
+  const title =
+    phase === "positions"
+      ? (position?.instruction ?? baseCopy.title)
+      : phase === "gesture"
+        ? `${clickGestureInstruction(clickGesture)}, then open — three times`
+        : baseCopy.title;
+  const hint =
+    phase === "gesture"
+      ? "Close deliberately, then open the whole hand clearly. This verifies the selection gesture on this camera."
+      : baseCopy.hint;
+
   return (
     <div className="cal" role="dialog" aria-label="Set up hand control">
       <div className="cal-frame">
@@ -551,40 +726,49 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       </div>
 
       <div className="cal-body">
-        <span className="cal-step">{copy.step}</span>
+        <span className="cal-step">{baseCopy.step}</span>
         <h1 className="cal-title">{title}</h1>
-        <p className="cal-hint">{note || copy.hint}</p>
+        <p className="cal-hint">{note || hint}</p>
 
-        {phase !== "done" && phase !== "reach" && phase !== "seek" && (
+        {(phase === "positions" || phase === "validate") && (
+          <div
+            className="cal-directions"
+            aria-label="Comfortable movement directions; status indicators, not cursor targets"
+          >
+            {POSITIONS.map((item) => (
+              <span
+                key={item.id}
+                className={`cal-direction cal-direction--${item.id} ${
+                  reached.includes(item.id) ? "is-on" : ""
+                } ${phase === "positions" && position?.id === item.id ? "is-next" : ""}`}
+              >
+                {reached.includes(item.id) ? "✓" : directionGlyph(item.id)}
+                <span>{item.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {phase !== "done" && phase !== "validate" && phase !== "seek" && (
           <div className={`cal-bar ${recording ? "is-live" : ""}`}>
             <div className="cal-bar__fill" style={{ transform: `scaleX(${progress})` }} />
             <span className="cal-bar__label">{recording ? "measuring" : "get ready…"}</span>
           </div>
         )}
 
-        {phase === "done" && result && <Summary profile={result} />}
+        {phase === "done" && result && <Summary profile={result} click={clickGesture} />}
       </div>
 
-      {(phase === "reach" || phase === "corners") &&
-        CORNERS.map((c) => (
-          <div
-            key={c.id}
-            className={`cal-corner ${reached.includes(c.id) ? "is-on" : ""} ${
-              phase === "corners" && CORNER_ORDER[rec.current.cornerIdx]?.id === c.id ? "is-next" : ""
-            }`}
-            style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%` }}
-          />
-        ))}
-
       {phase !== "done" && (
-        // Centre of the screen, because it is the one place every mapping can reach — including
-        // a badly wrong one, which is exactly the situation somebody would be leaving from.
         <div className="cal-actions">
-          <button type="button" data-hover className="cal-btn" onClick={restart}>
+          <span className="cal-actions__label">Operator controls · mouse, touch or keyboard</span>
+          <button type="button" className="cal-btn" onClick={restart}>
             Start over
           </button>
-          <button type="button" data-hover className="cal-btn" onClick={() => finish(null)}>
-            Skip — use the default settings
+          <button type="button" className="cal-btn" onClick={() => finish(null)}>
+            {previousProfile.current
+              ? "Skip — keep the previous settings"
+              : "Skip — use the default settings"}
           </button>
         </div>
       )}
@@ -592,97 +776,76 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** RMS spread of a short run of positions — "is this hand actually still?" */
 function spread(points: Array<{ x: number; y: number }>): number {
   if (points.length < 4) return Number.POSITIVE_INFINITY;
-  const mx = points.reduce((a, p) => a + p.x, 0) / points.length;
-  const my = points.reduce((a, p) => a + p.y, 0) / points.length;
+  const mx = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+  const my = points.reduce((sum, point) => sum + point.y, 0) / points.length;
   return Math.sqrt(
-    points.reduce((a, p) => a + (p.x - mx) ** 2 + (p.y - my) ** 2, 0) / points.length,
+    points.reduce(
+      (sum, point) => sum + (point.x - mx) ** 2 + (point.y - my) ** 2,
+      0,
+    ) / points.length,
   );
 }
 
-/** A profile from whatever has been measured so far. Everything unmeasured keeps its default. */
-function build(r: {
-  corners: ReachSample[];
-  still: Array<{ x: number; y: number; t: number }>;
-  open: number[];
-  close: number[];
-  fps: number;
-  frame: { w: number; h: number };
-  palmPx: number;
-  box: BoxConfig | null;
-  clippedBy: CalibrationProfile["clippedBy"];
-}): CalibrationProfile {
-  const pointer = activePointer();
-  const beta = pointer?.config.oneEuro.beta ?? 10;
-  const pinch = fitPinch(r.open, r.close);
-  const jitter = fitJitter(r.still, beta);
-  const { deviceId, label } = cameraIdentity();
+function completePositions(
+  positions: Partial<Record<PositionId, ReachSample>>,
+): AxisReachSamples | null {
+  const { center, left, right, up, down } = positions;
+  return center && left && right && up && down ? { center, left, right, up, down } : null;
+}
+
+function directionGlyph(id: PositionId): string {
+  if (id === "left") return "←";
+  if (id === "right") return "→";
+  if (id === "up") return "↑";
+  if (id === "down") return "↓";
+  return "•";
+}
+
+function buildProfile(r: Recording): CalibrationProfile {
+  const camera = activeCameraIdentity();
+  const video = visionLog.video;
+  const frameW = r.frame.w > 0 ? r.frame.w : (video?.videoWidth ?? 0);
+  const frameH = r.frame.h > 0 ? r.frame.h : (video?.videoHeight ?? 0);
   return {
     version: PROFILE_VERSION,
     measuredAt: Date.now(),
-    camera: { deviceId, label, frameW: r.frame.w, frameH: r.frame.h, fps: r.fps },
+    camera: {
+      ...camera,
+      frameW,
+      frameH,
+      fps: Math.max(1, r.fps),
+    },
+    display: displayFacts(),
     box: r.box ?? { ...DEFAULT_BOX },
-    clippedBy: r.clippedBy,
-    pinch,
-    jitter,
-    palmPx: r.palmPx,
-    // The measurement decides the grammar. A pinch whose two clouds overlap on THIS camera is
-    // not a gesture this installation can read, and offering it anyway is how a wall spends a
-    // week ignoring every third visitor.
-    clickGesture: pinch.usable ? "either" : "fist",
+    validated: true,
   };
 }
 
-function provisional(
-  box: BoxConfig,
-  clippedBy: CalibrationProfile["clippedBy"],
-  r: { fps: number; frame: { w: number; h: number }; palmPx: number },
-): CalibrationProfile {
-  const { deviceId, label } = cameraIdentity();
-  return {
-    version: PROFILE_VERSION,
-    measuredAt: Date.now(),
-    camera: { deviceId, label, frameW: r.frame.w, frameH: r.frame.h, fps: r.fps },
-    box,
-    clippedBy,
-    pinch: { on: 0.74, off: 0.88, open: NaN, closed: NaN, separation: 0, usable: false },
-    jitter: { raw: NaN, filtered: NaN, minCutoff: 0.4, dwellRadius: 0.035 },
-    palmPx: r.palmPx,
-    clickGesture: "either",
-  };
-}
-
-function Summary({ profile }: { profile: CalibrationProfile }) {
-  const clipped = Object.entries(profile.clippedBy)
-    .filter(([, v]) => v)
-    .map(([k]) => k);
+function Summary({
+  profile,
+  click,
+}: {
+  profile: CalibrationProfile;
+  click: ReturnType<typeof useClickGesture>;
+}) {
   return (
     <dl className="cal-summary">
       <div>
         <dt>Reach</dt>
         <dd>
           {profile.box.widthFaces.toFixed(1)} × {profile.box.heightFaces.toFixed(1)} face widths
-          {clipped.length > 0 && (
-            <span className="cal-summary__note"> · camera limited {clipped.join(", ")}</span>
-          )}
         </dd>
       </div>
       <div>
         <dt>Click</dt>
-        <dd>
-          {profile.pinch.usable
-            ? `pinch below ${profile.pinch.on.toFixed(2)} (or a fist)`
-            : "fist — this camera cannot separate your pinch"}
-        </dd>
+        <dd>{clickGestureNoun(click)} · three cycles verified</dd>
       </div>
       <div>
-        <dt>Steadiness</dt>
+        <dt>Display</dt>
         <dd>
-          {Number.isFinite(profile.jitter.filtered)
-            ? `${(profile.jitter.filtered * 100).toFixed(2)}% drift · cutoff ${profile.jitter.minCutoff}`
-            : "not measured"}
+          {profile.display.width}×{profile.display.height} · {profile.display.dpr.toFixed(2)}×
         </dd>
       </div>
       <div>
@@ -702,45 +865,27 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
     title: "Stand where you would stand",
     hint: "Raise one hand so the camera can see both you and it.",
   },
-  corners: {
-    step: "1 of 4",
-    title: "Move your hand toward the top-left",
-    hint: "As far that way as is comfortable — no need to stretch — and hold it there for a moment. Keep it inside the camera picture. The screen will be fitted to the four places you hold.",
+  positions: {
+    step: "1 of 3",
+    title: "Show your comfortable movement range",
+    hint: "Move only as far as feels easy and keep the whole hand inside the camera picture. You never need to reach a screen corner.",
   },
-  still: {
-    step: "2 of 4",
-    title: "Now hold it still",
-    hint: "Hold your hand steady for a couple of seconds. This measures how much the picture shakes when you do not.",
+  gesture: {
+    step: "2 of 3",
+    title: "Verify the selection gesture",
+    hint: "Close deliberately, then open the hand clearly.",
   },
-  open: {
-    step: "3 of 4",
-    title: "Hold your hand open",
-    hint: "Fingers spread, facing the camera.",
-  },
-  close: {
-    step: "3 of 4",
-    title: "Pinch, and open again — four times",
-    hint: "Slowly. Touch your thumb and finger together, then open the hand right up. If nothing registers, that is a finding, and a fist will be used instead.",
-  },
-  reach: {
-    step: "4 of 4",
-    title: "Touch all four corners",
-    hint: "Move the cursor into each dot — the same four places you just held your hand. This is the part that proves it.",
+  validate: {
+    step: "3 of 3",
+    title: "Check the reachable screen regions",
+    hint: "Centre, left, right, up and down. These are broad regions, not points or corners.",
   },
   done: { step: "", title: "Ready", hint: "" },
 };
 
-/**
- * The live picture of what is being measured: the camera frame, the margin a held hand must
- * stay inside, the corners taken so far, and the box that has been fitted to them.
- *
- * Not decoration. Calibration is otherwise a black box that asks for arm-waving and then claims
- * success, and the two ways it goes wrong — a hand held at the edge of the picture, a box the
- * frame edge cut short — are both immediately obvious here and invisible in a progress bar.
- */
 function drawPreview(
   canvas: HTMLCanvasElement | null,
-  r: { corners: ReachSample[]; recentRaw: ReachSample[] },
+  r: Pick<Recording, "positions" | "recentRaw">,
   box: { x0: number; y0: number; x1: number; y1: number } | null,
   phase: Phase,
   hand: { x: number; y: number } | null,
@@ -750,20 +895,35 @@ function drawPreview(
   const { width: w, height: h } = canvas;
   ctx.clearRect(0, 0, w, h);
 
-  // frame
+  const video = visionLog.video;
+  if (video && video.readyState >= 2 && video.videoWidth > 0) {
+    ctx.save();
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, w, h);
+    ctx.restore();
+    ctx.globalAlpha = 0.28;
+    ctx.fillStyle = getComputedStyle(canvas).getPropertyValue("--gt-brand-black");
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+  }
+
   ctx.strokeStyle = "rgba(255,255,255,0.25)";
   ctx.lineWidth = 1;
   ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
 
-  // the margin the hand has to stay inside while a corner is held
-  if (phase === "corners") {
+  if (phase === "positions") {
     ctx.strokeStyle = "rgba(255,255,255,0.18)";
     ctx.setLineDash([4, 4]);
-    ctx.strokeRect(FRAME_MARGIN * w, FRAME_MARGIN * h, (1 - 2 * FRAME_MARGIN) * w, (1 - 2 * FRAME_MARGIN) * h);
+    ctx.strokeRect(
+      FRAME_MARGIN * w,
+      FRAME_MARGIN * h,
+      (1 - 2 * FRAME_MARGIN) * w,
+      (1 - 2 * FRAME_MARGIN) * h,
+    );
     ctx.setLineDash([]);
   }
 
-  // the hand now, mirrored so it reads as the visitor's own movement rather than the camera's view
   if (hand) {
     ctx.fillStyle = "rgba(255,255,255,0.7)";
     ctx.beginPath();
@@ -771,20 +931,23 @@ function drawPreview(
     ctx.fill();
   }
 
-  // the corners held so far
-  for (const c of r.corners) {
+  for (const position of Object.values(r.positions)) {
+    if (!position) continue;
     ctx.strokeStyle = "rgba(122,122,255,0.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc((1 - c.x) * w, c.y * h, 7, 0, Math.PI * 2);
+    ctx.arc((1 - position.x) * w, position.y * h, 7, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  // the fitted box
-  if (box && (phase === "still" || phase === "open" || phase === "close" || phase === "reach")) {
+  if (box && (phase === "gesture" || phase === "validate")) {
     ctx.strokeStyle = "rgba(122,122,255,0.9)";
     ctx.lineWidth = 2;
-    const x = (1 - box.x1) * w;
-    ctx.strokeRect(x, box.y0 * h, (box.x1 - box.x0) * w, (box.y1 - box.y0) * h);
+    ctx.strokeRect(
+      (1 - box.x1) * w,
+      box.y0 * h,
+      (box.x1 - box.x0) * w,
+      (box.y1 - box.y0) * h,
+    );
   }
 }

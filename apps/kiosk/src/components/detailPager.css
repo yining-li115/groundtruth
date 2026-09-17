@@ -1,21 +1,23 @@
 /* Previous / next wings on a detail page. Tokens only (CLAUDE.md rule 1). */
 
 /*
- * Geometry. A half-ellipse anchored on the side edge, at mid-height — viewport units, like the
- * Home corner, so it is the same fraction of the wall as of a laptop. Centred a little above
- * the true middle: the Home corner climbs 38vh up the left edge, and these should end about
- * where it begins. Hit area, scrim and glow are all the same clipped shape, so what you can
- * see is what you can press and nothing else.
+ * Geometry. A half-ellipse anchored on the side edge, at upper-mid-height — viewport units,
+ * like the Home corner, so it is the same fraction of the wall as of a laptop. Its bottom edge
+ * stays at 64vh, where the old target ended; the extra height grows upward instead of further
+ * into the Home corner. Hit area, scrim and glow are all the same clipped shape, so what you
+ * can see is what you can press and nothing else.
  *
- * Sized up once already (13vw x 34vh → 18vw x 44vh) after the first look at the wall: at the
- * smaller size the glow read as a smudge at the edge rather than as a place to put a hand.
+ * The September review enlarged the useful target from 18vw x 44vh to 22vw x 54vh. That is
+ * about 50% more area for the drift of a closing fist, while staying clear of the centred text
+ * column. There is deliberately no upper pixel/rem cap: a wall and a laptop must get the same
+ * relative target rather than a large display silently falling back to a mouse-sized region.
  */
 .dp-wing {
   position: fixed;
-  top: 42vh;
+  top: 37vh;
   transform: translateY(-50%);
-  width: clamp(10rem, 18vw, 34rem);
-  height: clamp(18rem, 44vh, 52rem);
+  width: max(12rem, 22vw);
+  height: max(22rem, 54vh);
   z-index: 60;
   border: 0;
   padding: 0;
@@ -130,7 +132,7 @@
    inset as the arrow so the two read as one mark. */
 .dp-count {
   position: fixed;
-  top: calc(42vh + clamp(2.2rem, 3.6vmin, 4.6rem));
+  top: calc(37vh + clamp(2.2rem, 3.6vmin, 4.6rem));
   right: clamp(1.6rem, 3vw, 5rem);
   z-index: 61;
   font-size: clamp(0.85rem, 1.2vmin, 1.5rem);

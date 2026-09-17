@@ -84,10 +84,9 @@ export const MIN_SAMPLES = 60;
  * the default, which at least fails the way the wall has always failed rather than in a new way.
  */
 /*
- * Minimums of 1.2 faces wide and 0.8 tall: a small person holding four comfortable corners,
- * not stretching, sits around a face high. That is a small box and a high gain, but it is the
- * visitor's own movement; the stillness step that follows measures what the gain does to the
- * noise and sets the filter for it.
+ * Minimums of 1.2 faces wide and 0.8 tall reject a missed instruction or motionless hand.
+ * The persisted v4 profile applies tighter bounds around the shipped default; filtering is a
+ * runtime, time-consistent policy and is never fitted from this installation sample.
  */
 const LIMITS = {
   width: { min: 1.2, max: 9 },
@@ -115,6 +114,65 @@ export interface ReachFit {
 }
 
 /**
+ * Five comfortable, held positions used by the installation calibration.
+ *
+ * They are deliberately axis-aligned rather than screen corners. A webcam has a rectangular
+ * field of view and a person has a finite comfortable reach; asking for the two independently
+ * gives us the same rectangle without ever requiring the hand to visit the camera's least
+ * reliable diagonal extremes.
+ */
+export interface AxisReachSamples {
+  center: ReachSample;
+  left: ReachSample;
+  right: ReachSample;
+  up: ReachSample;
+  down: ReachSample;
+}
+
+/**
+ * Fit an interaction box from centre/left/right/up/down holds.
+ *
+ * `fitCorners` remains the single implementation of the safety rails and frame-edge clipping.
+ * The four synthetic corners below combine independently measured horizontal and vertical
+ * extents; no synthetic point is ever treated as an observed camera sample outside that logic.
+ */
+export function fitAxisReach(
+  held: AxisReachSamples,
+  aspect: number,
+  { inset = -0.08 }: { inset?: number } = {},
+): ReachFit | null {
+  const values = Object.values(held);
+  if (values.some((s) => !Number.isFinite(s.u) || !Number.isFinite(s.v) || !(s.faceW > 0))) {
+    return null;
+  }
+
+  const [uLo, uHi] = [held.left, held.right].sort((a, b) => a.u - b.u);
+  const [vLo, vHi] = [held.up, held.down].sort((a, b) => a.v - b.v);
+  if (!uLo || !uHi || !vLo || !vHi) return null;
+
+  // The neutral hold must genuinely sit inside the measured range. If it does not, one of the
+  // directional instructions was missed and silently shipping that fit would put the pointer's
+  // resting place near an edge.
+  const ux = (held.center.u - uLo.u) / Math.max(1e-6, uHi.u - uLo.u);
+  const vy = (held.center.v - vLo.v) / Math.max(1e-6, vHi.v - vLo.v);
+  if (ux < 0.15 || ux > 0.85 || vy < 0.15 || vy > 0.85) return null;
+
+  const faceW = quantile(values.map((s) => s.faceW), 0.5);
+  const corner = (h: ReachSample, v: ReachSample): ReachSample => ({
+    u: h.u,
+    v: v.v,
+    x: h.x,
+    y: v.y,
+    faceW,
+  });
+  return fitCorners(
+    [corner(uLo, vLo), corner(uHi, vLo), corner(uHi, vHi), corner(uLo, vHi)],
+    aspect,
+    { inset },
+  );
+}
+
+/**
  * Fit a box to a recorded sweep. Returns null when the sweep cannot support one.
  *
  * `aspect` is frame width / height, and it is needed for the same reason `interactionBox` needs
@@ -122,8 +180,8 @@ export interface ReachFit {
  * the way back out, so the conversion has to be undone here or every fitted box comes out
  * stretched by 16/9.
  *
- * No longer what the calibration screen uses — that is `fitCorners` — but kept: it is the
- * fit for any recorded movement, which the harness and the hand lab still have a use for.
+ * No longer what the calibration screen uses — that is `fitAxisReach` — but kept as the fit
+ * for recorded movement, which the harness and hand lab still use.
  */
 export function fitReach(samples: ReachSample[], aspect: number): ReachFit | null {
   if (samples.length < MIN_SAMPLES || !Number.isFinite(aspect) || aspect <= 0) return null;
@@ -182,16 +240,13 @@ export function fitReach(samples: ReachSample[], aspect: number): ReachFit | nul
 }
 
 /**
- * Fit a box to FOUR HELD POSITIONS — the visitor's hand at a comfortable top-left, top-right,
- * bottom-right and bottom-left — instead of to a sweep.
+ * Generic four-point box fitter. The current calibration reaches it through `fitAxisReach`,
+ * which combines five comfortable axis holds into synthetic corners without asking anyone to
+ * touch unreliable diagonal extremes.
  *
- * This replaced the circle, and the review that asked for it had the argument right: a box is
- * a rectangle, a rectangle is its corners, and nothing else in the calibration needs a sweep.
- * The circle existed only to produce the same four extents from a cloud of moving samples, and
- * it produced them badly — a moving hand at the limit of its reach is the least tracked thing
- * the camera sees, and at any distance inside a metre the arc ran straight out of the frame.
- * A held hand is a still sample, taken where the visitor has stopped, with time to check it is
- * actually in shot before it is kept.
+ * It originally replaced a moving circle: a moving hand at the limit of reach is the least
+ * tracked thing the camera sees, and at close laptop distance the arc ran out of frame. Held
+ * samples give the tracker time to prove that each extent is really visible.
  *
  * Label-free on purpose: the four samples are sorted by where they ARE, so the order they
  * were collected in and the mirror between the camera and the screen cannot get into the

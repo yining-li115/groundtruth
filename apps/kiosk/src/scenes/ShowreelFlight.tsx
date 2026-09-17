@@ -1,7 +1,25 @@
-import { lazy, Suspense } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  type ErrorInfo,
+  type ReactNode,
+} from "react";
 import { Logo } from "@groundtruth/ui";
 import { dark } from "@groundtruth/tokens";
 import { useKioskStore } from "../state/store";
+import {
+  flightInput,
+  setSceneAvailability as publishSceneAvailability,
+  setSceneMode,
+  type SceneAvailability,
+} from "../lib/vision/flightInput";
+import {
+  clickGestureInstruction,
+  useClickGesture,
+} from "../lib/vision/useClickGesture";
 import "./showreelFlight.css";
 
 /**
@@ -19,33 +37,74 @@ import "./showreelFlight.css";
  * single large target, because a hand-driven cursor is not a mouse and the one thing a first
  * interaction must not do is ask for precision.
  *
- * The flight's own steering comes from the global hand pointer (`handSource="global"`), not
- * from a camera of its own: one pipeline, one set of models.
- *
- * The tour hands the camera over as soon as a hand is seen — not once some grip is
- * discovered. A screen that keeps playing its own loop while somebody is standing in front
- * of it waving reads as a screen that cannot see them, which is the opposite of what this is
- * for. Moving the hand away from centre flies; holding it in the middle stops; and the block
- * of controls at the bottom is marked `data-no-fly` so aiming at the way in doesn't fly the
- * model out from under the cursor.
+ * The flight's own steering comes from the global hand pipeline, never a camera of its own.
+ * No hand means attract mode: the composed camera tour and its news cards keep cycling. A
+ * stable hand immediately freezes that tour and enters Explore; an open hand turns and travels,
+ * while UI hover, a closed hand and tracking loss hold the camera. The router still owns
+ * exclusivity, so an Enter press can never be interpreted as scene movement as well.
  */
-/** dev has the 147MB file locally; a deployed build only has what git could carry */
-const LOCAL_QUALITY = import.meta.env.DEV ? "max" : "mid";
+/** Use the deployment asset everywhere so laptop tests measure the product; `?asset=max` is explicit. */
+const LOCAL_QUALITY = "mid" as const;
 
 const CampusFlight = lazy(() =>
   import("../experiments/spark/SparkCampusExperiment").then((m) => ({ default: m.CampusFlight })),
 );
 
+/** Keep the site entrance alive when a laptop cannot initialise WebGL/Spark or load its chunk. */
+class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError(): { failed: boolean } {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo): void {
+    publishSceneAvailability("failed");
+    console.error("[showreel] 3D scene unavailable", error, info.componentStack);
+  }
+
+  render(): ReactNode {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 export function ShowreelFlight({ onEnter }: { onEnter?: () => void }) {
   const handPresent = useKioskStore((s) => s.handPresent);
   const handStatus = useKioskStore((s) => s.handStatus);
   const blind = handStatus === "error";
+  const clickGesture = useClickGesture();
+  const clickInstruction = clickGestureInstruction(clickGesture);
+  const [sceneAvailability, setSceneAvailability] = useState<SceneAvailability>(
+    () => flightInput.availability,
+  );
+
+  useEffect(() => {
+    // Production has one grammar. The other modes exist only for the Spark authoring tool and
+    // tests; do not let a previous dev route leave the public showreel in one of them.
+    if (!flightInput.active) setSceneMode("explore");
+    const id = window.setInterval(() => {
+      if (!flightInput.active && flightInput.mode !== "explore") setSceneMode("explore");
+      setSceneAvailability(flightInput.availability);
+    }, 100);
+    return () => window.clearInterval(id);
+  }, []);
+  const sceneReady = sceneAvailability === "ready";
+  const sceneFailed = sceneAvailability === "failed";
+  const showSceneStatus = handPresent || !sceneReady;
 
   return (
     <div className="fixed inset-0 overflow-hidden" style={{ background: dark.bg }}>
-      <Suspense fallback={null}>
-        <CampusFlight tools={false} autoPlay asset={LOCAL_QUALITY} handControl handSource="global" />
-      </Suspense>
+      <SceneErrorBoundary>
+        <Suspense fallback={null}>
+          <CampusFlight
+            tools={false}
+            autoPlay
+            asset={LOCAL_QUALITY}
+            handControl
+            visitorPresent={handPresent}
+          />
+        </Suspense>
+      </SceneErrorBoundary>
 
       {/* Brand, over the flight. White logo on the dark idle backdrop — the one allowed
           recolor (design-system §3). */}
@@ -69,27 +128,54 @@ export function ShowreelFlight({ onEnter }: { onEnter?: () => void }) {
           thing for a wall to be doing; a screen telling people to wave at a dead camera is
           not, and it is how a broken kiosk goes unnoticed for a week. */}
       <div
-        className={`sf-invite ${handPresent || blind ? "is-hidden" : ""}`}
-        aria-hidden={handPresent || blind}
+        className={`sf-invite ${handPresent || blind || !sceneReady ? "is-hidden" : ""}`}
+        aria-hidden={handPresent || blind || !sceneReady}
       >
         <span className="sf-invite__hand">✋</span>
         Raise a hand to control this screen
       </div>
 
-      {/* The way in. Only once a hand is actually being tracked.
-          `data-no-fly` marks the whole block as controls rather than scenery: while the
-          cursor is over it the camera holds still, so reaching for the button does not fly
-          the model out from under it. */}
-      <div className={`sf-enter ${handPresent ? "is-on" : ""}`} data-no-fly>
+      {/* One discoverable grammar, not a mode picker: presence takes the showreel out of its
+          news tour, while open-hand position controls the camera through the routed Explore
+          session. This panel is feedback only and therefore cannot steal the cursor. */}
+      <div
+        className={`sf-explore ${showSceneStatus ? "is-on" : ""}`}
+        aria-live="polite"
+        role="status"
+      >
+        <strong>
+          {sceneReady
+            ? "Explore the model"
+            : sceneFailed
+              ? "3D model unavailable"
+              : "Loading 3D model"}
+        </strong>
+        <span>
+          {sceneReady
+            ? "Move your open hand · left/right to turn · up/down to travel"
+            : sceneFailed
+              ? handPresent
+                ? "The news tour is unavailable · Enter still opens the site"
+                : "The news tour is unavailable · Raise a hand to enter the site"
+              : handPresent
+                ? "Preparing the news tour · Hand control is paused"
+                : "Preparing the news tour · Hand control will unlock when ready"}
+        </span>
+      </div>
+
+      {/* The way in appears once the pointer has a stable owner. It stays a large, ordinary UI
+          target; a scene grab can never steal the same fist. */}
+      <div className={`sf-enter ${handPresent ? "is-on" : ""}`} data-scene-ui>
         <button type="button" className="sf-enter__btn" onClick={onEnter} data-hover>
           Enter
           <span className="sf-enter__sub">Explore the group</span>
         </button>
         <p className="sf-enter__how">
-          Move your hand left or right to turn · up to fly forward, down to pull back ·
-          hold it in the middle to stop
+          Point with an open hand · {clickInstruction.toLowerCase()}, then open to select
           <br />
-          Make a fist (or pinch) to select
+          {sceneReady
+            ? "Keep your hand open to explore · move onto Enter to pause the model"
+            : "3D browsing is paused · Enter remains available"}
         </p>
       </div>
     </div>

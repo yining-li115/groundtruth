@@ -3,8 +3,8 @@
 // is painted by a moving pointer. Adaptations for this repo:
 //   • named export (our convention), inline shaders kept verbatim.
 //   • `pointerSource` prop: when provided, the sim does NOT bind window mouse/touch listeners;
-//     instead each frame it reads our on-screen cursor (Cursor.tsx → lib/cursorPosition) and
-//     feeds Mouse.setCoords, so the fluid trails the SAME phone-driven cursor. Without it (the
+//     instead each frame it reads our on-screen cursor (HandControl → lib/cursorPosition) and
+//     feeds Mouse.setCoords, so the fluid trails the same camera-driven hand cursor. Without it (the
 //     ?exp=liquid page) it falls back to the upstream real-mouse listeners + autoDemo.
 //   • colors come from experiments/liquid/assetColors (brand palette); the in-file default below
 //     is an unused upstream placeholder.
@@ -1013,7 +1013,7 @@ export function LiquidEther({
         Common.resize();
         this.output.resize();
       }
-      // Feed the external (phone-driven) cursor into the sim. Only counts as interaction when the
+      // Feed the external camera-driven cursor into the sim. Only counts as interaction when the
       // position actually changed, so a still cursor lets autoDemo resume after the idle delay.
       feedExternalPointer() {
         if (!this.props.pointer) return;

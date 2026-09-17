@@ -5,7 +5,7 @@ import "./liquidEther.css";
 /**
  * Standalone preview (?exp=liquid) of the LiquidEther cursor-fluid with the brand palette. Here it
  * uses the upstream real-mouse listeners + autoDemo (no pointerSource), so it can be driven by a
- * desktop mouse for tuning. The home hero wires it to the phone-driven cursor instead.
+ * desktop mouse for tuning. The home hero wires it to the camera-driven hand cursor instead.
  */
 export function LiquidExperiment() {
   return (
