@@ -2,7 +2,7 @@
  * The vision HUD. A DEV INSTRUMENT — it only exists with `?visionDebug=1` on the URL, and no
  * visitor ever sees it, which is why it is allowed to look like a terminal rather than like
  * the rest of the site. Colours still come from tokens (CLAUDE.md rule 1); the black scrim
- * follows the same pattern as the existing `.gt-hand-diag` strip.
+ * remains opt-in through `?visionDebug=1` and never appears during the normal kiosk flow.
  */
 
 .gt-vision-hud {

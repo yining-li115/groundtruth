@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Logo } from "@groundtruth/ui";
 import type { Person } from "../../../../content/schema";
 import { people } from "../lib/content";
+import { SectionHome } from "../components/SectionHome";
 import { LegoAvatarLab } from "../components/lego/LegoAvatarLab";
 import { PersonDetail } from "../experiments/people/PersonDetail";
 import { activePointer } from "../lib/cursorPosition";
@@ -151,17 +151,9 @@ export function PeopleSection() {
 
   return (
     <div className="ppl" ref={pageRef} style={{ color: "var(--gt-text-primary)" }}>
-      {/* No MENU here. Every section's top-right corner is the Home button now: the home
-          page IS the menu, so a drawer that repeats the same five destinations is a second
-          door into a room you can already see — and on the pages with a filter bar across the
-          top it was fighting for the same strip of screen. */}
-
       {/* Dev/test entry — opens the LEGO avatar lab (upload a photo, preview, save PNG).
-          DEV ONLY, for two reasons found while making the kiosk hand-driven. It is pinned to
-          the top-right corner, which is exactly where the navigation toggle sits, so on the
-          deployed wall it covered MENU and left this page with no way to reach the other
-          sections. And it invites a file upload — fine on a laptop, not something a passer-by
-          should be able to reach on a public screen with a wave of their hand. */}
+          It remains bottom-right, opposite the persistent bottom-left Home target, and stays
+          dev-only because a public-wall visitor should not be offered a file upload. */}
       {import.meta.env.DEV && (
         <>
           <button type="button" className="ppl__legolab" onClick={() => setLegoLab(true)}>
@@ -171,20 +163,9 @@ export function PeopleSection() {
         </>
       )}
 
-      {/* Not a control any more. It navigated home when clicked, while looking like three
-          lines of address text — an unlabelled trap that ejected a visitor who happened to
-          aim at the corner, and two of eight tested positions along the top edge did exactly
-          that. The Home button in the opposite corner is the way back, and says so. */}
-      <div className="ppl__brand">
-        <span className="ppl__brand-text">
-          <span className="ppl__brand-strong">
-            Professorship of Photogrammetry and Remote Sensing
-          </span>
-          <span>TUM School of Engineering and Design</span>
-          <span>Technical University of Munich</span>
-        </span>
-        <Logo variant="black" width="4rem" height="2.0625rem" />
-      </div>
+      {/* The identity keeps the fixed header slot reserved by the title/roster offsets;
+          SectionHome supplies the independent bottom-left Home target beside it. */}
+      <SectionHome tone="light" className="ppl__brand" />
 
       <div className="ppl__layout">
         <aside className="ppl__intro">

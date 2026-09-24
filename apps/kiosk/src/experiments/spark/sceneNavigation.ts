@@ -37,6 +37,8 @@ export interface SceneNavigationConfig {
   returnSpeed: number;
   returnTurnRate: number;
   maxPhysicsStep: number;
+  /** maximum world-space gap between collision samples; production keeps this at radius / 3 */
+  maxCollisionStep: number;
   maxReturnStep: number;
   flingWindowMs: number;
   flingMinRate: number;
@@ -63,6 +65,7 @@ export const DEFAULT_SCENE_NAVIGATION: SceneNavigationConfig = {
   returnSpeed: 1.35,
   returnTurnRate: 0.75,
   maxPhysicsStep: 1 / 120,
+  maxCollisionStep: 0.05,
   maxReturnStep: 0.08,
   flingWindowMs: 140,
   flingMinRate: 0.7,
@@ -113,6 +116,36 @@ export function sceneSampleIsFresh(
   ttlMs: number,
 ): boolean {
   return Number.isFinite(freshAt) && freshAt <= now + 1 && now - freshAt <= ttlMs;
+}
+
+type ScenePoint = Readonly<{ x: number; y: number; z: number }>;
+
+/**
+ * Check every bounded subdivision of a camera movement, including both endpoints.
+ *
+ * Render time is already divided by `maxPhysicsStep`, but that alone stops being a spatial
+ * guarantee if a speed is tuned upward. This pure sweep caps the actual distance between
+ * collision queries, so a long/high-speed frame cannot jump from one free side of a voxel to the
+ * other without asking the collision volume about the path between them.
+ */
+export function sweptSegmentIsRoamable(
+  from: ScenePoint,
+  to: ScenePoint,
+  maxStep: number,
+  isRoamable: (x: number, y: number, z: number) => boolean,
+): boolean {
+  const values = [from.x, from.y, from.z, to.x, to.y, to.z, maxStep];
+  if (!values.every(Number.isFinite) || maxStep <= 0) return false;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dz = to.z - from.z;
+  const distance = Math.hypot(dx, dy, dz);
+  const steps = Math.max(1, Math.ceil(distance / maxStep));
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps;
+    if (!isRoamable(from.x + dx * t, from.y + dy * t, from.z + dz * t)) return false;
+  }
+  return true;
 }
 
 /**
@@ -460,7 +493,12 @@ export class SceneNavigationController {
       this.candidate[axis] += this.step[axis];
       if (
         this.candidate.distanceTo(this.tourPos) > this.cfg.range ||
-        !isRoamable(this.candidate.x, this.candidate.y, this.candidate.z)
+        !sweptSegmentIsRoamable(
+          camera.position,
+          this.candidate,
+          this.cfg.maxCollisionStep,
+          isRoamable,
+        )
       ) {
         collided = true;
         if (axis === "x") blockedX = true;
@@ -536,7 +574,14 @@ export class SceneNavigationController {
       }
       const travel = Math.min(distance, budget, this.cfg.maxReturnStep);
       this.candidate.copy(target).sub(camera.position).multiplyScalar(travel / distance).add(camera.position);
-      if (!isRoamable(this.candidate.x, this.candidate.y, this.candidate.z)) {
+      if (
+        !sweptSegmentIsRoamable(
+          camera.position,
+          this.candidate,
+          this.cfg.maxCollisionStep,
+          isRoamable,
+        )
+      ) {
         // Breadcrumbs are accepted camera poses; failure here indicates a changed/corrupt roam
         // volume. Stop rather than taking a straight-line shortcut through the model.
         this.blocked = true;

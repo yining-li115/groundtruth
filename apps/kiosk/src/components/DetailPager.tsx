@@ -1,7 +1,7 @@
 import "./detailPager.css";
 
 /**
- * Previous / next, for a detail page, as two wings of light on the side edges.
+ * Previous / next, for a detail page, as two transparent hand-sized side-edge targets.
  *
  * Both text-only details (a paper, an open topic) had the same pair of arrows: 1.75rem tall,
  * bottom centre, a hand's width apart. Fine for a mouse, and on the wall the single most missed
@@ -10,11 +10,8 @@ import "./detailPager.css";
  * Asked for in the Sept 2026 review: make them the left and right sides of the screen, and
  * make them glow rather than draw.
  *
- * So each is now a half-ellipse of light bled in from its edge — the same construction as the
- * Home corner, and for the same reason: a soft target the shake cannot leave, and a scrim in
- * the page's own colour underneath it so the abstract scrolling past is dissolved rather than
- * overlapped. They occupy the upper-middle edge; the left wing only meets the Home corner at
- * its faint outer tail, where the higher Home layer deliberately retains hit ownership.
+ * Each is a broad half-ellipse the hand can drift inside. The shared particle backdrop draws
+ * the permanent arrows, so these buttons do not add a panel, rule or glow over the artwork.
  *
  * Disabled at either end rather than hidden: a wing that vanishes when there is no further
  * paper reads as a control that broke, one that dims reads as a shelf with nothing on it.
@@ -61,12 +58,6 @@ export function DetailPager({
           →
         </span>
       </button>
-      {/* Where you are. It lived at the bottom centre, where a long abstract scrolls straight
-          under it — and the pool of page colour that kept it legible ate the meta row instead.
-          Under the "next" arrow it sits on something that is already a control, over nothing. */}
-      <span className="dp-count" aria-live="polite">
-        {index + 1} / {total}
-      </span>
     </>
   );
 }

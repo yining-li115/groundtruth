@@ -42,27 +42,8 @@
   column-gap: 2rem;
 }
 .projects .frame__logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  pointer-events: auto;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-}
-.projects .frame__brand-text {
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-.projects .frame__brand-line {
-  white-space: nowrap;
-  color: var(--gt-text-secondary);
-}
-.projects .frame__brand-strong {
-  font-weight: 700;
-  color: var(--gt-text-primary);
+  pointer-events: none;
+  justify-self: start;
 }
 
 /* ---- filter tabs (GooeyNav), the middle cell of the frame grid ---- */
@@ -90,6 +71,15 @@
   pointer-events: none;
 }
 
+/* Open the edge bands for the project particle story without leaving ghost list copy behind.
+   The top-left identity and bottom-left Home control are separate fixed layers and stay put. */
+.projects--detail-open > .title,
+.projects--detail-open > .menu {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ---- oversized two-line title (behind the menu) ---- */
 .projects .title {
   position: fixed;
@@ -107,12 +97,11 @@
  * The title is scenery — set at 6.5vw behind the list so the page reads as a poster — and
  * scenery is fine right up until somebody is choosing. Then a topic lit to full white was
  * sitting on top of a word twice its height in the same white, and on the wall the two read
- * as one shape. So while any row is hovered (`is-hover` is what the hand pointer paints; the
- * `:hover` is for a mouse in dev) the title fades most of the way out and a scrim comes up
- * over it — see `.menu::before` — leaving the chosen row the only bright thing on the page.
+ * as one shape. So while any row is hovered (`is-hover` / `gt-hover` are painted by the hand;
+ * `:hover` is for a mouse in dev) the title fades most of the way out and a scrim comes up over
+ * it — see `.menu::before` — leaving the chosen row the only bright thing on the page.
  */
-.projects:has(.menu__item.is-hover) .title,
-.projects:has(.menu__item:hover) .title {
+.projects:has(.menu__item:is(:hover, .is-hover, .gt-hover)) .title {
   opacity: 0.16;
 }
 /* The scrim: the page colour washed over the title's half of the screen, faint at rest and up
@@ -132,8 +121,7 @@
   opacity: 0;
   transition: opacity 0.45s ease-out;
 }
-.projects:has(.menu__item.is-hover) .menu::before,
-.projects:has(.menu__item:hover) .menu::before {
+.projects:has(.menu__item:is(:hover, .is-hover, .gt-hover)) .menu::before {
   opacity: 1;
 }
 .projects .title__main {
@@ -176,9 +164,18 @@
   display: flex;
   align-items: center;
   position: relative;
+  min-height: clamp(3.25rem, 5.5vh, 6rem);
   padding: 0 2rem 0 6vw;
   text-decoration: none;
   cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.26s ease;
+}
+/* Dim only the inactive paint layer. The row geometry and hit area remain fixed while mouse or
+   either hand-hover class moves through the stack. */
+.projects .menu:has(.menu__item:is(:hover, .is-hover, .gt-hover))
+  .menu__item:not(:is(:hover, .is-hover, .gt-hover)) {
+  opacity: 0.3;
 }
 
 /* Number badge — revealed on hover (left edge). */
@@ -201,8 +198,7 @@
   transform: translateX(-1rem);
   transition: transform 0.3s, opacity 0.3s;
 }
-.projects .menu__item:hover::before,
-.projects .menu__item.is-hover::before {
+.projects .menu__item:is(:hover, .is-hover, .gt-hover)::before {
   opacity: 1;
   transform: translateX(0);
 }
@@ -211,20 +207,44 @@
 .projects .menu__item-text {
   position: relative;
   display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  padding: 0.45vh 0;
+  /* A little internal room shows the near part of the hover shadow; overflow trims the rest at
+     the row's top and bottom. Inline-end room protects the last glyph while the label scales. */
+  padding: 0.45vh 0.8em 0.45vh 0;
   font-size: clamp(0.95rem, 1.45vw, 1.55rem);
 }
 .projects .menu__item-textinner {
   display: block;
-  white-space: nowrap;
+  /* Student-project names can be as long as paper titles. Let the row grow instead of
+     cropping the title to preserve the fixed type tag at the inline end. */
+  white-space: normal;
   font-weight: 700;
   color: color-mix(in srgb, var(--gt-text-primary), var(--gt-bg) 55%);
   transition: color 0.3s;
 }
-.projects .menu__item:hover .menu__item-textinner,
-.projects .menu__item.is-hover .menu__item-textinner {
+.projects .menu__item-label {
+  display: block;
+  /* The selected title grows to 1.12x. Reserve that width before it grows so its final word
+     remains inside the row's overflow mask rather than being clipped at the right edge. */
+  width: calc(100% / 1.12);
+  line-height: 1.18;
+  text-wrap: balance;
+  transform: translateY(0) scale(1);
+  transform-origin: left center;
+  text-shadow: 0 0 0 transparent;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    text-shadow 0.28s ease;
+}
+.projects .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-textinner {
   color: var(--gt-text-primary);
+}
+.projects .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-label {
+  /* Keep GSAP's reveal transform on textinner and the hand hitbox on menu__item untouched. */
+  transform: translateY(-0.035em) scale(1.12);
+  text-shadow: 0 0.18em 0.32em color-mix(in srgb, var(--gt-text-primary) 42%, transparent);
 }
 
 /* Project-type sub-label — revealed on hover, after the title, with a diagonal slash. */
@@ -244,8 +264,7 @@
   transform: translateX(-1rem);
   transition: transform 0.3s, opacity 0.3s;
 }
-.projects .menu__item:hover .menu__item-sub,
-.projects .menu__item.is-hover .menu__item-sub {
+.projects .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-sub {
   opacity: 1;
   transform: translateX(0);
 }
@@ -261,8 +280,7 @@
   transform: rotate(22.5deg) scale3d(1, 0, 1);
   transition: transform 0.3s;
 }
-.projects .menu__item:hover .menu__item-sub::before,
-.projects .menu__item.is-hover .menu__item-sub::before {
+.projects .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-sub::before {
   transform: rotate(22.5deg) scale3d(1, 1, 1);
 }
 /* Muted pipe between multiple colour-coded tags. */
@@ -271,7 +289,7 @@
   color: var(--gt-text-secondary);
 }
 
-/* ---- text-only detail (click a topic) ---- */
+/* ---- project detail (click a topic) ---- */
 .projects .sp-detail {
   position: fixed;
   inset: 0;
@@ -282,9 +300,12 @@
      ABOVE the scroll origin, where no scrolling can reach it. A topic longer than the
      viewport would open with its own title already cut off the top. */
   justify-content: safe center;
-  background: var(--gt-bg);
+  /* Match Paper: the middle remains the untouched black page while the particle story owns
+     only the side bands. A solid detail surface would erase that backdrop. */
+  background: transparent;
   overflow-y: auto;
-  padding: 7rem 8vw 6rem;
+  /* Match Paper's safe header and Home clearances. */
+  padding: clamp(8rem, 14vh, 14rem) 8vw clamp(10rem, 18vh, 16rem);
 }
 /* Centred, not left-hugged: at 8vw padding on a 2000px wall the text sat in the leftmost
    quarter with two thirds of the screen empty beside it. `margin-inline: auto` puts the
@@ -292,10 +313,12 @@
    A poster read from across a corridor, so it is centred as a whole — every child gets its
    own measure below and is re-centred with `margin-inline: auto`. */
 .projects .sp-detail-inner {
-  max-width: 96ch;
+  max-width: min(96rem, 48vw);
   margin-inline: auto;
   width: 100%;
   text-align: center;
+  position: relative;
+  z-index: 1;
 }
 .projects .sp-detail-type {
   text-transform: uppercase;
@@ -310,8 +333,8 @@
    size, so 20ch is roughly twice the body width and the same headline lands in three. */
 .projects .sp-detail-title {
   margin: 0.9rem auto 0;
-  max-width: 20ch;
-  font-size: clamp(2rem, 4.4vw, 4.5rem);
+  max-width: 26ch;
+  font-size: clamp(1.8rem, 2.8vw, 3.4rem);
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.02em;
@@ -381,6 +404,22 @@
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--gt-text-primary);
+}
+
+@media (max-width: 64rem) {
+  .projects .sp-detail {
+    padding-inline: max(2rem, 8vw);
+  }
+  .projects .sp-detail-inner {
+    max-width: min(62ch, 48vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .projects .menu__item,
+  .projects .menu__item-label {
+    transition: none;
+  }
 }
 
 /* Prev / next moved to the shared `components/DetailPager` — see publications.css. */

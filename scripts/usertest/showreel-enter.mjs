@@ -412,7 +412,7 @@ try {
     );
     ok("the Enter release opens Home", enteredView?.home === true, JSON.stringify(enteredView));
 
-    await kiosk.evaluate(`window.__siteGestureClicks = { people: 0, back: 0, research: 0 }`);
+    await kiosk.evaluate(`window.__siteGestureClicks = { people: 0, home: 0, research: 0 }`);
 
     // Second fist: the first site-page control after Enter. This is the regression's essential
     // seam — testing Enter alone cannot reveal that its active press poisoned every later page.
@@ -433,17 +433,17 @@ try {
       ok("the second fist opens People", peopleView?.people === true, JSON.stringify(peopleView));
     }
 
-    // Third fist: the persistent Back control must work after the exact same neutral release.
-    const backTarget = await kiosk.evaluate(`(() => {
-      const button = document.querySelector(".bc-home");
+    // Third fist: the section header's persistent Home control must work after the same release.
+    const homeTarget = await kiosk.evaluate(`(() => {
+      const button = document.querySelector("[data-section-home]");
       if (!button) return null;
-      button.addEventListener("click", () => { window.__siteGestureClicks.back += 1; }, true);
+      button.addEventListener("click", () => { window.__siteGestureClicks.home += 1; }, true);
       const r = button.getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2, selector: ".bc-home" };
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, selector: "[data-section-home]" };
     })()`);
-    ok("People exposes the shared Back control", !!backTarget);
-    if (backTarget) {
-      await fistClickEpoch(kiosk, backTarget, "back", "the third fist on Back");
+    ok("People exposes the shared Home header", !!homeTarget);
+    if (homeTarget) {
+      await fistClickEpoch(kiosk, homeTarget, "home", "the third fist on Home");
       const homeView = await waitUntil(
         () => viewSnapshot(kiosk),
         (view) => view?.home === true,

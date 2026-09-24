@@ -14,6 +14,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  justify-content: safe center;
+  overflow-y: auto;
   gap: clamp(2rem, 4vh, 4rem);
   background: var(--gt-brand-black);
   color: var(--gt-brand-white);
@@ -68,6 +70,15 @@
   color: var(--gt-gray-20);
   min-height: 3em;
 }
+.cal-purpose {
+  margin: 0;
+  color: var(--gt-brand-electric);
+  font-size: clamp(0.72rem, 0.82vmin, 0.95rem);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /*
  * Progress, and it is NOT a countdown — it is how much of what the step needs has happened. A
@@ -111,8 +122,15 @@
   color: var(--gt-gray-50);
 }
 
-/* A compact status map, deliberately inside the instructions rather than spread across the
-   screen. These marks say which CAMERA-SPACE holds were confirmed; they are not cursor targets. */
+/* A compact CAMERA-SPACE checklist. It is intentionally separate from the mapped-display
+   surface used by step 3, so the same five words cannot masquerade as the same five targets. */
+.cal-evidence-label {
+  color: var(--gt-gray-50);
+  font-size: clamp(0.66rem, 0.74vmin, 0.86rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 .cal-directions {
   display: grid;
   grid-template-columns: repeat(3, minmax(4.4rem, 1fr));
@@ -178,6 +196,78 @@
   background: color-mix(in srgb, var(--gt-brand-electric) 55%, transparent);
   color: var(--gt-brand-white);
   transform: scale(1.12);
+}
+
+/* Step 3 replaces the camera preview with the thing it is actually testing: the fitted display
+   mapping. The outlined regions are broad bands, never five precision keypoints. */
+.cal-screen-check {
+  position: relative;
+  flex: none;
+  width: clamp(18rem, 26vw, 34rem);
+  max-height: 34vh;
+  overflow: hidden;
+  border: 1px solid var(--gt-gray-80);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--gt-brand-white) 4%, transparent);
+}
+.cal-screen-check__label {
+  position: absolute;
+  z-index: 3;
+  top: 0.55rem;
+  left: 0.7rem;
+  color: var(--gt-gray-50);
+  font-size: clamp(0.58rem, 0.66vmin, 0.76rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.cal-screen-check__zone {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--gt-brand-white) 38%, transparent);
+  background: color-mix(in srgb, var(--gt-brand-white) 5%, transparent);
+  color: var(--gt-gray-20);
+  font-size: clamp(0.62rem, 0.72vmin, 0.84rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition:
+    background 0.18s ease-out,
+    border-color 0.18s ease-out,
+    opacity 0.18s ease-out;
+}
+.cal-screen-check__zone.is-next {
+  border-color: color-mix(in srgb, var(--gt-brand-electric) 72%, var(--gt-brand-white));
+  background: color-mix(in srgb, var(--gt-brand-electric) 12%, transparent);
+}
+.cal-screen-check__zone.is-on {
+  border-color: var(--gt-brand-electric);
+  background: color-mix(in srgb, var(--gt-brand-electric) 48%, transparent);
+  color: var(--gt-brand-white);
+}
+/* A region acknowledges entry immediately; the shared progress bar shows the short proof dwell. */
+.cal-screen-check__zone.is-candidate {
+  border-color: var(--gt-brand-electric);
+  background: color-mix(in srgb, var(--gt-brand-electric) 24%, transparent);
+  color: var(--gt-brand-white);
+  box-shadow:
+    0 0 0 0.18rem color-mix(in srgb, var(--gt-brand-electric) 30%, transparent),
+    0 0 1.4rem color-mix(in srgb, var(--gt-brand-electric) 44%, transparent);
+}
+.cal-screen-check__cursor {
+  position: absolute;
+  z-index: 4;
+  width: clamp(0.8rem, 1.2vmin, 1.35rem);
+  aspect-ratio: 1;
+  border: 0.16rem solid var(--gt-brand-white);
+  border-radius: 50%;
+  background: var(--gt-brand-electric);
+  box-shadow: 0 0 1rem color-mix(in srgb, var(--gt-brand-electric) 72%, transparent);
+  transform: translate(-50%, -50%);
 }
 
 /*
@@ -252,6 +342,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cal-direction,
+  .cal-screen-check__zone,
   .cal-btn,
   .cal-bar {
     transition: none;

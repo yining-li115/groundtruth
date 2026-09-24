@@ -21,6 +21,10 @@ apps/kiosk/public/splat/*.bin
 # .sog is the Spark-readable WebP bundle: 21MB for the 1.8M tier, 147MB for the full 12.4M
 # one. See the splat README to rebuild either.
 apps/kiosk/public/splat/*.sog
+# Local PlayCanvas Streamed SOG: many JSON/WebP chunk files generated from the full scan.
+# The manifest stays documented in public/splat/README.md; the payload belongs on object
+# storage for deployment and must never enter git history.
+apps/kiosk/public/splat/tum-campus-stream/
 # EXCEPTION: the 1.8M tier IS committed (~21MB, same size as the PLY it replaces) so the
 # deployed showreel has a campus to fly through at all. The 12.4M tier stays out — 147MB of
 # git history, re-downloaded on every cold load, needs object storage instead.

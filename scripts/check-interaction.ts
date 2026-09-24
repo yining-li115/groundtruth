@@ -7,6 +7,12 @@ import {
   type RouterHit,
   type RouterSample,
 } from "../apps/kiosk/src/lib/vision/interactionRouter";
+import {
+  advanceResearchEdgeDwell,
+  DEFAULT_RESEARCH_EDGE_DWELL,
+  initialResearchEdgeDwell,
+} from "../apps/kiosk/src/lib/researchEdgeDwell";
+import { nearestLoopTime } from "../apps/kiosk/src/lib/horizontalLoopMath";
 
 type Target = { id: string };
 type Scroll = { id: string };
@@ -665,6 +671,50 @@ console.log("\ninteraction router — exclusive gesture sessions\n");
       actionsOf(lateRelease, "click").length === 0 &&
       !stalled.snapshot().armed,
   );
+
+  const horizontalTap = new InteractionRouter<Target, Scroll>();
+  prime(horizontalTap, site);
+  horizontalTap.handleEdge(
+    edge("press", 2, 1_020),
+    site,
+    { ...buttonHit, scrollTarget: page, canScroll: true, scrollAxis: "x" },
+  );
+  horizontalTap.observe(
+    sample(2, 1_035, { posture: "closed", live: { x: 0.5, y: 0.62 } }),
+    site,
+  );
+  ok(
+    "vertical hand wobble does not steal a click from an x-only carousel",
+    horizontalTap.snapshot().kind === "UI_PRESS" && !horizontalTap.snapshot().moved,
+  );
+  const horizontalTapRelease = horizontalTap.handleEdge(
+    edge("release", 3, 1_060, { live: { x: 0.5, y: 0.62 } }),
+    site,
+    undefined,
+    true,
+  );
+  ok(
+    "releasing that x-stable press still clicks once",
+    actionsOf(horizontalTapRelease, "click").length === 1,
+  );
+
+  const horizontalDrag = new InteractionRouter<Target, Scroll>();
+  prime(horizontalDrag, site);
+  horizontalDrag.handleEdge(
+    edge("press", 2, 1_020),
+    site,
+    { ...buttonHit, scrollTarget: page, canScroll: true, scrollAxis: "x" },
+  );
+  horizontalDrag.observe(
+    sample(2, 1_035, { posture: "closed", live: { x: 0.58, y: 0.7 } }),
+    site,
+  );
+  ok(
+    "horizontal travel promotes an x-only carousel and suppresses its y component",
+    horizontalDrag.snapshot().kind === "UI_SCROLL" &&
+      horizontalDrag.snapshot().scrollDx > 0.07 &&
+      horizontalDrag.snapshot().scrollDy === 0,
+  );
 }
 
 {
@@ -775,6 +825,86 @@ console.log("\ninteraction router — exclusive gesture sessions\n");
     site,
   );
   ok("a corrupt release cancels instead of clicking", actionsOf(invalidRelease, "click").length === 0 && !router5.snapshot().armed);
+}
+
+{
+  console.log("Research edge dwell is local, bounded, and one-shot");
+  ok(
+    "Research edge paging stays inside the side reach proved by calibration",
+    DEFAULT_RESEARCH_EDGE_DWELL.leftEnter >= 0.22 &&
+      DEFAULT_RESEARCH_EDGE_DWELL.rightEnter <= 0.78,
+  );
+  ok(
+    "carousel snap crosses the 0/1 seam by the short forward path",
+    Math.abs(nearestLoopTime(9.9, 0, 10) - 10) < 1e-9,
+  );
+  ok(
+    "carousel snap crosses the 0/1 seam by the short reverse path",
+    Math.abs(nearestLoopTime(0.1, 9.9, 10) + 0.1) < 1e-9,
+  );
+  let state = initialResearchEdgeDwell();
+  let result = advanceResearchEdgeDwell(state, { x: 0.1, at: 1_000, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("entering the left edge does not flip immediately", result.fired === null);
+  result = advanceResearchEdgeDwell(state, { x: 0.11, at: 1_500, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok(
+    "an incomplete edge hold only reports progress",
+    result.fired === null && state.progress > 0.8 && state.progress < 1,
+  );
+  result = advanceResearchEdgeDwell(state, { x: 0.12, at: 1_600, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("600ms at the edge advances exactly once", result.fired === "left" && state.locked);
+
+  result = advanceResearchEdgeDwell(state, { x: 0.1, at: 2_400, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("remaining at that edge cannot repeat", result.fired === null && state.locked);
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 3_200, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("crossing straight to the other edge is still locked", result.fired === null && state.locked);
+  result = advanceResearchEdgeDwell(state, { x: 0.5, at: 3_250, eligible: false, ownerId: 1 });
+  state = result.state;
+  ok("a closed hand at centre cannot silently re-arm edge dwell", state.locked);
+  result = advanceResearchEdgeDwell(state, { x: 0.5, at: 3_300, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("returning to the neutral band re-arms", !state.locked && result.fired === null);
+
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 4_000, eligible: true, ownerId: 1 });
+  state = result.state;
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 4_400, eligible: false, ownerId: 1 });
+  state = result.state;
+  ok("closing the hand or losing freshness clears partial dwell", state.progress === 0);
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 4_500, eligible: true, ownerId: 1 });
+  state = result.state;
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 5_099, eligible: true, ownerId: 1 });
+  state = result.state;
+  ok("a resumed edge visit must earn the full dwell again", result.fired === null);
+  result = advanceResearchEdgeDwell(state, { x: 0.9, at: 5_100, eligible: true, ownerId: 1 });
+  ok("the fresh full right-edge dwell advances once", result.fired === "right");
+
+  state = initialResearchEdgeDwell();
+  state = advanceResearchEdgeDwell(state, {
+    x: 0.1,
+    at: 6_000,
+    eligible: true,
+    ownerId: 11,
+  }).state;
+  state = advanceResearchEdgeDwell(state, {
+    x: 0.1,
+    at: 6_500,
+    eligible: true,
+    ownerId: 11,
+  }).state;
+  result = advanceResearchEdgeDwell(state, {
+    x: 0.1,
+    at: 6_600,
+    eligible: true,
+    ownerId: 12,
+  });
+  ok(
+    "a new hand owner cannot inherit the previous owner's partial edge dwell",
+    result.fired === null && result.state.ownerId === 12 && result.state.progress === 0,
+  );
 }
 
 console.log(`\n${checks - failures}/${checks} passed`);

@@ -1,11 +1,12 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
-import { GooeyNav, Logo, type GooeyNavItem } from "@groundtruth/ui";
+import { GooeyNav, type GooeyNavItem } from "@groundtruth/ui";
 import type { OpenTopic, OpenTopicType } from "../../../../content/schema";
 import { openTopics, personName } from "../lib/content";
-import { navigate } from "../lib/navigate";
 import { DetailPager } from "../components/DetailPager";
+import { SectionHome } from "../components/SectionHome";
+import { ProjectStoryBackdrop } from "./PublicationStoryBackdrop";
 import { TAG_COLOR } from "./tagColors";
 import "./projects.css";
 
@@ -13,7 +14,7 @@ import "./projects.css";
  * Student Projects — the open topics the group OFFERS to students. A GooeyNav filter (the
  * five project kinds) at the top narrows the list; the list reuses the Codrops
  * RapidImageHoverMenuEffects demo 5 (hover reveals number + type tag), and a click opens a
- * text-only detail (no figures — those live on the Publications page). Data is content
+ * centred particle-backed detail (no figures — those live on the Publications page). Data is content
  * (content/open-topics.json, CLAUDE.md rule 3). Dark via [data-theme="dark"] — a deliberate
  * exception to the light-first site (design-system §5). Preview at /?view=projects.
  */
@@ -55,6 +56,7 @@ export function ProjectsSection() {
   const detailRef = useRef<HTMLDivElement>(null);
   const [activeFilter, setActiveFilter] = useState(0);
   const [selected, setSelected] = useState<OpenTopic | null>(null);
+  const [pageDirection, setPageDirection] = useState<-1 | 1>(1);
   const activeLabel = FILTER_LABELS[activeFilter] ?? ALL;
   const filtered = useMemo(() => {
     if (activeLabel === ALL) return [...openTopics].sort(byPostedDesc);
@@ -62,9 +64,17 @@ export function ProjectsSection() {
   }, [activeLabel]);
 
   const selectedIndex = selected ? filtered.findIndex((t) => t.id === selected.id) : -1;
+  const selectTopic = (topic: OpenTopic) => {
+    const nextIndex = filtered.findIndex((candidate) => candidate.id === topic.id);
+    setPageDirection(selectedIndex >= 0 && nextIndex < selectedIndex ? -1 : 1);
+    setSelected(topic);
+  };
   const goTo = (dir: -1 | 1) => {
     const next = filtered[selectedIndex + dir];
-    if (next) setSelected(next);
+    if (next) {
+      setPageDirection(dir);
+      setSelected(next);
+    }
   };
 
   // Reveal the list whenever the filter changes (each title slides up from its clip row,
@@ -90,37 +100,21 @@ export function ProjectsSection() {
   }, [activeFilter]);
 
   return (
-    <div className="projects" data-theme="dark" ref={rootRef}>
-      {/* No MENU here. Every section's top-right corner is the Home button now: the home
-          page IS the menu, so a drawer that repeats the same five destinations is a second
-          door into a room you can already see — and on the pages with a filter bar across the
-          top it was fighting for the same strip of screen. */}
-
-      {/* The top strip: brand block on the left, the filter tabs in the middle — ONE grid, so
+    <div
+      className={`projects${selected ? " projects--detail-open" : ""}`}
+      data-theme="dark"
+      ref={rootRef}
+    >
+      {/* The top strip: static brand on the left, the filter tabs in the middle — ONE grid, so
           the two cannot overlap on any screen. They used to be two independent fixed elements
           (brand at the left edge, tabs centred at 50%), which is a layout that only works while
           the brand block happens to be narrower than the gap to the tabs; on a laptop, where
           the root scaled differently, it was not, and the tabs ran under the logo. The grid's
           first column is at least as wide as the brand, so the tabs are pushed right rather
-          than covered when there is no room to centre them. The logo is sized in rem for the
-          same reason: a 64px logo is a different fraction of every screen. */}
+          than covered when there is no room to centre them. SectionHome also supplies the
+          independent fixed bottom-left Home target. */}
       <div className="frame">
-        <button
-          type="button"
-          data-hover
-          className="frame__logo"
-          aria-label="Back to home"
-          onClick={() => navigate("home")}
-        >
-          <div className="frame__brand-text">
-            <div className="frame__brand-line frame__brand-strong">
-              Professorship of Photogrammetry and Remote Sensing
-            </div>
-            <div className="frame__brand-line">TUM School of Engineering and Design</div>
-            <div className="frame__brand-line">Technical University of Munich</div>
-          </div>
-          <Logo variant="white" width="4rem" height="2.0625rem" />
-        </button>
+        <SectionHome tone="dark" className="frame__logo" />
 
         {/* Filter tabs — the five project kinds. */}
         <div className="projects-filter">
@@ -153,9 +147,11 @@ export function ProjectsSection() {
           <p className="menu__empty">No open topics in this category right now — check back soon.</p>
         ) : (
           filtered.map((t) => (
-            <a className="menu__item" data-hover key={t.id} onClick={() => setSelected(t)}>
+            <a className="menu__item" data-hover key={t.id} onClick={() => selectTopic(t)}>
               <span className="menu__item-text">
-                <span className="menu__item-textinner">{t.title}</span>
+                <span className="menu__item-textinner">
+                  <span className="menu__item-label">{t.title}</span>
+                </span>
               </span>
               <span className="menu__item-sub">
                 <TagList types={t.types} />
@@ -165,26 +161,33 @@ export function ProjectsSection() {
         )}
       </nav>
 
-      {/* Text-only detail for the clicked open topic. */}
-      <AnimatePresence>
+      {/* The project shelf uses the same five-destination particle treatment as papers, with a
+          younger cyan/lime/coral visual story authored specifically for student work. */}
+      {selected && (
+        <ProjectStoryBackdrop
+          index={selectedIndex}
+          direction={pageDirection}
+        />
+      )}
+
+      {/* Detail uses the same centred reading surface and directional page transition as Paper. */}
+      <AnimatePresence mode="wait">
         {selected && (
           <motion.div
-            key="sp-detail"
+            key={`sp-detail:${selected.id}`}
             ref={detailRef}
             className="sp-detail"
             /* Lenis owns the document wheel. Without this it swallows the gesture and
                scrolls the page — which, on a fixed full-screen detail, means nothing
                moves and a topic longer than the viewport cannot be read to the end. */
             data-lenis-prevent
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 32 }}
+            initial={{ opacity: 0, x: pageDirection * 40, y: 16 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            exit={{ opacity: 0, x: pageDirection * -40, y: -8 }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* No page-level Back here. The global Home control is the one way out of a
-                section, and a second exit two centimetres from it — in the strip a hand
-                crosses on its way to the filter tabs — was a control competing with the
-                control. Prev/next below still moves between topics. */}
+            {/* Home remains fixed at bottom-left. Prev/next below still moves only between
+                topics in the current filter. */}
 
             <div className="sp-detail-inner">
               <span className="sp-detail-type">

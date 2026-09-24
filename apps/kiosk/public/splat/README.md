@@ -17,7 +17,9 @@ TUM Main Campus (Hauptgebäude) 3D Gaussian-splat scan, published on SuperSplat:
 | `tum-campus.ply` | ~1.8M Gaussians, cropped to the Hauptgebäude, rotated upright | source for the web build | no (git-ignored) |
 | `tum-campus-web.ply` | **400k** decimated, **no SH** (~21MB) — the mkkellogg-era campus | showreel landing (`SplatStage`), `/?exp=splatnav`, `/?exp=splat3d` | **yes (committed)** |
 | `tum-campus.sog` | **1.8M**, same crop, ~21MB — same download as the 400k PLY, 4.5x the splats | the showreel flight, `/?exp=spark` | **yes (committed)** |
-| `tum-campus-full.sog` | **12.4M**, full source density, ~147MB | `/?exp=spark&asset=max` | no (git-ignored) |
+| `tum-campus-local-ultra.sog` | **6M**, locally derived from the full crop, ~70MB | local full-quality Showreel | no (git-ignored) |
+| `tum-campus-full.sog` | **13.0M**, full source density, ~147MB | `/?exp=spark&asset=max` | no (git-ignored) |
+| `tum-campus-stream/` | **13.0M / 6.5M / 3.25M / 1.63M**, four-level Streamed SOG, ~283MB | local PlayCanvas/WebGPU Showreel | no (git-ignored) |
 | `tum-campus.bin` | ~500k decimated points (pos + rgba + size) | `/?exp=cv` and the old point-cloud showreel | no (git-ignored) |
 
 The `.sog` tiers are read by **Spark** (`@sparkjsdev/spark`), which mkkellogg's renderer
@@ -25,10 +27,42 @@ cannot open. SOG is a WebP bundle, so the full 1.8M crop costs the same download
 400k PLY it replaces — which is why that tier is committed and the deployed showreel flies
 through it.
 
-The 12.4M tier is the one that actually holds up a couple of metres from a façade, but 147MB
+The 13.0M tier is the one that actually holds up a couple of metres from a façade, but 147MB
 cannot go in git history and would be re-fetched on every cold load. Putting it on object
 storage (R2/B2) and pointing `URLS.max` at an absolute URL is the way to ship it; until then
 the deployed site runs the 1.8M tier.
+
+### Local full-quality Showreel
+
+When `tum-campus-full.sog` exists locally, create the ignored `apps/kiosk/.env.local` with:
+
+```dotenv
+VITE_GAUSSIAN_LOCAL_ULTRA=1
+```
+
+After restarting Vite, the normal Showreel uses the local four-level Streamed SOG through the
+official SuperSplat Viewer/PlayCanvas WebGPU renderer. Its top LOD keeps all 13M Gaussians in the
+campus crop; an 8M global budget is distributed spatially by projected error, with a 2× DPR cap.
+This replaces the old Spark/WASM path that trapped while initialising the same 13M static SOG.
+None of the generated chunks or the local environment setting enters Git; a clone or deployment
+without that setting continues to use the committed 1.8M tier through the same PlayCanvas
+renderer. URL parameters (`asset`, `budget`, `dpr`) remain available for comparisons.
+
+Regenerate the local Streamed SOG from the ignored full-density SOG. The intermediate PLY files
+are temporary and intentionally live outside the repository:
+
+```bash
+npx @playcanvas/splat-transform tum-campus-full.sog /tmp/tum-campus-lod0.ply -w
+npx @playcanvas/splat-transform tum-campus-full.sog --decimate-adaptive 50% /tmp/tum-campus-lod1.ply -w
+npx @playcanvas/splat-transform tum-campus-full.sog --decimate-adaptive 25% /tmp/tum-campus-lod2.ply -w
+npx @playcanvas/splat-transform tum-campus-full.sog --decimate-adaptive 12.5% /tmp/tum-campus-lod3.ply -w
+npx @playcanvas/splat-transform \
+  /tmp/tum-campus-lod0.ply -l 0 \
+  /tmp/tum-campus-lod1.ply -l 1 \
+  /tmp/tum-campus-lod2.ply -l 2 \
+  /tmp/tum-campus-lod3.ply -l 3 \
+  tum-campus-stream/lod-meta.json --lod-errors -w
+```
 
 `tum-campus-web.ply` is committed (via a `!` exception in `.gitignore`) so the deployed
 landing page has its Gaussian campus without hosting the full 97MB scan. Rebuild it from

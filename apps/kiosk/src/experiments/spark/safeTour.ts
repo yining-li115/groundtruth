@@ -15,6 +15,16 @@ export interface TourWaypoint {
 }
 
 /**
+ * Radius of the visitor camera's collision body, in campus world units.
+ *
+ * The roam grid has 0.45-unit cells. A 0.15-unit sphere gives the camera a meaningful 0.30-unit
+ * body while leaving measured clearance along every production tour sample and authored stop.
+ * `check:scene` binds that claim to the checked-in tour and roam volume; increasing the radius
+ * without enough clearance therefore fails before it can strand a visitor in the scene.
+ */
+export const PRODUCTION_CAMERA_RADIUS = 0.15;
+
+/**
  * The exact curve constructor used by both the production player and its takeover invariant.
  * Keeping this here prevents a test from validating a subtly different spline type/tension.
  */
@@ -67,6 +77,64 @@ export function isRoamablePoint(
 ): boolean {
   const cell = roamCell(volume, x, y, z);
   return cell !== null && volume.free[roamIndex(volume, cell)] === "1";
+}
+
+/**
+ * Whether a spherical camera body lies wholly inside measured free voxels.
+ *
+ * A Gaussian splat is not a watertight collision mesh. This deliberately makes no such claim:
+ * the checked-in roam volume remains the conservative authority, and any sphere/AABB contact
+ * with a blocked or out-of-bounds voxel is rejected. The point predicate above remains available
+ * for the offline six-connected routing algorithm, whose nodes are voxel centres.
+ */
+export function isRoamableSphere(
+  volume: RoamVolume,
+  x: number,
+  y: number,
+  z: number,
+  radius: number,
+): boolean {
+  if (!validVolume(volume) || ![x, y, z, radius].every(Number.isFinite) || radius < 0) {
+    return false;
+  }
+  if (radius === 0) return isRoamablePoint(volume, x, y, z);
+
+  const position = [x, y, z] as const;
+  // Include the voxel on both sides of an exact grid boundary: tangent contact is still contact.
+  const boundaryEpsilon = volume.cell * 1e-9;
+  const first = position.map((value, axis) =>
+    Math.floor((value - radius - volume.min[axis]! - boundaryEpsilon) / volume.cell),
+  );
+  const last = position.map((value, axis) =>
+    Math.floor((value + radius - volume.min[axis]! + boundaryEpsilon) / volume.cell),
+  );
+  const radiusSq = radius * radius;
+
+  for (let ix = first[0]!; ix <= last[0]!; ix += 1) {
+    for (let iy = first[1]!; iy <= last[1]!; iy += 1) {
+      for (let iz = first[2]!; iz <= last[2]!; iz += 1) {
+        const cell: Cell = [ix, iy, iz];
+        if (cell.some((value, axis) => value < 0 || value >= volume.dims[axis]!)) {
+          return false;
+        }
+        if (volume.free[roamIndex(volume, cell)] === "1") continue;
+
+        let distanceSq = 0;
+        for (let axis = 0; axis < 3; axis += 1) {
+          const cellMin = volume.min[axis]! + cell[axis]! * volume.cell;
+          const cellMax = cellMin + volume.cell;
+          const value = position[axis]!;
+          const distance =
+            value < cellMin ? cellMin - value : value > cellMax ? value - cellMax : 0;
+          distanceSq += distance * distance;
+        }
+        // Contact counts as intersection. The tiny tolerance makes the safety result stable at a
+        // mathematically tangent face despite binary floating-point representation.
+        if (distanceSq <= radiusSq + 1e-12) return false;
+      }
+    }
+  }
+  return true;
 }
 
 function cellFromIndex(volume: RoamVolume, index: number): Cell {
@@ -203,6 +271,30 @@ export function inspectCurveInRoam(
   for (let i = 0; i <= samples; i += 1) {
     const point = curve.getPointAt(i / samples);
     if (!isRoamablePoint(volume, point.x, point.y, point.z)) {
+      return { ok: false, samples: samples + 1, firstBlocked: point };
+    }
+  }
+  return { ok: true, samples: samples + 1, firstBlocked: null };
+}
+
+/**
+ * Validate the production camera body along a curve without changing point-based tour routing.
+ * Samples are no farther apart than one third of the radius (and never coarser than the legacy
+ * point audit), making this a stricter takeover invariant than the render cadence.
+ */
+export function inspectCameraCurveInRoam(
+  curve: THREE.Curve<THREE.Vector3>,
+  volume: RoamVolume,
+  radius = PRODUCTION_CAMERA_RADIUS,
+): CurveRoamReport {
+  if (!Number.isFinite(radius) || radius <= 0 || !validVolume(volume)) {
+    return { ok: false, samples: 0, firstBlocked: curve.getPointAt(0) };
+  }
+  const spacing = Math.min(volume.cell / 4, radius / 3);
+  const samples = Math.max(1, Math.ceil(curve.getLength() / spacing));
+  for (let i = 0; i <= samples; i += 1) {
+    const point = curve.getPointAt(i / samples);
+    if (!isRoamableSphere(volume, point.x, point.y, point.z, radius)) {
       return { ok: false, samples: samples + 1, firstBlocked: point };
     }
   }

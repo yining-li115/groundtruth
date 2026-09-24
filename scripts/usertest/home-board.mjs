@@ -11,8 +11,8 @@
  * What it asks:
  *   1. geometry     — are the rows as large as the design claims?
  *   2. coverage     — is EVERY point of a row live, including its corners and its arrow?
- *   3. activation   — does the production fist gesture open every section, and does
- *                     Back come home?
+ *   3. activation   — does the production fist gesture open every section, and does its
+ *                     labelled Home header return home?
  *   4. scrolling    — on a real reading page, does a held fist + upward lean move the page?
  *   5. inertness    — does anything on the left side navigate when closed on? (It must not.)
  *   6. boundaries   — does the same pixel report the same row from above and from below?
@@ -254,37 +254,37 @@ async function main() {
         }
       }
 
-      // Back home, through the control every page carries.
-      const back = await k.evaluate(`(() => {
-        const b = document.querySelector('.bc-home');
+      // Home through the labelled control in every section's reserved header.
+      const homeControl = await k.evaluate(`(() => {
+        const b = document.querySelector('[data-section-home]');
         if (!b) return null;
         if (${JSON.stringify(ROWS[i])} === 'teaching') {
-          window.__teachingBackClicks = 0;
-          b.addEventListener('click', () => { window.__teachingBackClicks += 1; }, true);
+          window.__teachingHomeClicks = 0;
+          b.addEventListener('click', () => { window.__teachingHomeClicks += 1; }, true);
         }
         const r = b.getBoundingClientRect();
         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
       })()`);
-      if (!back) {
-        note("FAIL", `no Back control on '${got}' — the visitor is stranded`);
+      if (!homeControl) {
+        note("FAIL", `no Home header on '${got}' — the visitor is stranded`);
         await k.evaluate(`location.href = ${JSON.stringify(URL)}`);
         await sleep(3500);
         continue;
       }
 
       // The decisive click-vs-scroll case is a close begun ON a control while its page can
-      // scroll. Closing Back must not activate it yet; moving the still-closed hand must turn
+      // scroll. Closing Home must not activate it yet; moving the still-closed hand must turn
       // that same transaction into scroll, and opening must never resurrect the pending click.
       // This is exactly the grammar that an immediate-on-close implementation destroys.
       if (got === "teaching") {
         const beforeControlScroll = await k.evaluate(`window.scrollY`);
-        await k.aimPx(back.x, back.y);
+        await k.aimPx(homeControl.x, homeControl.y);
         const scrollGesture = await k.leanScroll(0.2, { holdMs: 900, blinkMs: 90 });
         await sleep(250);
         const afterControlScroll = await k.evaluate(`({
           y: window.scrollY,
           view: ${VIEW},
-          clicks: window.__teachingBackClicks ?? 0,
+          clicks: window.__teachingHomeClicks ?? 0,
         })`);
         if (
           afterControlScroll?.view !== "teaching" ||
@@ -293,12 +293,12 @@ async function main() {
         ) {
           note(
             "FAIL",
-            `a fist drag begun on Back did not remain a pure scroll: ${JSON.stringify({ before: beforeControlScroll, ...afterControlScroll })}`,
+            `a fist drag begun on Home did not remain a pure scroll: ${JSON.stringify({ before: beforeControlScroll, ...afterControlScroll })}`,
           );
         } else {
           note(
             "INFO",
-            `Back stays pending while held, becomes scroll, and does not click on release (${Math.round(beforeControlScroll)} → ${Math.round(afterControlScroll.y)}px)`,
+            `Home stays pending while held, becomes scroll, and does not click on release (${Math.round(beforeControlScroll)} → ${Math.round(afterControlScroll.y)}px)`,
           );
         }
         if (
@@ -315,16 +315,16 @@ async function main() {
         }
       }
 
-      await k.aimPx(back.x, back.y);
+      await k.aimPx(homeControl.x, homeControl.y);
       await k.fist();
       const home = await k.evaluate(VIEW);
-      if (home !== "home") note("FAIL", `Back from ${ROWS[i]} landed on '${home}'`);
+      if (home !== "home") note("FAIL", `Home from ${ROWS[i]} landed on '${home}'`);
       if (got === "teaching") {
-        const backClicks = await k.evaluate(`window.__teachingBackClicks ?? 0`);
-        if (backClicks !== 1) {
-          note("FAIL", `a stationary close→open on Back clicked ${backClicks} times`);
+        const homeClicks = await k.evaluate(`window.__teachingHomeClicks ?? 0`);
+        if (homeClicks !== 1) {
+          note("FAIL", `a stationary close→open on Home clicked ${homeClicks} times`);
         } else {
-          note("INFO", "a stationary close→open on Back clicks exactly once");
+          note("INFO", "a stationary close→open on Home clicks exactly once");
         }
       }
     }

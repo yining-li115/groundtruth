@@ -1,124 +1,91 @@
 /* Previous / next wings on a detail page. Tokens only (CLAUDE.md rule 1). */
 
 /*
- * Geometry. A half-ellipse anchored on the side edge, at upper-mid-height — viewport units,
- * like the Home corner, so it is the same fraction of the wall as of a laptop. Its bottom edge
- * stays at 64vh, where the old target ended; the extra height grows upward instead of further
- * into the Home corner. Hit area, scrim and glow are all the same clipped shape, so what you
- * can see is what you can press and nothing else.
+ * Geometry. A broad half-ellipse anchored on the side edge, at upper-mid-height — viewport units,
+ * in viewport units, so it is the same fraction of the wall as of a laptop. The ellipse is
+ * deliberately taller than its box: that makes the useful upper and lower reaches full-bodied
+ * instead of tapering to a mouse-sized sliver. Its visuals come from the particle canvas.
  *
- * The September review enlarged the useful target from 18vw x 44vh to 22vw x 54vh. That is
- * about 50% more area for the drift of a closing fist, while staying clear of the centred text
- * column. There is deliberately no upper pixel/rem cap: a wall and a laptop must get the same
- * relative target rather than a large display silently falling back to a mouse-sized region.
+ * The useful target now reaches 27vw inward and 82vh vertically. The two rectangular bounds still
+ * leave a 46vw central corridor for starting a detail-page scroll, before the ellipse removes even
+ * more of their corners. There is deliberately no upper pixel/rem cap: a wall and a laptop must
+ * get the same relative target rather than a large display silently falling back to a mouse-sized
+ * region.
  */
 .dp-wing {
   position: fixed;
-  top: 37vh;
+  top: 46vh;
   transform: translateY(-50%);
-  width: max(12rem, 22vw);
-  height: max(22rem, 54vh);
+  width: max(15rem, 27vw);
+  height: max(32rem, 82vh);
   z-index: 60;
   border: 0;
   padding: 0;
   background: transparent;
   cursor: pointer;
   color: var(--gt-text-primary);
-  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  transition: opacity 0.35s ease-out;
 }
 .dp-wing--prev {
   left: 0;
-  clip-path: ellipse(100% 50% at 0% 50%);
+  clip-path: ellipse(125% 78% at 0% 50%);
   transform-origin: 0 50%;
 }
 .dp-wing--next {
   right: 0;
-  clip-path: ellipse(100% 50% at 100% 50%);
+  clip-path: ellipse(125% 78% at 100% 50%);
   transform-origin: 100% 50%;
 }
 
-/* The scrim: the page's own colour, opaque at the edge and gone before the clip, so the
-   abstract scrolling underneath is dissolved rather than overlapped. */
+/* Visuals belong to the particle field. These pseudo-elements used to draw a large radial
+   wash and a blue edge rule over the image whenever the hand entered the zone. The hit target
+   remains deliberately huge, but it is now completely transparent. */
 .dp-wing::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    ellipse 100% 50% at var(--dp-edge) 50%,
-    var(--gt-bg) 0%,
-    var(--gt-bg) 28%,
-    color-mix(in srgb, var(--gt-bg) 70%, transparent) 50%,
-    color-mix(in srgb, var(--gt-bg) 32%, transparent) 68%,
-    transparent 84%
-  );
+  background: none;
 }
-/* The light: the page's ink colour, so it is white on the dark pages and black on a light one,
-   on the same eased falloff as the Home corner. */
 .dp-wing::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    ellipse 100% 50% at var(--dp-edge) 50%,
-    color-mix(in srgb, currentColor 78%, transparent) 0%,
-    color-mix(in srgb, currentColor 66%, transparent) 12%,
-    color-mix(in srgb, currentColor 48%, transparent) 24%,
-    color-mix(in srgb, currentColor 32%, transparent) 36%,
-    color-mix(in srgb, currentColor 20%, transparent) 48%,
-    color-mix(in srgb, currentColor 11%, transparent) 60%,
-    color-mix(in srgb, currentColor 4%, transparent) 70%,
-    transparent 80%
-  );
-  opacity: 0.6;
-  transition: opacity 0.5s ease-out;
+  background: none;
 }
-.dp-wing--prev {
-  --dp-edge: 0%;
-}
-.dp-wing--next {
-  --dp-edge: 100%;
-}
-
-/* The arrow, over the light, near the edge where the glow is brightest. In the ink colour,
-   like the glow itself: a cut-out in the page colour was tried first and at rest, with the
-   glow at half strength, it was a dark arrow on a dim wash — invisible from a corridor. */
+/* Solid fallback while the WebGL particle field is still loading (or unavailable). Once the
+   particle canvas is ready its own permanently reserved points form the arrows. */
 .dp-wing__arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: clamp(2.8rem, 4.6vmin, 6rem);
+  font-size: clamp(3.4rem, 5.6vmin, 7rem);
   font-weight: 700;
   line-height: 1;
   color: currentColor;
-  transition: transform 0.35s ease-out;
+  opacity: 0.72;
+  transition: opacity 0.25s ease-out;
 }
 .dp-wing--prev .dp-wing__arrow {
-  left: clamp(1.6rem, 3vw, 5rem);
+  left: clamp(2rem, 4.5vw, 7rem);
 }
 .dp-wing--next .dp-wing__arrow {
-  right: clamp(1.6rem, 3vw, 5rem);
+  right: clamp(2rem, 4.5vw, 7rem);
 }
 
-/* Under the cursor: the hand pointer paints `gt-hover` / `is-hover`; `:hover` is a dev mouse. */
-.dp-wing.gt-hover::after,
-.dp-wing.is-hover::after,
-.dp-wing:hover::after {
-  opacity: 1;
-}
+/* The pointer's global hover class normally draws a blue accessibility outline. On these
+   invisible edge targets that outline exposed the whole rectangular hot zone, so explicitly
+   suppress it without weakening feedback on any other control. */
 .dp-wing.gt-hover,
 .dp-wing.is-hover,
 .dp-wing:hover {
-  transform: translateY(-50%) scale(1.06);
+  outline: none !important;
+  outline-offset: 0;
+  transform: translateY(-50%);
 }
-.dp-wing--prev.gt-hover .dp-wing__arrow,
-.dp-wing--prev.is-hover .dp-wing__arrow,
-.dp-wing--prev:hover .dp-wing__arrow {
-  transform: translateY(-50%) translateX(-0.2em);
-}
-.dp-wing--next.gt-hover .dp-wing__arrow,
-.dp-wing--next.is-hover .dp-wing__arrow,
-.dp-wing--next:hover .dp-wing__arrow {
-  transform: translateY(-50%) translateX(0.2em);
+
+.publications:has(.publication-story[data-story-state="ready"]) .dp-wing__arrow,
+.projects:has(.project-story[data-story-state="ready"]) .dp-wing__arrow {
+  opacity: 0;
 }
 
 /* Nothing further that way. Dimmed, not removed, and not a target. */
@@ -126,21 +93,6 @@
   opacity: 0.22;
   pointer-events: none;
   cursor: default;
-}
-
-/* The counter: under the "next" arrow, inside the right wing's light, never a control. Same
-   inset as the arrow so the two read as one mark. */
-.dp-count {
-  position: fixed;
-  top: calc(37vh + clamp(2.2rem, 3.6vmin, 4.6rem));
-  right: clamp(1.6rem, 3vw, 5rem);
-  z-index: 61;
-  font-size: clamp(0.85rem, 1.2vmin, 1.5rem);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--gt-text-primary);
-  opacity: 0.7;
-  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

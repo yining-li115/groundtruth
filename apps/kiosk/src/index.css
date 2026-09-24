@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "@groundtruth/tokens/tokens.css";
 
+/* A square SVG box whose path is centred in its own viewBox. Home-page arrow wrappers set the
+   font size; the icon inherits that size and colour without inheriting a text baseline. */
+.gt-arrow-right {
+  display: block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
 /* Staggered per-letter bounce for the showreel "raise your hand" prompt (so it isn't stiff). */
 @keyframes gt-letter-bounce {
   0%, 55%, 100% { transform: translateY(0); }

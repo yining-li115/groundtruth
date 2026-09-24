@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef } from "react";
 import type { Person } from "../../../../../content/schema";
+import { SectionHome } from "../../components/SectionHome";
 import { TypeShuffle } from "./typeShuffle";
 // LEGO effect temporarily OFF — uncomment to restore the pixel-brick portrait.
 // import { LegoAvatar } from "../../components/lego/LegoAvatar";
@@ -58,9 +59,12 @@ export function PersonDetail({ person, onBack }: { person: Person; onBack: () =>
 
   return (
     <div className="ppl-detail" data-theme="dark">
-      <button type="button" className="ppl-detail__back" data-hover onClick={onBack}>
-        ← Back
-      </button>
+      <header className="ppl-detail__chrome">
+        <SectionHome tone="dark" className="ppl-detail__brand" />
+        <button type="button" className="ppl-detail__back" data-hover onClick={onBack}>
+          ← Back to team
+        </button>
+      </header>
 
       {/* Left column: research / biography, decoded by TypeShuffle. */}
       <dl className="ppl-detail__content" ref={contentRef}>

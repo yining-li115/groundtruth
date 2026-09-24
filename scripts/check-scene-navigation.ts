@@ -6,6 +6,7 @@ import {
   SceneNavigationController,
   sceneAxis,
   sceneSampleIsFresh,
+  sweptSegmentIsRoamable,
   type SceneNavigationConfig,
   type SceneNavigationMode,
   type SceneNavigationSample,
@@ -13,8 +14,11 @@ import {
 import { sceneExploreAxes } from "../apps/kiosk/src/lib/vision/flightInput";
 import {
   buildProductionTourCurve,
+  inspectCameraCurveInRoam,
   inspectCurveInRoam,
   isRoamablePoint,
+  isRoamableSphere,
+  PRODUCTION_CAMERA_RADIUS,
   roamCell,
   routeTourThroughRoam,
   type RoamVolume,
@@ -59,6 +63,10 @@ ok(sceneAxis(-8, 0.08, 0.75, 1.7) === -1, "movement remains symmetric");
 ok(sceneSampleIsFresh(900, 1000, 180), "a recent decoded sample is accepted");
 ok(!sceneSampleIsFresh(800, 1000, 180), "a stale decoded sample is rejected");
 ok(
+  DEFAULT_SCENE_NAVIGATION.maxCollisionStep <= PRODUCTION_CAMERA_RADIUS / 3 + 1e-9,
+  "production movement samples its swept path at least three times per camera radius",
+);
+ok(
   sceneExploreAxes(0.5, 0.5).dx === 0 && sceneExploreAxes(0.5, 0.5).dy === 0,
   "the calibrated comfortable centre is neutral in Explore",
 );
@@ -76,8 +84,20 @@ ok(
   };
   const authored = autoTourJson as unknown as TourWaypoint[];
   ok(
+    PRODUCTION_CAMERA_RADIUS + 1e-9 >= roam.cell / 3,
+    "the production camera keeps a meaningful radius relative to the measured voxels",
+  );
+  ok(
     authored.every((waypoint) => isRoamablePoint(roam, ...waypoint.pos)),
     "every authored tour pose starts in measured free air",
+  );
+  ok(
+    authored
+      .filter((waypoint) => waypoint.kind === "stop")
+      .every((waypoint) =>
+        isRoamableSphere(roam, ...waypoint.pos, PRODUCTION_CAMERA_RADIUS),
+      ),
+    "every production stop clears the full camera radius",
   );
   const routed = routeTourThroughRoam(authored, roam);
   ok(routed.length > authored.length, "blocked between-pose spans receive safe routing vias");
@@ -86,6 +106,11 @@ ok(
   ok(
     report.ok,
     `every production getPointAt sample is takeover-safe (${report.samples} checked)`,
+  );
+  const cameraReport = inspectCameraCurveInRoam(curve, roam, PRODUCTION_CAMERA_RADIUS);
+  ok(
+    cameraReport.ok,
+    `every production tour sample clears the camera sphere (${cameraReport.samples} checked)`,
   );
 
   const samples = Math.max(1, Math.ceil(curve.getLength() / (roam.cell / 4)));
@@ -117,6 +142,49 @@ ok(
   }
   ok(!isolated, "no automatic-tour takeover starts in an isolated Explore cell");
 }
+
+{
+  const cells = Array.from({ length: 3 * 3 * 3 }, () => "1");
+  // The camera centre remains in [1,1,1], but its radius reaches the blocked +x neighbour.
+  cells[(2 * 3 + 1) * 3 + 1] = "0";
+  cells[(0 * 3 + 1) * 3 + 1] = "0";
+  const volume: RoamVolume = {
+    cell: 1,
+    min: [0, 0, 0],
+    dims: [3, 3, 3],
+    free: cells.join(""),
+  };
+  ok(
+    isRoamablePoint(volume, 1.9, 1.5, 1.5),
+    "the synthetic camera centre itself remains in a free voxel",
+  );
+  ok(
+    !isRoamableSphere(volume, 1.9, 1.5, 1.5, 0.15),
+    "a blocked neighbouring voxel rejects the camera sphere before its centre crosses",
+  );
+  ok(
+    isRoamableSphere(volume, 1.5, 1.5, 1.5, 0.15),
+    "a camera sphere wholly inside measured free voxels remains valid",
+  );
+  ok(
+    !isRoamableSphere(volume, 1.15, 1.5, 1.5, 0.15),
+    "tangent contact with a blocked voxel is rejected rather than rounded away",
+  );
+  ok(
+    !isRoamableSphere(volume, 0.1, 1.5, 1.5, 0.15),
+    "space beyond the measured volume is treated as blocked for the camera radius",
+  );
+}
+
+ok(
+  !sweptSegmentIsRoamable(
+    { x: 0, y: 0, z: 0 },
+    { x: 10, y: 0, z: 0 },
+    0.05,
+    (x) => x < 4.9 || x > 5.1,
+  ),
+  "a subdivided high-speed path cannot tunnel through a thin blocked span",
+);
 
 {
   const cam = camera();
@@ -291,6 +359,31 @@ const exploreAfterOneSecond = (hz: number) => {
   ok(nav.status.blocked, "a rejected movement axis reports the collision");
   ok(Math.abs(cam.position.z) < 1e-6, "the blocked axis never enters the model");
   ok(cam.position.x > 0.2, "the unblocked component still slides along the boundary");
+}
+
+{
+  const cam = camera();
+  const nav = new SceneNavigationController(
+    config({
+      range: 100,
+      dollySpeed: 100,
+      accelerationTau: 0.001,
+      maxPhysicsStep: 0.1,
+      maxCollisionStep: 0.05,
+    }),
+  );
+  const moving = sample("move", 1, 0, 0, 0.75);
+  nav.begin(cam, moving);
+  // The candidate endpoint lands well beyond this slab and is itself allowed. Only checking that
+  // endpoint would tunnel; the bounded swept samples must see the blocked interval in between.
+  nav.update(
+    cam,
+    moving,
+    0.1,
+    (_x, _y, z) => z > -0.45 || z < -0.9,
+  );
+  ok(nav.status.blocked, "a high-speed MOVE reports the obstacle crossed by its path");
+  ok(Math.abs(cam.position.z) < 1e-9, "a high-speed MOVE cannot tunnel to a free far endpoint");
 }
 
 {

@@ -23,34 +23,12 @@
   font-size: max(12px, 1.1vw);
 }
 
-/* Brand / chair block, fixed top-left (→ home). White logo on the dark section. */
+/* The static institutional identity lives in the slider's reserved upper-left header band. */
 .rsl-brand {
   position: fixed;
   top: 2rem;
   left: 2.5rem;
   z-index: 40;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-  padding: 0;
-  background: none;
-  border: 0;
-  text-align: left;
-  color: var(--gt-text-primary);
-  font: inherit;
-  cursor: pointer;
-}
-.rsl-brand-text {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: var(--gt-text-secondary);
-}
-.rsl-brand-strong {
-  font-weight: 700;
-  color: var(--gt-text-primary);
 }
 
 /* ── Left overlay (counter + description + nav), fading the slides under a gradient ── */
@@ -135,10 +113,8 @@
 /*
  * BOTTOM CENTRE, not the bottom of the left column where the reference put them.
  *
- * The kiosk's chrome rule is about height, not left/right: leaving the page sits bottom-left,
- * moving around inside it sits bottom-centre. This pair was the one thing still breaking that
- * rule, and it stopped being survivable when the exit became a corner the page dissolves into
- * — two controls in the same corner, one of which erases whatever it covers.
+ * Home owns the bottom-left corner; moving inside the research carousel stays bottom-centre,
+ * away from that route control and the descriptive overlay.
  *
  * The column keeps the exact slot they used to occupy (the spacer below), so the counter and
  * the blurb do not move a pixel.
@@ -228,6 +204,87 @@
   opacity: 1 !important;
 }
 
+/* ── Open-hand edge paging ──────────────────────────────────────────────────
+ *
+ * These two washes are feedback for a spatial gesture, not DOM targets. Keeping
+ * `pointer-events:none` is essential: a fist that begins here still reaches the carousel's
+ * `data-hand-scroll="x"` surface and can become a horizontal grab. The global hand loop owns
+ * the input; Research merely visualises its local 600ms edge dwell.
+ */
+.rsl-edge {
+  --rsl-edge-progress: 0;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  z-index: 12;
+  /* Matches Calibration's proved left/right zones and researchEdgeDwell.ts exactly. */
+  width: 22vw;
+  min-width: 9rem;
+  pointer-events: none;
+  color: var(--gt-text-primary);
+  opacity: max(0.16, var(--rsl-edge-progress));
+  transition: opacity 0.18s linear;
+}
+.rsl-edge--left {
+  left: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--gt-text-primary) 16%, transparent),
+    color-mix(in srgb, var(--gt-text-primary) 5%, transparent) 46%,
+    transparent 100%
+  );
+}
+.rsl-edge--right {
+  right: 0;
+  background: linear-gradient(
+    270deg,
+    color-mix(in srgb, var(--gt-text-primary) 16%, transparent),
+    color-mix(in srgb, var(--gt-text-primary) 5%, transparent) 46%,
+    transparent 100%
+  );
+}
+.rsl-edge::after {
+  content: "";
+  position: absolute;
+  top: 22%;
+  bottom: 22%;
+  width: max(3px, 0.18vw);
+  border-radius: 999px;
+  background: var(--gt-text-primary);
+  transform: scaleY(var(--rsl-edge-progress));
+  transform-origin: 50% 100%;
+  opacity: 0.9;
+}
+.rsl-edge--left::after {
+  left: clamp(0.65rem, 1.2vw, 2rem);
+}
+.rsl-edge--right::after {
+  right: clamp(0.65rem, 1.2vw, 2rem);
+}
+.rsl-edge svg {
+  position: absolute;
+  top: 50%;
+  width: clamp(2.4rem, 3.2vw, 5rem);
+  height: auto;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: max(0.46, var(--rsl-edge-progress));
+  transition: transform 0.18s ease-out, opacity 0.18s linear;
+}
+.rsl-edge.is-active svg {
+  transform: translateY(-50%) scale(1.08);
+}
+.rsl-edge--left svg {
+  left: clamp(2rem, 4vw, 6rem);
+}
+.rsl-edge--right svg {
+  right: clamp(2rem, 4vw, 6rem);
+}
+
 /* ── Slider ── */
 .rsl-main {
   z-index: 0;
@@ -263,6 +320,10 @@
 .rsl-slide.active {
   opacity: 1;
 }
+.rsl-slide.is-hover:not(.active),
+.rsl-slide.gt-hover:not(.active) {
+  opacity: 0.42;
+}
 .rsl-inner {
   position: relative;
   width: 100%;
@@ -280,7 +341,9 @@
 @media (prefers-reduced-motion: reduce) {
   .rsl-slide,
   .rsl-button,
-  .rsl-button-overlay {
+  .rsl-button-overlay,
+  .rsl-edge,
+  .rsl-edge svg {
     transition: none;
   }
 }

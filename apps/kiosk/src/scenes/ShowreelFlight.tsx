@@ -20,6 +20,7 @@ import {
   clickGestureInstruction,
   useClickGesture,
 } from "../lib/vision/useClickGesture";
+import { DEFAULT_SHOWREEL_ASSET } from "../experiments/spark/quality";
 import "./showreelFlight.css";
 
 /**
@@ -43,14 +44,14 @@ import "./showreelFlight.css";
  * while UI hover, a closed hand and tracking loss hold the camera. The router still owns
  * exclusivity, so an Enter press can never be interpreted as scene movement as well.
  */
-/** Use the deployment asset everywhere so laptop tests measure the product; `?asset=max` is explicit. */
-const LOCAL_QUALITY = "mid" as const;
+/** The committed default is deployable; local full quality uses the ignored Streamed SOG. */
+const LOCAL_QUALITY = DEFAULT_SHOWREEL_ASSET;
 
 const CampusFlight = lazy(() =>
   import("../experiments/spark/SparkCampusExperiment").then((m) => ({ default: m.CampusFlight })),
 );
 
-/** Keep the site entrance alive when a laptop cannot initialise WebGL/Spark or load its chunk. */
+/** Keep the site entrance alive when a laptop cannot initialise the 3D renderer or load it. */
 class SceneErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 

@@ -10,10 +10,8 @@
   padding: clamp(2.5rem, 7vh, 6rem) clamp(1.5rem, 5vw, 5rem) 12vh;
 }
 
-/* TEST entry button (top-right) → LEGO avatar lab. Remove once real portraits land. */
-/* Bottom-right, not top-right: the navigation toggle owns the top-right corner on every
-   section, and this was sitting on top of it. Dev-only now, but a dev build is what gets
-   demonstrated, so it still must not cover the menu. */
+/* TEST entry button → LEGO avatar lab. Bottom-right keeps the bottom-left Home target clear.
+   Dev-only now, but a dev build is what gets demonstrated, so it must not cover navigation. */
 .ppl__legolab {
   position: fixed;
   bottom: 1.25rem;
@@ -29,35 +27,13 @@
   cursor: pointer;
 }
 
-/* Brand / chair block, fixed top-left (→ home), like the other sections' frame. */
-/* Same proportions as the other sections' frame (scenes/projects.css .frame). */
+/* The static identity occupies the fixed header slot. The page's 16vh title/roster offset below
+   is the reserved content boundary, so no card or heading begins under the lockup. */
 .ppl__brand {
   position: fixed;
   top: 2rem;
   left: 2.5rem;
   z-index: 40;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-  padding: 0;
-  background: none;
-  border: 0;
-  text-align: left;
-  color: var(--gt-text-primary);
-  font: inherit;
-  cursor: pointer;
-}
-.ppl__brand-text {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.72rem;
-  line-height: 1.35;
-  color: var(--gt-text-secondary);
-}
-.ppl__brand-strong {
-  font-weight: 700;
-  color: var(--gt-text-primary);
 }
 
 .ppl__layout {

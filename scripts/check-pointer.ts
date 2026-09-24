@@ -55,7 +55,11 @@ import {
 import { PointerStabilizer } from "../apps/kiosk/src/lib/vision/pointerStabilizer";
 import {
   advanceGestureProof,
+  advanceValidationDwell,
+  VALIDATION_DWELL_MS,
+  VALIDATION_EXIT_MARGIN,
   validationZone,
+  type ValidationDwellState,
 } from "../apps/kiosk/src/lib/vision/calibrationValidation";
 import {
   activeCameraIdentity,
@@ -1899,12 +1903,80 @@ function runFist(p: HandPointer, clock: { t: number }, score: number): boolean {
   ok("a diagonal corner is deliberately not a target", validationZone(0.05, 0.05) === null);
   ok("overlap near the left/up boundary matches no direction", validationZone(0.2, 0.2) === null);
   ok(
+    "validation still requires entry into the proved side band",
+    validationZone(0.23, 0.5) === null && validationZone(0.77, 0.5) === null,
+  );
+  ok(
     "the same diagonal point cannot advance a second direction",
     validationZone(0.2, 0.2, ["left"]) === null,
   );
   ok(
     "a completed region cannot be counted twice",
     validationZone(0.5, 0.5, ["center"]) === null,
+  );
+
+  let dwell: ValidationDwellState = { candidate: null, heldMs: 0 };
+  let step = advanceValidationDwell(dwell, { u: 0.5, v: 0.5 });
+  dwell = step;
+  for (let elapsed = 0; elapsed < VALIDATION_DWELL_MS; elapsed += 100) {
+    step = advanceValidationDwell(dwell, { u: 0.5, v: 0.5 }, [], 100);
+    dwell = step;
+  }
+  ok(
+    "a stable production cursor confirms a region after the short dwell",
+    step.confirmed === "center" && step.candidate === null,
+  );
+
+  dwell = advanceValidationDwell(
+    { candidate: null, heldMs: 0 },
+    { u: 0.5, v: 0.5 },
+  );
+  step = advanceValidationDwell(dwell, { u: 0.5, v: 0.5 }, [], 1_000);
+  ok(
+    "one delayed sample cannot back-fill a complete validation dwell",
+    step.confirmed === null && step.heldMs === 100,
+  );
+
+  dwell = advanceValidationDwell(
+    { candidate: null, heldMs: 0 },
+    { u: 0.2, v: 0.5 },
+  );
+  // Entry still requires 0.22, but once entered the larger exit margin absorbs realistic
+  // mapped-cursor shimmer instead of making the final setup step restart invisibly.
+  const shimmerX = 0.22 + VALIDATION_EXIT_MARGIN - 0.01;
+  step = advanceValidationDwell(dwell, { u: shimmerX, v: 0.5 }, [], 100);
+  dwell = step;
+  step = advanceValidationDwell(dwell, { u: 0.2, v: 0.5 }, [], 100);
+  ok(
+    "small boundary shimmer keeps the same validation candidate",
+    step.confirmed === "left",
+  );
+
+  dwell = advanceValidationDwell(
+    { candidate: "left", heldMs: 100 },
+    { u: 0.22 + VALIDATION_EXIT_MARGIN + 0.01, v: 0.5 },
+    [],
+    100,
+  );
+  ok(
+    "hysteresis cannot drift a side proof into the unassigned gap",
+    dwell.candidate === null && dwell.heldMs === 0,
+  );
+
+  dwell = advanceValidationDwell(
+    { candidate: "right", heldMs: 200 },
+    { u: 0.5, v: 0.5 },
+    [],
+    100,
+  );
+  ok(
+    "moving to another region starts a new dwell instead of carrying time across",
+    dwell.candidate === "center" && dwell.heldMs === 0,
+  );
+  step = advanceValidationDwell(dwell, null, [], 100);
+  ok(
+    "owner or source loss clears validation evidence immediately",
+    step.candidate === null && step.heldMs === 0 && step.confirmed === null,
   );
 }
 

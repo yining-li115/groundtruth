@@ -18,7 +18,15 @@ import {
   type RouterHit,
 } from "../lib/vision/interactionRouter";
 import { setCursorPosition } from "../lib/cursorPosition";
-import { dragScrollVelocity, scrollableAt, scrollTarget } from "../lib/scroll";
+import {
+  beginHandScroll,
+  dragScrollVelocity,
+  endHandScroll,
+  handScrollSpeed,
+  pressHandScroll,
+  scrollableAt,
+  scrollTarget,
+} from "../lib/scroll";
 import { RUNTIME_CLICK_GESTURE } from "../lib/vision/gestureRuntime";
 import { activeProfile, applyProfile } from "../lib/vision/profileStore";
 import { useKioskStore } from "../state/store";
@@ -97,7 +105,6 @@ export function HandControl() {
   /** Near-misses: fingers closed a long way, nothing latched. See NEAR_MISS below. */
   const nearMiss = useRef<{ armed: boolean; at: number[] }>({ armed: false, at: [] });
   const hovered = useRef<Element | null>(null);
-  const diagRef = useRef<HTMLDivElement>(null);
   const routerRef = useRef<InteractionRouter<Element, HTMLElement> | null>(null);
   if (!routerRef.current) routerRef.current = new InteractionRouter<Element, HTMLElement>();
 
@@ -132,6 +139,8 @@ export function HandControl() {
     let exploreSessionId: number | null = null;
     let exploreOwnerId: number | null = null;
     let nextExploreSessionId = Math.max(1, flightInput.sessionId + 1);
+    /** Opted-in transformed surface currently owned by the router's UI_SCROLL session. */
+    let handScrollTarget: HTMLElement | null = null;
 
     /** End only the presence-driven Explore session owned by this mounted input loop. */
     const stopExplore = (reason: Parameters<typeof cancelSceneGrab>[0]) => {
@@ -489,6 +498,8 @@ export function HandControl() {
           const under = document.elementFromPoint(hitX, hitY);
           const clickTarget = under?.closest(HOVERABLE) ?? null;
           const scrollEl = scrollableAt(hitX, hitY);
+          const optedAxis = scrollEl?.dataset.handScroll;
+          const scrollAxis = optedAxis === "x" || optedAxis === "y" ? optedAxis : "both";
           const root = document.documentElement;
           const pageCanScroll =
             root.scrollHeight > window.innerHeight + 8 ||
@@ -498,6 +509,7 @@ export function HandControl() {
             clickTarget,
             scrollTarget: scrollEl,
             canScroll,
+            scrollAxis,
             // Production Showreel is presence-driven Explore. A fist on the background is a
             // pause, not a second clutch grammar competing with the open-hand joystick.
             scene: false,
@@ -528,21 +540,45 @@ export function HandControl() {
             : edge.type === "release"
               ? lockedClickTarget === null || targetValid(lockedClickTarget, edge.aim)
               : true;
-        actions.push(
-          ...router.handleEdge(
-            edge,
-            context,
-            hit,
-            edgeTargetValid,
-            nowMs,
-          ),
+        const edgeActions = router.handleEdge(
+          edge,
+          context,
+          hit,
+          edgeTargetValid,
+          nowMs,
         );
+        actions.push(...edgeActions);
+        // Do not infer this from the instantaneous posture in a section rAF. A short render
+        // stall can contain both queued edges; the router still accepts the tap, and the
+        // surface must still learn that this edge visit was owned by a press.
+        if (
+          edge.type === "press" &&
+          router.snapshot().kind === "UI_PRESS" &&
+          hit?.scrollTarget?.matches("[data-hand-scroll]")
+        ) {
+          pressHandScroll(hit.scrollTarget, edge.ownerId);
+        }
       }
 
       actions.push(...router.tick(nowMs, context));
       applyActions(actions);
 
       routed = router.snapshot();
+
+      // A transformed carousel is not a native scroll container, but it still belongs to the
+      // same exclusive router transaction. Publish lifecycle edges only after the final routed
+      // snapshot for this frame, so a release/cancel cannot leave the section thinking a drag
+      // is still active and a click that never crossed the threshold never starts one.
+      const routedHandScroll =
+        routed.kind === "UI_SCROLL" &&
+        routed.scrollTarget?.matches("[data-hand-scroll]")
+          ? routed.scrollTarget
+          : null;
+      if (routedHandScroll !== handScrollTarget) {
+        if (handScrollTarget) endHandScroll(handScrollTarget, routed.endReason);
+        handScrollTarget = routedHandScroll;
+        if (handScrollTarget) beginHandScroll(handScrollTarget, routed.ownerId);
+      }
 
       // --- Showreel takeover ---------------------------------------------------------------
       // Presence freezes the news/tour in CampusFlight. Camera authority remains stricter:
@@ -633,34 +669,14 @@ export function HandControl() {
 
       if (routed.kind === "UI_SCROLL") {
         // Lean, don't drag: displacement from the locked origin sets a continuous speed.
-        const vx = dragScrollVelocity(routed.scrollDx);
-        const vy = dragScrollVelocity(routed.scrollDy);
+        const speed = handScrollSpeed(routed.scrollTarget);
+        const vx = dragScrollVelocity(routed.scrollDx) * speed;
+        const vy = dragScrollVelocity(routed.scrollDy) * speed;
         if (vx !== 0 || vy !== 0) scrollTarget(routed.scrollTarget, vx * dt, vy * dt);
       }
       if (VISION_TRACE) {
         interactionTrace.dragFrac = Math.hypot(routed.scrollDx, routed.scrollDy);
         interactionTrace.dragPx = interactionTrace.dragFrac * Math.hypot(w, h);
-      }
-
-      // --- the chain, stated out loud (dev only) ---
-      // Each link here was guessed at once and guessed wrong. A hand can be tracked while the
-      // tour keeps playing, and from the outside those are indistinguishable from a pointer
-      // that simply does not work — so the state that decides it is on screen rather than in
-      // someone's head.
-      if (import.meta.env.DEV && diagRef.current) {
-        const th = pointer.current.pinchThresholds;
-        diagRef.current.textContent =
-          `hand ${handActive ? "✓" : "✗"} · ${s.conf.reason} · ${s.fps.toFixed(0)}fps` +
-          ` · ${s.pinched ? `PINCH(${s.pressVia})` : "open"}` +
-          // The numbers that decide it. A stuck click was invisible without them: the state
-          // said PINCH and nothing said why, or what an open hand would have to do to escape.
-          ` · ratio ${Number.isFinite(s.ratio) ? s.ratio.toFixed(2) : "—"}` +
-          ` str ${(pointer.current.pinchStrength() * 100).toFixed(0)}%` +
-          ` (on<${th.on.toFixed(2)} off>${th.off.toFixed(2)})` +
-          ` · entered ${store.entered ? "✓" : "✗"}` +
-          ` · route ${routed.kind}` +
-          ` · scene ${flightInput.active ? flightInput.mode : "off"}` +
-          ` Δ ${flightInput.dx.toFixed(2)},${flightInput.dy.toFixed(2)}`;
       }
 
       // Dwell is a complete click on its own. It crosses from the camera clock to the display
@@ -694,6 +710,7 @@ export function HandControl() {
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
+      if (handScrollTarget) endHandScroll(handScrollTarget, "unmount");
       applyActions(router.dispose(performance.now()));
       stopExplore("unmount");
       if (flightTestHook && window.__flightTest === flightTestHook) {
@@ -716,8 +733,6 @@ export function HandControl() {
           <circle ref={dwellRef} className="gt-hand__dwell" cx="24" cy="24" r="21" />
         </svg>
       </div>
-
-      {import.meta.env.DEV ? <div ref={diagRef} className="gt-hand-diag" /> : null}
 
       {/* The fault-isolation HUD. Renders nothing at all without `?visionDebug=1`, and works
           in a production build too — the wall is where the measurements have to be taken. */}

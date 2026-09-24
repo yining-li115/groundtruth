@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { gsap } from "gsap";
-import { Logo } from "@groundtruth/ui";
+import { SectionHome } from "../components/SectionHome";
 import { topics, topicCoverUrl } from "../lib/content";
 import { horizontalLoop } from "../lib/horizontalLoop";
+import { activePointer as activeHandPointer, hasFreshOwner } from "../lib/vision/handPointer";
+import {
+  advanceResearchEdgeDwell,
+  initialResearchEdgeDwell,
+  type ResearchEdgeDwellState,
+} from "../lib/researchEdgeDwell";
+import type { HandScrollDetail } from "../lib/scroll";
 import "./research.css";
 
 /**
@@ -23,9 +30,14 @@ export function ResearchSection() {
   );
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<HTMLButtonElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
+  const leftEdgeRef = useRef<HTMLDivElement>(null);
+  const rightEdgeRef = useRef<HTMLDivElement>(null);
+  const loopRef = useRef<ReturnType<typeof horizontalLoop> | null>(null);
+  const edgeDwellRef = useRef<ResearchEdgeDwellState>(initialResearchEdgeDwell());
   // The opaque (active) slide is offset by +1 from the centred one (clears the overlay), so
   // the slider starts on the 2nd slide — matching the reference.
   const [activeIndex, setActiveIndex] = useState(1);
@@ -33,6 +45,7 @@ export function ResearchSection() {
   useEffect(() => {
     const root = rootRef.current;
     const steps = stepsRef.current;
+    const main = mainRef.current;
     if (!root) return;
 
     const slideEls = gsap.utils.toArray<HTMLElement>(root.querySelectorAll('[data-slider="slide"]'));
@@ -55,6 +68,7 @@ export function ResearchSection() {
         setActiveIndex(activeIdx);
       },
     });
+    loopRef.current = loop;
 
     const slideHandlers = slideEls.map((slide, i) => {
       const handler = () => loop.toIndex(i - 1, { ease: "power3", duration: 0.725 });
@@ -66,37 +80,125 @@ export function ResearchSection() {
     nextRef.current?.addEventListener("click", onNext);
     prevRef.current?.addEventListener("click", onPrev);
 
+    const onHandScroll = (event: Event) => {
+      const detail = (event as CustomEvent<HandScrollDetail>).detail;
+      if (!detail) return;
+      if (detail.phase === "press") {
+        edgeDwellRef.current = {
+          ...initialResearchEdgeDwell(detail.ownerId ?? null),
+          locked: true,
+        };
+      } else if (detail.phase === "start") {
+        // A drag owns this edge visit. Requiring a return to the neutral band prevents the
+        // newly opened hand at the end of a swipe from also firing edge dwell 600ms later.
+        edgeDwellRef.current = {
+          ...initialResearchEdgeDwell(detail.ownerId ?? edgeDwellRef.current.ownerId),
+          locked: true,
+        };
+        loop.beginPan?.();
+      } else if (detail.phase === "move") {
+        loop.panByPixels?.(detail.dx);
+      } else {
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        loop.endPan?.({ ease: "power3", duration: reduced ? 0 : 0.4 });
+      }
+    };
+    main?.addEventListener("handscroll", onHandScroll);
+
     return () => {
       slideEls.forEach((slide, i) => slide.removeEventListener("click", slideHandlers[i]!));
       nextRef.current?.removeEventListener("click", onNext);
       prevRef.current?.removeEventListener("click", onPrev);
+      main?.removeEventListener("handscroll", onHandScroll);
+      if (loopRef.current === loop) loopRef.current = null;
       loop.context?.revert();
     };
   }, [slides]);
+
+  useEffect(() => {
+    let raf = 0;
+    let busyUntil = 0;
+
+    const paint = (state: ResearchEdgeDwellState) => {
+      const left = leftEdgeRef.current;
+      const right = rightEdgeRef.current;
+      const apply = (node: HTMLDivElement | null, side: "left" | "right") => {
+        if (!node) return;
+        const active = state.candidate === side;
+        node.classList.toggle("is-active", active);
+        node.style.setProperty("--rsl-edge-progress", String(active ? state.progress : 0));
+      };
+      apply(left, "left");
+      apply(right, "right");
+    };
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      const pointer = activeHandPointer();
+      const state = pointer?.state;
+      const fresh = !!state && hasFreshOwner(state, now);
+      const under = state
+        ? document.elementFromPoint(
+            state.x * window.innerWidth,
+            state.y * window.innerHeight,
+          )
+        : null;
+      const overChrome = !!under?.closest(
+        ".rsl-brand, .rsl-nav-row, button, a, input, label, [data-no-edge]",
+      );
+      // Any close/press epoch owns this edge visit, including a tap which never becomes a
+      // hand-scroll. Without this lock, releasing a fist on an edge slide would click it and
+      // the newly open hand parked at the same edge would dwell-fire a second page 600ms later.
+      if (
+        state &&
+        (state.posture === "closed" || state.pinched || state.pressProgress > 0) &&
+        !edgeDwellRef.current.locked
+      ) {
+        edgeDwellRef.current = {
+          ...initialResearchEdgeDwell(state.owner.id),
+          locked: true,
+        };
+      }
+      const eligible =
+        now >= busyUntil &&
+        !!loopRef.current &&
+        fresh &&
+        state!.posture === "open" &&
+        !state!.pinched &&
+        state!.pressProgress === 0 &&
+        !overChrome;
+      const result = advanceResearchEdgeDwell(edgeDwellRef.current, {
+        x: state?.x ?? 0.5,
+        at: now,
+        eligible,
+        ownerId: state?.owner.id ?? null,
+      });
+      edgeDwellRef.current = result.state;
+      paint(result.state);
+
+      if (result.fired && loopRef.current) {
+        busyUntil = now + 800;
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const vars = { ease: "power3", duration: reduced ? 0 : 0.725 };
+        if (result.fired === "left") loopRef.current.previous(vars);
+        else loopRef.current.next(vars);
+      }
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      paint(initialResearchEdgeDwell());
+    };
+  }, []);
 
   const active = slides[activeIndex] ?? slides[0]!;
 
   return (
     <div className="rsl" data-theme="dark" ref={rootRef}>
-      {/* No MENU here. Every section's top-right corner is the Home button now: the home
-          page IS the menu, so a drawer that repeats the same five destinations is a second
-          door into a room you can already see — and on the pages with a filter bar across the
-          top it was fighting for the same strip of screen. */}
-
-      {/* Not a control any more. It navigated home when clicked, while looking like three
-          lines of address text — an unlabelled trap that ejected a visitor who happened to
-          aim at the corner, and two of eight tested positions along the top edge did exactly
-          that. The Home button in the opposite corner is the way back, and says so. */}
-      <div className="rsl-brand">
-        <span className="rsl-brand-text">
-          <span className="rsl-brand-strong">
-            Professorship of Photogrammetry and Remote Sensing
-          </span>
-          <span>TUM School of Engineering and Design</span>
-          <span>Technical University of Munich</span>
-        </span>
-        <Logo variant="white" width="4rem" height="2.0625rem" />
-      </div>
+      {/* The slider leaves this upper-left band free for the static institutional identity;
+          SectionHome supplies the independent bottom-left Home target. */}
+      <SectionHome tone="dark" className="rsl-brand" />
 
       <div className="rsl-overlay">
         <div className="rsl-overlay-inner">
@@ -164,11 +266,24 @@ export function ResearchSection() {
         </div>
       </div>
 
-      <div className="rsl-main">
+      {/* Open-hand edge dwell: one page per visit, then return to the neutral band to re-arm.
+          These are visual only; they never steal the DOM hit test from slide click/drag. */}
+      <div ref={leftEdgeRef} className="rsl-edge rsl-edge--left" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M14.5 5 7.5 12l7 7" />
+        </svg>
+      </div>
+      <div ref={rightEdgeRef} className="rsl-edge rsl-edge--right" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="m9.5 5 7 7-7 7" />
+        </svg>
+      </div>
+
+      <div className="rsl-main" ref={mainRef} data-hand-scroll="x">
         <div className="rsl-wrap">
           <div className="rsl-list">
             {slides.map((s) => (
-              <div className="rsl-slide" data-slider="slide" key={s.id}>
+              <div className="rsl-slide" data-slider="slide" data-hover key={s.id}>
                 <div className="rsl-inner">
                   <img src={s.image} alt="" loading="lazy" />
                 </div>

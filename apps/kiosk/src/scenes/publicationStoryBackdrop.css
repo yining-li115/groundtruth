@@ -1,0 +1,70 @@
+.detail-particle-story {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  /* Particles can take curved routes during a morph, but never cross the reading column. */
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    var(--gt-brand-black) 0%,
+    var(--gt-brand-black) 22%,
+    transparent 27%,
+    transparent 73%,
+    var(--gt-brand-black) 78%,
+    var(--gt-brand-black) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    var(--gt-brand-black) 0%,
+    var(--gt-brand-black) 22%,
+    transparent 27%,
+    transparent 73%,
+    var(--gt-brand-black) 78%,
+    var(--gt-brand-black) 100%
+  );
+}
+
+.detail-particle-story__canvas,
+.detail-particle-story__fallback {
+  position: absolute;
+  inset: 0;
+  display: block;
+  /* The particle loader fits each side independently. Keeping the canvas at its real bounds
+     avoids cropping the outer right-side particles while still reaching the physical edges. */
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+.detail-particle-story__canvas {
+  opacity: 1;
+}
+
+.detail-particle-story__fallback {
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.72;
+}
+
+.detail-particle-story[data-story-state="loading"] .detail-particle-story__fallback {
+  animation: publication-story-loading 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes publication-story-loading {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-particle-story__fallback {
+    animation: none !important;
+  }
+}

@@ -11,6 +11,7 @@
 import { gsap } from "gsap";
 import { Draggable } from "gsap/Draggable";
 import { InertiaPlugin } from "gsap/InertiaPlugin";
+import { nearestLoopTime } from "./horizontalLoopMath";
 
 gsap.registerPlugin(Draggable, InertiaPlugin);
 
@@ -192,6 +193,48 @@ export function horizontalLoop(rawItems: any, config?: HorizontalLoopConfig): an
     tl.next = (vars?: any) => toIndex(tl.current() + 1, vars);
     tl.previous = (vars?: any) => toIndex(tl.current() - 1, vars);
     tl.times = times;
+    const progressWrap = gsap.utils.wrap(0, 1);
+    /**
+     * Camera-hand drag seam. The carousel is transform-driven, so it cannot be scrolled by
+     * changing `scrollLeft`; these three methods let the global gesture router drive the same
+     * timeline without fabricating mouse events for Draggable.
+     */
+    tl.beginPan = () => {
+      gsap.killTweensOf(tl);
+      if (proxy) gsap.killTweensOf(proxy);
+      tl.pause();
+      indexIsDirty = true;
+    };
+    tl.panByPixels = (delta: number) => {
+      if (!Number.isFinite(delta) || !Number.isFinite(totalWidth) || totalWidth <= 0) return;
+      tl.pause();
+      tl.progress(progressWrap(tl.progress() + delta / totalWidth));
+      indexIsDirty = true;
+    };
+    tl.endPan = (vars?: any) => {
+      const index = tl.closestIndex();
+      const duration = tl.duration();
+      const now = tl.time();
+      // `toIndex(sameIndex)` deliberately skips its wrap branch. That is correct for buttons,
+      // but not for a free pan sitting at progress 0.99 whose nearest copy of index 0 is one
+      // percent AHEAD across the seam. Choose the nearest periodic copy from timeline time.
+      const target = nearestLoopTime(now, times[index]!, duration);
+      const snapVars: any = {
+        ease: "power3",
+        duration: 0.4,
+        ...(vars || {}),
+        overwrite: true,
+      };
+      if (target < 0 || target > duration) {
+        snapVars.modifiers = { ...(snapVars.modifiers || {}), time: timeWrap };
+      }
+      curIndex = index;
+      indexIsDirty = false;
+      gsap.killTweensOf(proxy);
+      return snapVars.duration === 0
+        ? tl.time(timeWrap(target))
+        : tl.tweenTo(target, snapVars);
+    };
     tl.progress(1, true).progress(0, true); // pre-render for performance
     if (config!.reversed) {
       tl.vars.onReverseComplete();

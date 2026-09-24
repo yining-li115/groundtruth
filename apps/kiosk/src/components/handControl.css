@@ -132,26 +132,6 @@
     outline-offset 0.15s ease-out;
 }
 
-/* Above the gesture legend and the showreel's invitation, both of which live along the
-   bottom centre — three things stacked in one place is how a screenshot ends up unreadable. */
-/* Dev diagnostic strip: the whole input chain in one line. Never built into production. */
-.gt-hand-diag {
-  position: fixed;
-  left: 50%;
-  top: 0.5rem;
-  transform: translateX(-50%);
-  z-index: 9997;
-  padding: 0.2rem 0.7rem;
-  border-radius: 999px;
-  background: rgb(0 0 0 / 0.6);
-  color: #fff;
-  font-family: var(--font-sans);
-  font-size: 0.68rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 .gt-hand-error {
   position: fixed;
   left: 50%;

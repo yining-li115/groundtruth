@@ -80,8 +80,8 @@ export function scrollByPx(dy: number, { continuous = false } = {}) {
  * Put a freshly opened screen at its top.
  *
  * Without this the scroll position simply carries over, and a detail page taller than the
- * viewport opens clamped to its own bottom — with its Back control several hundred pixels
- * above the top edge, unreachable by any gesture. Measured on eight profiles: eight failures.
+ * viewport opens clamped to its own bottom — with its header and roster return several hundred
+ * pixels above the top edge, unreachable by any gesture. Measured on eight profiles: eight failures.
  */
 export function scrollToTop() {
   scrollToY(0);
@@ -106,6 +106,10 @@ export function scrollToY(y: number) {
 export function scrollableAt(x: number, y: number): HTMLElement | null {
   let el = document.elementFromPoint(x, y) as HTMLElement | null;
   while (el && el !== document.body && el !== document.documentElement) {
+    // A transformed carousel has no native scrollWidth even though it is a real hand-scroll
+    // surface. Opting in here lets it reuse the router's existing press-vs-drag, ownership and
+    // cancellation rules instead of starting a second gesture recogniser in the section.
+    if (el.matches("[data-hand-scroll]")) return el;
     const st = getComputedStyle(el);
     const scrollableY =
       /(auto|scroll|overlay)/.test(st.overflowY) && el.scrollHeight > el.clientHeight + 2;
@@ -117,6 +121,67 @@ export function scrollableAt(x: number, y: number): HTMLElement | null {
   return null;
 }
 
+export type HandScrollPhase = "press" | "start" | "move" | "end" | "cancel";
+
+export interface HandScrollDetail {
+  phase: HandScrollPhase;
+  dx: number;
+  dy: number;
+  reason?: string;
+  /** Stable camera owner that began this transaction. */
+  ownerId?: number;
+}
+
+function dispatchHandScroll(
+  el: HTMLElement,
+  detail: HandScrollDetail,
+): void {
+  el.dispatchEvent(
+    new CustomEvent<HandScrollDetail>("handscroll", {
+      bubbles: false,
+      detail,
+    }),
+  );
+}
+
+/**
+ * Publish the accepted press itself, before it has either become a click or crossed the drag
+ * threshold. This durable edge comes from the camera event queue, so a transformed surface
+ * cannot miss a complete press/release merely because both happened between display frames.
+ */
+export function pressHandScroll(el: HTMLElement | null, ownerId: number): void {
+  if (el?.matches("[data-hand-scroll]")) {
+    dispatchHandScroll(el, { phase: "press", dx: 0, dy: 0, ownerId });
+  }
+}
+
+/** Notify an opted-in transformed surface that the router has granted it the drag. */
+export function beginHandScroll(el: HTMLElement | null, ownerId?: number | null): void {
+  if (el?.matches("[data-hand-scroll]")) {
+    dispatchHandScroll(el, {
+      phase: "start",
+      dx: 0,
+      dy: 0,
+      ownerId: ownerId ?? undefined,
+    });
+  }
+}
+
+/** Finish or cancel an opted-in transformed surface so it can snap to a stable item. */
+export function endHandScroll(
+  el: HTMLElement | null,
+  reason: string | null,
+): void {
+  if (!el?.matches("[data-hand-scroll]")) return;
+  const cancelled = reason !== null && reason !== "released" && reason !== "moved";
+  dispatchHandScroll(el, {
+    phase: cancelled ? "cancel" : "end",
+    dx: 0,
+    dy: 0,
+    reason: reason ?? undefined,
+  });
+}
+
 /**
  * Scroll a specific element, or the page (through Lenis) when there isn't one.
  *
@@ -125,9 +190,33 @@ export function scrollableAt(x: number, y: number): HTMLElement | null {
  */
 export function scrollTarget(el: HTMLElement | null, dx: number, dy: number): void {
   if (el) {
+    const axis = el.dataset.handScroll;
+    if (axis) {
+      dispatchHandScroll(el, {
+        phase: "move",
+        dx: axis === "y" ? 0 : dx,
+        dy: axis === "x" ? 0 : dy,
+      });
+      return;
+    }
     if (dx) el.scrollLeft += dx;
     if (dy) el.scrollTop += dy;
   } else if (dy) scrollByPx(dy, { continuous: true });
+}
+
+/**
+ * Optional, page-authored speed multiplier for continuous hand scrolling.
+ *
+ * The camera grammar remains global, but dense shelves can ask for a slightly slower read
+ * without changing the feel of every other page. Native scroll targets inherit the value from
+ * their closest scope; document scrolling reads the active page scope.
+ */
+export function handScrollSpeed(el: HTMLElement | null): number {
+  const scope =
+    el?.closest<HTMLElement>("[data-hand-scroll-speed]") ??
+    document.querySelector<HTMLElement>("[data-hand-scroll-speed]");
+  const requested = Number(scope?.dataset.handScrollSpeed);
+  return Number.isFinite(requested) && requested >= 0.25 && requested <= 1.5 ? requested : 1;
 }
 
 export { dragScrollVelocity } from "./scrollGesture";

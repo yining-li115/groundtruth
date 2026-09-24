@@ -14,26 +14,43 @@
   /* FIXED-width two-column group, CENTRED on the screen: the left text column and the right
      portrait card have set widths, so on a wide display the pair sits in the middle with even
      margins on both sides — never a heap on the left. Both columns top-align at a fixed start,
-     so an empty vs. a full profile land in exactly the same spot. back/tag pinned. */
+     so an empty vs. a full profile land in exactly the same spot. */
   display: grid;
   grid-template-columns: 48rem clamp(240px, 24vw, 320px);
   justify-content: center;
   align-items: start;
   column-gap: clamp(3rem, 8vw, 10rem);
-  padding-top: clamp(6rem, 26vh, 17rem);
+  row-gap: clamp(3rem, 8vh, 8rem);
 }
 
-/* Sized for a hand. It was a 62x24px word with about a centimetre of vertical tolerance —
-   the only way out of a profile, and small enough that a scripted hand aiming straight at its
-   centre missed it. A pinch is aimed from a position captured before the fingers moved, so a
-   target this pointer can hit needs area, not precision. */
+/* This first grid row is real layout space, not a layer over the profile. It stays at the top
+   while the long personnel file scrolls, and its opaque surface keeps the identity and roster
+   return clear. The independent Home target stays fixed at bottom-left. */
+.ppl-detail__chrome {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1rem;
+  background: var(--gt-bg);
+}
+
+.ppl-detail__brand {
+  flex: 0 1 auto;
+}
+
+/* The roster return is separate from the global route and keeps a stable hand-sized box. */
 .ppl-detail__back {
-  position: absolute;
-  top: clamp(2rem, 7vh, 5rem);
-  left: clamp(1.5rem, 6vw, 5rem);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
+  min-width: 10rem;
+  min-height: 3.5rem;
   padding: 0.8rem 1.6rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--gt-surface) 12%, transparent);
@@ -104,8 +121,11 @@
 @media (max-width: 63.99em) {
   .ppl-detail {
     grid-template-columns: 1fr;
-    padding-top: clamp(5rem, 12vh, 9rem);
     row-gap: clamp(2rem, 5vh, 3rem);
+  }
+  .ppl-detail__chrome {
+    grid-column: 1;
+    flex-wrap: wrap;
   }
   .ppl-detail__content {
     max-width: 100%;

@@ -82,6 +82,8 @@ export interface RouterHit<TTarget, TScrollTarget> {
   /** Locked scroll recipient. Null is allowed to mean the document when canScroll is true. */
   scrollTarget: TScrollTarget | null;
   canScroll: boolean;
+  /** Restrict drag promotion to the axes the locked surface can actually consume. */
+  scrollAxis?: "x" | "y" | "both";
   /** The point belongs to the Gaussian background rather than UI laid over it. */
   scene: boolean;
 }
@@ -175,6 +177,7 @@ interface ActiveSession<TTarget, TScrollTarget> {
   clickTarget: TTarget | null;
   scrollTarget: TScrollTarget | null;
   canScroll: boolean;
+  scrollAxis: "x" | "y" | "both";
   moved: boolean;
   rawOrigin: RouterRawHand | null;
   prevScene: { seq: number; at: number; dx: number; dy: number } | null;
@@ -401,7 +404,7 @@ export class InteractionRouter<TTarget = unknown, TScrollTarget = unknown> {
       // creating the worst possible middle state: the press no longer clicks and the page
       // does not scroll. Crossing either live axis is the point at which scrolling can really
       // begin, so it is also the only point at which a press may be reclassified.
-      const moved = dragStarted(dx, dy, this.cfg.dragStart);
+      const moved = dragStarted(dx, dy, this.cfg.dragStart, this.active.scrollAxis);
       if (moved) this.active.moved = true;
 
       if (this.active.kind === "UI_PRESS" && moved) {
@@ -413,8 +416,8 @@ export class InteractionRouter<TTarget = unknown, TScrollTarget = unknown> {
         this.currentKind = "UI_SCROLL";
       }
       if (this.active.kind === "UI_SCROLL") {
-        this.scrollDx = dx;
-        this.scrollDy = dy;
+        this.scrollDx = this.active.scrollAxis === "y" ? 0 : dx;
+        this.scrollDy = this.active.scrollAxis === "x" ? 0 : dy;
       }
       return actions;
     }
@@ -584,6 +587,7 @@ export class InteractionRouter<TTarget = unknown, TScrollTarget = unknown> {
       clickTarget: hit.clickTarget,
       scrollTarget: hit.scrollTarget,
       canScroll: hit.canScroll,
+      scrollAxis: hit.scrollAxis ?? "both",
       moved: false,
       rawOrigin: edge.rawHand,
       prevScene: null,
@@ -686,6 +690,7 @@ export class InteractionRouter<TTarget = unknown, TScrollTarget = unknown> {
       edge.live.x - s.liveOrigin.x,
       edge.live.y - s.liveOrigin.y,
       this.cfg.dragStart,
+      s.scrollAxis,
     );
     if (movedAtRelease) s.moved = true;
     const invalidClickTarget =
@@ -827,7 +832,14 @@ function finitePoint(point: { x: number; y: number }): boolean {
   return Number.isFinite(point.x) && Number.isFinite(point.y);
 }
 
-function dragStarted(dx: number, dy: number, threshold: number): boolean {
+function dragStarted(
+  dx: number,
+  dy: number,
+  threshold: number,
+  axis: "x" | "y" | "both" = "both",
+): boolean {
+  if (axis === "x") return Math.abs(dx) > threshold;
+  if (axis === "y") return Math.abs(dy) > threshold;
   return Math.abs(dx) > threshold || Math.abs(dy) > threshold;
 }
 

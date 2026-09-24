@@ -4,7 +4,6 @@ import { useKioskStore } from "./state/store";
 import { HandControl } from "./components/HandControl";
 import { Calibration } from "./components/Calibration";
 import { GestureHint } from "./components/GestureHint";
-import { BackControl } from "./components/BackControl";
 import { PixelOverlay } from "./components/PixelOverlay";
 import { Home } from "./scenes/Home";
 import { HomeBoard } from "./scenes/HomeBoard";
@@ -133,9 +132,6 @@ export default function App() {
         <>
           {/* What the hands can do, said once per visitor. */}
           <GestureHint />
-
-          {/* The way home, identical on every section. */}
-          <BackControl />
 
           {/* Pixel page transition cover — above everything; played on section navigation. */}
           <PixelOverlay />

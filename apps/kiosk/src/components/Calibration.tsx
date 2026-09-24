@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_BOX, mapToBox, palmCenter, type BoxConfig } from "../lib/vision/calibration";
+import { DEFAULT_BOX, palmCenter, type BoxConfig } from "../lib/vision/calibration";
 import { activePointer } from "../lib/vision/handPointer";
 import {
   advanceGestureProof,
-  validationZone,
+  advanceValidationDwell,
+  VALIDATION_DWELL_MS,
+  VALIDATION_REGIONS,
   type CalibrationZone,
 } from "../lib/vision/calibrationValidation";
 import {
@@ -45,9 +47,10 @@ import "./calibration.css";
  * thresholds and cursor noise are runtime state; persisting either would tune the next visitor
  * to somebody else's hand.
  *
- * No step asks for a screen corner. Five comfortable, axis-aligned holds establish the visible
- * range, the configured selection gesture is proved three times, and the final step validates
- * the actual mapped screen zones. A profile is saved only after all three proofs pass.
+ * No step asks for a screen corner. Five comfortable, axis-aligned camera-space holds establish
+ * the visible range, the configured selection gesture is proved three times, and a deliberately
+ * different screen-space map then validates the fitted output. Stage 3 is not a second attempt to
+ * hit the five samples from stage 1. A profile is saved only after all three proofs pass.
  */
 
 type Phase = "resolving" | "seek" | "positions" | "gesture" | "validate" | "done";
@@ -58,7 +61,6 @@ interface Recording {
   positions: Partial<Record<PositionId, ReachSample>>;
   positionIdx: number;
   recentRaw: ReachSample[];
-  recentMapped: Array<{ x: number; y: number }>;
   fps: number;
   frame: { w: number; h: number };
   lastFrameSeq: number;
@@ -90,8 +92,6 @@ const POSITION_FIT_INSET = -0.08;
 const GESTURE_CYCLES = 3;
 const GESTURE_CAP_MS = 18_000;
 const VALIDATE_CAP_MS = 25_000;
-const VALIDATE_HOLD_MS = 420;
-const MAPPED_STILL_TOLERANCE = 0.02;
 /** Never join two short holds across a decoder/inference pause. */
 const MAX_EVIDENCE_GAP_MS = 250;
 
@@ -122,7 +122,6 @@ function newRecording(
     positions: {},
     positionIdx: 0,
     recentRaw: [],
-    recentMapped: [],
     fps: 30,
     frame: { w: 0, h: 0 },
     lastFrameSeq: -1,
@@ -152,6 +151,8 @@ export function Calibration({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
   const [note, setNote] = useState("");
   const [reached, setReached] = useState<string[]>([]);
+  const [validationCandidate, setValidationCandidate] = useState<PositionId | null>(null);
+  const [validationPoint, setValidationPoint] = useState<{ x: number; y: number } | null>(null);
   const [recording, setRecording] = useState(false);
   const [result, setResult] = useState<CalibrationProfile | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -181,6 +182,8 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     setReached([]);
     setResult(null);
     setProgress(0);
+    setValidationCandidate(null);
+    setValidationPoint(null);
     setRecording(false);
     setNote(message);
   }, []);
@@ -305,12 +308,13 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       r.recording = false;
       r.held = 0;
       r.recentRaw = [];
-      r.recentMapped = [];
       r.lastSampleAt = 0;
       r.gestureArmed = false;
       r.gestureClosed = false;
       r.validationCandidate = null;
       r.validationHeld = 0;
+      setValidationCandidate(null);
+      setValidationPoint(null);
     };
 
     const advance = (next: Phase) => {
@@ -409,7 +413,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         }
         setRecording(false);
         setNote("The camera feed paused. Hold your position; measuring will restart when it resumes.");
-        drawPreview(canvasRef.current, r, s.box, current, null);
+        drawPreview(canvasRef.current, s.box, current);
         return;
       }
       if (!r.sourceFresh) {
@@ -616,44 +620,43 @@ export function Calibration({ onDone }: { onDone: () => void }) {
         }
 
         case "validate": {
-          if (fresh && continuous && tracked && palm && s.box) {
-            const mapped = mapToBox(s.box, palm);
-            const candidate = validationZone(mapped.u, mapped.v, r.validated);
-            if (candidate) {
-              if (r.validationCandidate !== candidate) {
-                r.validationCandidate = candidate;
-                r.validationHeld = 0;
-                r.recentMapped = [];
-              }
-              r.recentMapped.push({ x: mapped.u, y: mapped.v });
-              if (r.recentMapped.length > 12) r.recentMapped.shift();
-              if (spread(r.recentMapped) < MAPPED_STILL_TOLERANCE) {
-                r.validationHeld += sampleDt;
-              } else {
-                r.validationHeld = 0;
-              }
-              if (r.validationHeld >= VALIDATE_HOLD_MS) {
-                r.validated.push(candidate);
-                r.validationCandidate = null;
-                r.validationHeld = 0;
-                r.recentMapped = [];
-                setReached([...r.validated]);
-              }
-            } else {
-              r.validationCandidate = null;
-              r.validationHeld = 0;
-              r.recentMapped = [];
+          // This is a reachability check, not a second calibration measurement. Consume the same
+          // filtered, stabilised screen coordinate as the real cursor instead of applying a new
+          // raw-palm stillness gate. Face coasting is valid here too: the owner, mapped box and
+          // source must remain fresh, but one missed face frame must not erase a good hold.
+          const validationOwner =
+            ownerVisible &&
+            s.owner.id === r.ownerId &&
+            !!s.box &&
+            Number.isFinite(s.liveX) &&
+            Number.isFinite(s.liveY);
+          r.recording = validationOwner;
+          if (fresh && continuous && validationOwner) {
+            setValidationPoint({ x: clamp01(s.liveX), y: clamp01(s.liveY) });
+            const proof = advanceValidationDwell(
+              { candidate: r.validationCandidate, heldMs: r.validationHeld },
+              { u: s.liveX, v: s.liveY },
+              r.validated,
+              sampleDt,
+            );
+            r.validationCandidate = proof.candidate;
+            r.validationHeld = proof.heldMs;
+            setValidationCandidate(proof.candidate);
+            if (proof.confirmed) {
+              r.validated.push(proof.confirmed);
+              setReached([...r.validated]);
             }
           } else if (fresh) {
             r.validationCandidate = null;
             r.validationHeld = 0;
-            r.recentMapped = [];
+            setValidationCandidate(null);
+            setValidationPoint(null);
           }
 
           setProgress(
             Math.min(
               1,
-              (r.validated.length + r.validationHeld / VALIDATE_HOLD_MS) / POSITIONS.length,
+              (r.validated.length + r.validationHeld / VALIDATION_DWELL_MS) / POSITIONS.length,
             ),
           );
           if (r.validated.length === POSITIONS.length) {
@@ -672,8 +675,11 @@ export function Calibration({ onDone }: { onDone: () => void }) {
             current = "done";
             finish(buildProfile(r));
           } else if (now - phaseStart > VALIDATE_CAP_MS) {
+            const pending = POSITIONS.filter((item) => !r.validated.includes(item.id))
+              .map((item) => item.name)
+              .join(", ");
             setNote(
-              "Not all screen regions are reachable yet. Move through centre, left, right, up and down; no corner is required.",
+              `Still needed: ${pending}. Move the marker into each broad band; no corner is required.`,
             );
           }
           break;
@@ -684,7 +690,7 @@ export function Calibration({ onDone }: { onDone: () => void }) {
       }
 
       setRecording(r.recording);
-      drawPreview(canvasRef.current, r, s.box, current, palm);
+      drawPreview(canvasRef.current, s.box, current);
     };
 
     raf = requestAnimationFrame(loop);
@@ -718,41 +724,108 @@ export function Calibration({ onDone }: { onDone: () => void }) {
     phase === "gesture"
       ? "Close deliberately, then open the whole hand clearly. This verifies the selection gesture on this camera."
       : baseCopy.hint;
+  const validationCandidateName = POSITIONS.find(
+    (item) => item.id === validationCandidate,
+  )?.name;
+  const validationNext = POSITIONS.find((item) => !reached.includes(item.id));
+  const validationAspect =
+    typeof window === "undefined" || window.innerHeight <= 0
+      ? 16 / 9
+      : window.innerWidth / window.innerHeight;
 
   return (
     <div className="cal" role="dialog" aria-label="Set up hand control">
-      <div className="cal-frame">
-        <canvas ref={canvasRef} className="cal-canvas" width={480} height={270} />
-      </div>
-
-      <div className="cal-body">
-        <span className="cal-step">{baseCopy.step}</span>
-        <h1 className="cal-title">{title}</h1>
-        <p className="cal-hint">{note || hint}</p>
-
-        {(phase === "positions" || phase === "validate") && (
-          <div
-            className="cal-directions"
-            aria-label="Comfortable movement directions; status indicators, not cursor targets"
-          >
-            {POSITIONS.map((item) => (
+      {phase === "validate" ? (
+        <div
+          className="cal-screen-check"
+          style={{ aspectRatio: validationAspect }}
+          role="img"
+          aria-label="Mapped display with broad centre, left, right, up and down validation bands"
+        >
+          <span className="cal-screen-check__label">Mapped display</span>
+          {POSITIONS.map((item) => {
+            const region = VALIDATION_REGIONS[item.id];
+            return (
               <span
                 key={item.id}
-                className={`cal-direction cal-direction--${item.id} ${
+                className={`cal-screen-check__zone ${
                   reached.includes(item.id) ? "is-on" : ""
-                } ${phase === "positions" && position?.id === item.id ? "is-next" : ""}`}
+                } ${validationCandidate === item.id ? "is-candidate" : ""} ${
+                  validationNext?.id === item.id ? "is-next" : ""
+                }`}
+                style={{
+                  left: `${region.x0 * 100}%`,
+                  top: `${region.y0 * 100}%`,
+                  width: `${(region.x1 - region.x0) * 100}%`,
+                  height: `${(region.y1 - region.y0) * 100}%`,
+                }}
               >
                 {reached.includes(item.id) ? "✓" : directionGlyph(item.id)}
                 <span>{item.name}</span>
               </span>
-            ))}
-          </div>
+            );
+          })}
+          {validationPoint && (
+            <span
+              className="cal-screen-check__cursor"
+              style={{
+                left: `${validationPoint.x * 100}%`,
+                top: `${validationPoint.y * 100}%`,
+              }}
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      ) : (
+        <div className="cal-frame">
+          <canvas ref={canvasRef} className="cal-canvas" width={480} height={270} />
+        </div>
+      )}
+
+      <div className="cal-body">
+        <span className="cal-step">{baseCopy.step}</span>
+        <h1 className="cal-title">{title}</h1>
+        {baseCopy.purpose && <p className="cal-purpose">{baseCopy.purpose}</p>}
+        <p className="cal-hint">{note || hint}</p>
+
+        {phase === "positions" && (
+          <>
+            <span className="cal-evidence-label">Camera-range checklist · not screen targets</span>
+            <div
+              className="cal-directions"
+              aria-label="Comfortable camera-space movement checklist; not cursor targets"
+            >
+              {POSITIONS.map((item) => (
+                <span
+                  key={item.id}
+                  className={`cal-direction cal-direction--${item.id} ${
+                    reached.includes(item.id) ? "is-on" : ""
+                  } ${position?.id === item.id ? "is-next" : ""}`}
+                >
+                  {reached.includes(item.id) ? "✓" : directionGlyph(item.id)}
+                  <span>{item.name}</span>
+                </span>
+              ))}
+            </div>
+          </>
         )}
 
-        {phase !== "done" && phase !== "validate" && phase !== "seek" && (
+        {phase !== "done" && phase !== "seek" && (
           <div className={`cal-bar ${recording ? "is-live" : ""}`}>
             <div className="cal-bar__fill" style={{ transform: `scaleX(${progress})` }} />
-            <span className="cal-bar__label">{recording ? "measuring" : "get ready…"}</span>
+            <span className="cal-bar__label">
+              {phase === "validate"
+                ? validationCandidateName
+                  ? `hold ${validationCandidateName}…`
+                  : recording
+                    ? validationNext
+                      ? `move the marker to ${validationNext.name}`
+                      : "checking mapped reach…"
+                    : "keep your hand in view…"
+                : recording
+                  ? "measuring"
+                  : "get ready…"}
+            </span>
           </div>
         )}
 
@@ -801,6 +874,10 @@ function directionGlyph(id: PositionId): string {
   if (id === "up") return "↑";
   if (id === "down") return "↓";
   return "•";
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
 }
 
 function buildProfile(r: Recording): CalibrationProfile {
@@ -858,7 +935,10 @@ function Summary({
   );
 }
 
-const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
+const COPY: Record<
+  Phase,
+  { step: string; title: string; purpose?: string; hint: string }
+> = {
   resolving: { step: "", title: "", hint: "" },
   seek: {
     step: "Setup",
@@ -868,27 +948,28 @@ const COPY: Record<Phase, { step: string; title: string; hint: string }> = {
   positions: {
     step: "1 of 3",
     title: "Show your comfortable movement range",
-    hint: "Move only as far as feels easy and keep the whole hand inside the camera picture. You never need to reach a screen corner.",
+    purpose: "Purpose · measure the camera-visible hand range that will size the mapping.",
+    hint: "Follow the movement words and hold comfortably. The checklist records camera positions; do not aim at a dot or screen location.",
   },
   gesture: {
     step: "2 of 3",
     title: "Verify the selection gesture",
+    purpose: "Purpose · confirm this camera can see a deliberate close and open.",
     hint: "Close deliberately, then open the hand clearly.",
   },
   validate: {
     step: "3 of 3",
-    title: "Check the reachable screen regions",
-    hint: "Centre, left, right, up and down. These are broad regions, not points or corners.",
+    title: "Check the fitted screen mapping",
+    purpose: "Purpose · verify that the range measured in step 1 reaches the mapped display.",
+    hint: "Move the marker through the five broad bands and pause briefly in each. This checks the result of step 1; it does not ask you to repeat its camera points or reach a corner.",
   },
   done: { step: "", title: "Ready", hint: "" },
 };
 
 function drawPreview(
   canvas: HTMLCanvasElement | null,
-  r: Pick<Recording, "positions" | "recentRaw">,
   box: { x0: number; y0: number; x1: number; y1: number } | null,
   phase: Phase,
-  hand: { x: number; y: number } | null,
 ): void {
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
@@ -922,22 +1003,6 @@ function drawPreview(
       (1 - 2 * FRAME_MARGIN) * h,
     );
     ctx.setLineDash([]);
-  }
-
-  if (hand) {
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    ctx.beginPath();
-    ctx.arc((1 - hand.x) * w, hand.y * h, 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  for (const position of Object.values(r.positions)) {
-    if (!position) continue;
-    ctx.strokeStyle = "rgba(122,122,255,0.95)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc((1 - position.x) * w, position.y * h, 7, 0, Math.PI * 2);
-    ctx.stroke();
   }
 
   if (box && (phase === "gesture" || phase === "validate")) {

@@ -32,60 +32,19 @@
   pointer-events: none;
 }
 .publications .frame__logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.publications .frame__brand-text {
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-.publications .frame__brand-line {
-  white-space: nowrap;
-  color: var(--gt-text-secondary);
-}
-.publications .frame__brand-strong {
-  font-weight: 700;
-  color: var(--gt-text-primary);
+  pointer-events: none;
 }
 
-/* ---- oversized title (behind the menu) ---- */
+/* ---- oversized title, in its own normal-flow poster slot before the menu ---- */
 .publications .title {
-  position: fixed;
-  /* Sit above the QR card (bottom-8 + ~280px tall) — rem-based so it clears the
-     fixed-pixel QR on any viewport height, not just tall ones. */
-  bottom: 21rem;
-  left: 50vw;
+  position: relative;
+  /* Keep the original right-half poster composition, but give it real layout height. With a
+     fixed title every one of the 43 scrolling rows eventually crossed it; no offset could make
+     those two independent coordinate systems stop overlapping. */
+  margin-left: 50vw;
+  padding: clamp(8rem, 18vh, 18rem) 2.5rem 0 0;
   z-index: 0;
   pointer-events: none;
-  transition: opacity 0.45s ease-out;
-}
-/* The moment a row is under the hand, the title steps back — the same rule as Projects, for
-   the same reason: a paper lit to full white was sitting on a word twice its height in the
-   same white. The title fades and a scrim in the page colour comes up over its half of the
-   screen (`.menu::before`), leaving the chosen row the only bright thing on the page. */
-.publications:has(.menu__item.is-hover) .title,
-.publications:has(.menu__item:hover) .title {
-  opacity: 0.16;
-}
-.publications .menu::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(
-    to right,
-    transparent 30%,
-    color-mix(in srgb, var(--gt-bg) 78%, transparent) 55%,
-    color-mix(in srgb, var(--gt-bg) 92%, transparent) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.45s ease-out;
-}
-.publications:has(.menu__item.is-hover) .menu::before,
-.publications:has(.menu__item:hover) .menu::before {
-  opacity: 1;
 }
 .publications .title__main {
   margin: 0;
@@ -108,9 +67,9 @@
   z-index: 1;
   display: flex;
   flex-direction: column;
-  /* Start the list near the vertical middle (like the CLT stack's 50vh top margin) and
-     give scroll room below; the list flows down from there. */
-  padding: 45vh 2.5rem 25vh;
+  /* The title above now owns the opening poster space; this is only the breathing room between
+     that header and the first paper. The list can never scroll through the title. */
+  padding: clamp(2.5rem, 6vh, 7rem) 2.5rem 25vh;
   counter-reset: menucounter;
   -webkit-user-select: none;
   user-select: none;
@@ -120,9 +79,18 @@
   display: flex;
   align-items: center;
   position: relative;
+  min-height: clamp(3.25rem, 5.5vh, 6rem);
   padding: 0 2rem 0 6vw;
   text-decoration: none;
   cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.26s ease;
+}
+/* Fade the stack around the active row. Opacity and the nested label transform are paint-only:
+   the anchor's box never changes, so a hand cannot lose its target while the state settles. */
+.publications .menu:has(.menu__item:is(:hover, .is-hover, .gt-hover))
+  .menu__item:not(:is(:hover, .is-hover, .gt-hover)) {
+  opacity: 0.3;
 }
 
 /* Number badge — revealed on hover (left edge). */
@@ -145,8 +113,7 @@
   transform: translateX(-1rem);
   transition: transform 0.3s, opacity 0.3s;
 }
-.publications .menu__item:hover::before,
-.publications .menu__item.is-hover::before {
+.publications .menu__item:is(:hover, .is-hover, .gt-hover)::before {
   opacity: 1;
   transform: translateX(0);
 }
@@ -155,20 +122,48 @@
 .publications .menu__item-text {
   position: relative;
   display: block;
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
-  padding: 0.45vh 0;
+  /* The block padding lets a little of the selected title's shadow breathe; overflow clips the
+     rest at the top and bottom, so neighbouring rows still read as a stack. Inline-end room
+     keeps the slight scale from clipping the final glyph of a long no-wrap title. */
+  /* A two-line title grows vertically as well as horizontally at 1.18x. Reserve enough block
+     room for that paint transform so the cap height and descenders remain inside the mask. */
+  padding: 0.42em 0.8em 0.42em 0;
   font-size: clamp(0.95rem, 1.45vw, 1.55rem);
 }
 .publications .menu__item-textinner {
   display: block;
-  white-space: nowrap;
+  /* Paper titles routinely exceed one wall-sized row. Wrap instead of clipping them to make
+     room for the venue; the row grows, while its hand hitbox and hover geometry stay stable. */
+  white-space: normal;
   font-weight: 700;
   color: color-mix(in srgb, var(--gt-text-primary), var(--gt-bg) 55%);
   transition: color 0.3s;
 }
-.publications .menu__item:hover .menu__item-textinner,
-.publications .menu__item.is-hover .menu__item-textinner {
+.publications .menu__item-label {
+  display: block;
+  /* Reserve the exact width that the 1.18 hover scale consumes, so the final word remains
+     inside the text mask even while the selected title pops forward. */
+  width: calc(100% / 1.18);
+  line-height: 1.18;
+  text-wrap: balance;
+  transform: translateY(0) scale(1);
+  transform-origin: left center;
+  text-shadow: 0 0 0 transparent;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    text-shadow 0.28s ease;
+}
+.publications .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-textinner {
   color: var(--gt-text-primary);
+}
+.publications .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-label {
+  /* This nested span is deliberately NOT the GSAP reveal target. Scaling the textinner itself
+     would fight GSAP's inline transform; scaling the anchor would move its hand hit boundary. */
+  transform: translateY(-0.045em) scale(1.18);
+  text-shadow: 0 0.18em 0.32em color-mix(in srgb, var(--gt-text-primary) 42%, transparent);
 }
 
 /* Project-type sub-label — revealed on hover, after the title, with a diagonal slash. */
@@ -188,8 +183,7 @@
   transform: translateX(-1rem);
   transition: transform 0.3s, opacity 0.3s;
 }
-.publications .menu__item:hover .menu__item-sub,
-.publications .menu__item.is-hover .menu__item-sub {
+.publications .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-sub {
   opacity: 1;
   transform: translateX(0);
 }
@@ -205,15 +199,24 @@
   transform: rotate(22.5deg) scale3d(1, 0, 1);
   transition: transform 0.3s;
 }
-.publications .menu__item:hover .menu__item-sub::before,
-.publications .menu__item.is-hover .menu__item-sub::before {
+.publications .menu__item:is(:hover, .is-hover, .gt-hover) .menu__item-sub::before {
   transform: rotate(22.5deg) scale3d(1, 1, 1);
 }
 
-/* ---- text-only detail (click a paper) ----
-   Built to the same plan as the student-project detail (`projects.css` .sp-detail): one
-   centred column, the abstract as the body, the bibliography as meta blocks. No figures —
-   see the note in PublicationsSection.tsx for why they went. */
+/* A detail deliberately opens the edge bands for the image story. Remove the browse poster
+   underneath it first; otherwise its list and oversized title show through those same transparent
+   bands and read as ghost copy rather than depth. The top-left identity is a separate layer and
+   remains unchanged. */
+.publications--detail-open > .title,
+.publications--detail-open > .menu {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- paper detail (click a paper) ----
+   Text owns the middle; the generated story plates own the edges. A figure is supporting
+   material below the abstract, never a second column that squeezes the reading measure. */
 .publications .pub-detail {
   position: fixed;
   inset: 0;
@@ -224,18 +227,30 @@
      the scroll origin, where no scrolling can reach it. A long abstract would otherwise open
      with its own title already cut off the top. */
   justify-content: safe center;
-  background: var(--gt-bg);
+  /* The story layer owns the single final-composite centre mask. Keeping this surface
+     transparent prevents a second black veil from washing out both side scenes. The centre is
+     still the page's untouched background because no image is composited there. */
+  background: transparent;
   overflow-y: auto;
-  padding: 7rem 8vw 8.5rem;
+  /* Top clears the unchanged TUM identity; bottom clears the fixed lower-left Home target. */
+  padding: clamp(8rem, 14vh, 14rem) 8vw clamp(10rem, 18vh, 16rem);
 }
 /* Centred, not left-hugged: at 8vw padding on a 2000px wall the text sat in the leftmost
    quarter with two thirds of the screen empty beside it. A poster read from across a corridor
    is centred as a whole, and every child then gets its own measure and is re-centred. */
 .publications .pub-detail-inner {
-  max-width: 96ch;
+  /* Stay between the two hand-sized pager wings. Scientific figures need more room than the old
+     text-only 96ch measure, but content under a wing would turn an attempted scroll into paging. */
+  max-width: min(96rem, 48vw);
   margin-inline: auto;
   width: 100%;
   text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.publications .pub-detail-header {
+  max-width: 96ch;
+  margin-inline: auto;
 }
 .publications .pub-detail-type {
   text-transform: uppercase;
@@ -274,21 +289,61 @@
   text-wrap: balance;
   color: var(--gt-text-primary);
 }
-/* The abstract is the page. It is the one part of a paper a passer-by can carry away, so it
-   gets the centre of the screen and the full measure. */
+/* The selected paper's body only. The abstract remains directly under the authors on every
+   viewport; the optional figure follows it at a useful poster size. */
+.publications .pub-detail-body {
+  margin-top: 1.8rem;
+}
+.publications .pub-detail-body--with-image {
+  display: block;
+}
+.publications .pub-detail-figure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  width: min(100%, 62rem);
+  height: clamp(15rem, 36vh, 34rem);
+  margin: clamp(2.5rem, 5vh, 5rem) auto 0;
+  padding: clamp(0.65rem, 1.2vw, 1.25rem);
+  overflow: hidden;
+  background: var(--gt-surface);
+  border: 1px solid var(--gt-border);
+}
+.publications .pub-detail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* The abstract is the part of a paper a passer-by can carry away. It therefore owns one centred
+   measure immediately below the author line, regardless of whether this paper has a figure. */
 .publications .pub-detail-abstract {
-  margin: 1.8rem auto 0;
+  margin: 0 auto;
   max-width: 62ch;
   font-size: clamp(1rem, 1.05vw, 1.45rem);
   line-height: 1.7;
   color: var(--gt-text-secondary);
+  text-align: center;
+}
+.publications .pub-detail-body--with-image .pub-detail-abstract {
+  max-width: 62ch;
 }
 .publications .pub-detail-meta {
   margin-top: 2.8rem;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
-  gap: 2.5rem 4rem;
+  gap: clamp(2.5rem, 4vw, 5rem);
+}
+.publications .pub-meta-facts {
+  display: flex;
+  min-width: clamp(10rem, 12vw, 15rem);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
 }
 .publications .pub-meta-block {
   display: flex;
@@ -308,21 +363,50 @@
   font-weight: 700;
   color: var(--gt-text-primary);
 }
-.publications .pub-meta-url {
-  color: var(--gt-accent);
+.publications .pub-meta-block--qr {
+  gap: 0.75rem;
+}
+.publications .pub-paper-qr {
+  display: block;
+  width: clamp(10rem, 12vmin, 14rem);
+  height: auto;
+  background: var(--gt-brand-white);
+}
+.publications .pub-meta-domain {
+  max-width: 20rem;
+  overflow-wrap: anywhere;
+  font-size: clamp(0.8rem, 0.72vw, 1rem);
   font-weight: 500;
-  word-break: break-all;
+  color: var(--gt-text-secondary);
+}
+
+/* On a laptop the same centred order remains; only the safe reading width and figure height
+   contract. There is never a breakpoint that puts image and abstract side by side again. */
+@media (max-width: 64rem) {
+  .publications .pub-detail {
+    padding-inline: max(2rem, 8vw);
+  }
+  .publications .pub-detail-inner {
+    /* Match the story mask's 26–74% hard-safe centre even on a narrow laptop. */
+    max-width: min(62ch, 48vw);
+  }
+  .publications .pub-detail-figure {
+    height: clamp(13rem, 34vh, 25rem);
+  }
+}
+
+@media (max-width: 50rem) {
+  .publications .pub-detail-meta {
+    flex-direction: column;
+  }
 }
 
 /* Prev / next moved to the shared `components/DetailPager`: two wings of light on the side
    edges, sized for a hand. The bottom-centre arrow pair that lived here was the most missed
    target on the page. */
-/* Brand block is a button → home (frame is pointer-events:none; re-enable on the button). */
-.publications .frame__logo {
-  pointer-events: auto;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
+@media (prefers-reduced-motion: reduce) {
+  .publications .menu__item,
+  .publications .menu__item-label {
+    transition: none;
+  }
 }

@@ -1,0 +1,206 @@
+/* Shared section chrome. The identity stays top-left in each page's existing reserved slot;
+   Home is one independent, fixed bottom-left target. Tokens only (CLAUDE.md rule 1). */
+
+/* Institutional identity, deliberately inert. The page-specific class supplied to
+   `SectionHome` owns only its position; these rules own the common lockup geometry. */
+.section-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 100%;
+  color: var(--gt-text-primary);
+  font-family: var(--font-sans);
+  text-align: left;
+  pointer-events: none;
+  user-select: none;
+}
+
+.section-brand__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: var(--gt-text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.section-brand__identity strong {
+  color: var(--gt-text-primary);
+  font-weight: 700;
+}
+
+.section-brand svg {
+  width: 4rem;
+  height: auto;
+  flex: none;
+}
+
+/* A broad corner target is forgiving of the cursor movement created by closing a fist. The hit
+   shape, scrim and glow share one ellipse, so nothing that looks like page content remains live
+   underneath Home. Viewport sizing preserves the same useful reach on a laptop and a wall. */
+.section-home {
+  --sh-label: var(--gt-brand-black);
+  --sh-glow-core: color-mix(in srgb, var(--gt-brand-black) 48%, transparent);
+  --sh-glow-mid: color-mix(in srgb, var(--gt-brand-black) 24%, transparent);
+
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 9980;
+  box-sizing: border-box;
+  width: clamp(20rem, 30vw, 58rem);
+  height: clamp(15rem, 38vh, 40rem);
+  padding: 0;
+  border: 0;
+  clip-path: ellipse(100% 100% at 0% 100%);
+  appearance: none;
+  background: transparent;
+  color: var(--sh-label);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  transform-origin: 0 100%;
+  transition: transform 0.5s ease-out;
+}
+
+.section-home--dark {
+  --sh-label: var(--gt-brand-white);
+  --sh-glow-core: color-mix(in srgb, var(--gt-brand-white) 82%, transparent);
+  --sh-glow-mid: color-mix(in srgb, var(--gt-brand-white) 46%, transparent);
+}
+
+/* Opaque at the corner, then eased away. It prevents a list row or reading column from being
+   visibly overlapped by a different action while keeping most of the page untouched. */
+.section-home::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 100% at 0% 100%,
+    var(--gt-bg) 0%,
+    var(--gt-bg) 30%,
+    color-mix(in srgb, var(--gt-bg) 72%, transparent) 50%,
+    color-mix(in srgb, var(--gt-bg) 34%, transparent) 68%,
+    transparent 84%
+  );
+}
+
+.section-home::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 100% at 0% 100%,
+    var(--sh-glow-core) 0%,
+    color-mix(in srgb, var(--sh-glow-core) 88%, transparent) 12%,
+    color-mix(in srgb, var(--sh-glow-core) 66%, transparent) 24%,
+    var(--sh-glow-mid) 36%,
+    color-mix(in srgb, var(--sh-glow-mid) 62%, transparent) 48%,
+    color-mix(in srgb, var(--sh-glow-mid) 34%, transparent) 60%,
+    color-mix(in srgb, var(--sh-glow-mid) 14%, transparent) 70%,
+    transparent 80%
+  );
+  opacity: 0.62;
+  transition: opacity 0.5s ease-out;
+}
+
+/* Particle-backed detail pages: blur the scene that is already under Home instead of painting
+   the old grey/white glow over it. The black tint is intentionally slight; separation comes
+   primarily from backdrop blur, leaving the white label crisp and the particles still visible. */
+.publications--detail-open .section-home::before,
+.projects--detail-open .section-home::before {
+  background: radial-gradient(
+    ellipse 100% 100% at 0% 100%,
+    color-mix(in srgb, var(--gt-brand-black) 28%, transparent) 0%,
+    color-mix(in srgb, var(--gt-brand-black) 16%, transparent) 38%,
+    color-mix(in srgb, var(--gt-brand-black) 6%, transparent) 62%,
+    transparent 78%
+  );
+  -webkit-backdrop-filter: blur(18px) saturate(0.74);
+  backdrop-filter: blur(18px) saturate(0.74);
+}
+
+.publications--detail-open .section-home::after,
+.projects--detail-open .section-home::after {
+  background: none;
+}
+
+.publications--detail-open .section-home__label,
+.projects--detail-open .section-home__label {
+  color: var(--gt-brand-white);
+  text-shadow:
+    0 0.08em 0.2em var(--gt-brand-black),
+    0 0 0.55em color-mix(in srgb, var(--gt-accent) 38%, transparent);
+}
+
+.section-home__label {
+  position: absolute;
+  left: clamp(1.6rem, 3vw, 4rem);
+  bottom: clamp(1.4rem, 3.2vh, 3.4rem);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.4em 0.2em;
+  color: var(--sh-label);
+  font-size: clamp(1.05rem, 1.6vmin, 2.1rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  transition: letter-spacing 0.35s ease-out;
+}
+
+/* HandControl adds a generic rectangular outline to every hot target. This control already
+   paints its exact clipped hit geometry, so the rectangle would be a false boundary. */
+.section-home.gt-hover,
+.section-home.is-hover,
+.section-home:hover {
+  outline: none;
+  transform: scale(1.05);
+}
+
+.section-home.gt-hover::after,
+.section-home.is-hover::after,
+.section-home:hover::after {
+  opacity: 1;
+}
+
+.section-home.gt-hover .section-home__label,
+.section-home.is-hover .section-home__label,
+.section-home:hover .section-home__label {
+  letter-spacing: 0.34em;
+}
+
+.section-home:focus-visible {
+  outline: 2px solid var(--sh-label);
+  outline-offset: -0.5rem;
+}
+
+/* SectionLayout keeps the original normal-flow identity row above the Teaching title. Home is
+   the only fixed element; making the brand sticky would silently change how the existing TUM
+   lockup behaves while scrolling, even though it was explicitly out of scope. */
+.section-layout__brandbar {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  background: var(--gt-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-home,
+  .section-home::after,
+  .section-home__label {
+    transition: none;
+  }
+
+  .section-home.gt-hover,
+  .section-home.is-hover,
+  .section-home:hover {
+    transform: none;
+  }
+}

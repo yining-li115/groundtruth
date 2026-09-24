@@ -2,6 +2,7 @@ import { Logo } from "@groundtruth/ui";
 import { navigate } from "../lib/navigate";
 import { clickGestureInstruction, useClickGesture } from "../lib/vision/useClickGesture";
 import { useKioskStore } from "../state/store";
+import { ArrowRightIcon } from "../components/ArrowRightIcon";
 import { SECTION_COLOR, SECTION_ORDER } from "./sectionColors";
 import "./homeMenu.css";
 
@@ -91,7 +92,7 @@ export function HomeMenu() {
                 <span className="hm__sub">{l.sub}</span>
               </span>
               <span className="hm__arrow" aria-hidden>
-                →
+                <ArrowRightIcon />
               </span>
             </button>
           );

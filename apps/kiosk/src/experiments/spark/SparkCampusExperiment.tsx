@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { SparkRenderer, SplatMesh, SparkControls } from "@sparkjsdev/spark";
+import { SparkControls } from "@sparkjsdev/spark";
 import { dark } from "@groundtruth/tokens";
 import { showreel } from "../../lib/content";
 import {
@@ -18,19 +18,29 @@ import {
 } from "./sceneNavigation";
 import {
   buildProductionTourCurve,
+  inspectCameraCurveInRoam,
   inspectCurveInRoam,
-  isRoamablePoint,
+  isRoamableSphere,
+  PRODUCTION_CAMERA_RADIUS,
   routeTourThroughRoam,
   type RoamVolume,
   type TourWaypoint as Waypoint,
 } from "./safeTour";
 import autoTour from "./tour.json";
 import roamVolume from "./roam.json";
+import {
+  DEFAULT_GAUSSIAN_DPR_CAP,
+  DEFAULT_GAUSSIAN_SPLAT_BUDGET,
+} from "./quality";
+import {
+  createPlayCanvasCampusRenderer,
+  type PlayCanvasCampusRenderer,
+} from "./playCanvasRenderer";
 
 /**
- * Spark renderer trial (/?exp=spark) — step 1 of moving the campus gaussians off
- * @mkkellogg/gaussian-splats-3d and onto Spark (World Labs), so we can fly INSIDE the
- * scan instead of orbiting it from outside.
+ * Campus renderer and authoring route (/?exp=spark). The route name is retained for existing
+ * authoring links, while the production model now uses the official SuperSplat
+ * PlayCanvas/WebGPU renderer and Streamed SOG data.
  *
  * What this page is for:
  *   1. judging DENSITY up close — `?asset=` switches between the shipped 400k decimated
@@ -67,6 +77,10 @@ const PARAMS = typeof window === "undefined" ? null : new URLSearchParams(locati
  * longer clamps Y, which is what had been flattening the clock tower's spire.
  */
 const URLS = {
+  local: {
+    url: "/splat/tum-campus-stream/lod-meta.json",
+    label: "Streamed SOG · 13.0M top LOD (local full density)",
+  },
   mid: { url: "/splat/tum-campus.sog", label: "SOG · 1.8M splats · 21MB" },
   max: { url: "/splat/tum-campus-full.sog", label: "SOG · 13.0M splats · 147MB (full density)" },
   web: { url: "/splat/tum-campus-web.ply", label: "PLY · 400k · shipped today (clipped tower)" },
@@ -74,60 +88,25 @@ const URLS = {
 type AssetKey = keyof typeof URLS;
 const ASSET_PARAM = ((): AssetKey | null => {
   const a = PARAMS?.get("asset");
-  return a === "web" || a === "mid" || a === "max" ? a : null;
+  return a === "web" || a === "mid" || a === "local" || a === "max" ? a : null;
 })();
-/** LoD costs a few seconds of worker time on load; `?lod=0` compares against raw,
- *  `?lod=quality` uses the slower/better bhatt-lod tree instead of the quick one. */
-const LOD_PARAM = PARAMS?.get("lod");
-const LOD_OPT: { lod?: boolean | "quality" } =
-  LOD_PARAM === "0" ? {} : LOD_PARAM === "quality" ? { lod: "quality" } : { lod: true };
-
 const num = (key: string, fallback: number) => {
   const v = Number(PARAMS?.get(key));
   return Number.isFinite(v) && PARAMS?.get(key) !== null ? v : fallback;
 };
 /**
- * Sharpness knobs. SuperSplat IS the PlayCanvas renderer, and Spark's docs say
- * `focalAdjustment: 2.0` reproduces PlayCanvas' splat scale calculation — Spark's own
- * default of 1.0 renders the same data visibly softer. That mismatch (not the data) is
- * half of why this looked worse than the SuperSplat viewer. Tunable live via URL:
- *   ?focal=2 &blur=0 &preblur=0 &stddev=2.83 &maxr=512
+ * Global Streamed-SOG budget. PlayCanvas distributes it spatially according to the current
+ * camera instead of thinning the entire campus uniformly. The URL value remains expressed in
+ * individual splats for compatibility with the existing authoring links.
  */
-const FOCAL_ADJUSTMENT = num("focal", 2.0);
-const BLUR_AMOUNT = num("blur", 0.0);
-const PRE_BLUR_AMOUNT = num("preblur", 0.0);
-const MAX_STD_DEV = num("stddev", Math.sqrt(8));
-/**
- * How large a single gaussian may be drawn, in pixels.
- *
- * Capping this was tried as a fix for the long streaks across a façade and made things worse:
- * at 64 the streaks remained and holes opened where the big splats had been doing the
- * covering. The strokes are not oversized splats — they are genuinely elongated ellipsoids,
- * flat and oriented for a view from above, seen edge-on from a few metres away. Clamping the
- * radius removes their coverage without touching their shape. Left at Spark's default.
- */
-const MAX_PIXEL_RADIUS = num("maxr", 512);
-const MIN_PIXEL_RADIUS = num("minr", 0);
-/**
- * LoD budget in splats per FRAME — the real sharpness control, and the thing that decides
- * whether a denser asset buys anything at all. Loading 12.4M splats while capping this at 2M
- * renders about as much as the 1.8M tier does, so the big asset looks no better than the
- * small one. Default high enough that `asset=max` is actually worth loading; drop it with
- * ?budget= if the frame rate needs it. (Spark's own desktop default is 2.5M.)
- */
-const LOD_SPLAT_COUNT = num("budget", 8_000_000);
-/** Cone foveation — full detail within cone0, easing down to cone. Spark's defaults are
- *  90°/120°; tightening them buys frame rate but visibly softens everything off-centre,
- *  which is the wrong trade while judging quality. */
-const CONE_FOV0 = num("cone0", 90);
-const CONE_FOV = num("cone", 120);
+const LOD_SPLAT_COUNT = num("budget", DEFAULT_GAUSSIAN_SPLAT_BUDGET);
 /**
  * Render resolution. The old hero capped dpr at 1.5 as a kiosk perf budget, but on a
  * Retina panel that alone reads softer than SuperSplat (which renders at the full 2.0).
  * Default to the device's real dpr here so the comparison is honest; `?dpr=1.5` to see
  * what the perf-budgeted version costs in sharpness.
  */
-const DPR_CAP = num("dpr", 1.5);
+const DPR_CAP = num("dpr", DEFAULT_GAUSSIAN_DPR_CAP);
 /**
  * `?look=<yawDeg>,<pitchDeg>` — nudge the opening pose before anything else runs.
  *
@@ -194,35 +173,7 @@ const SCENE_CONFIG: SceneNavigationConfig = {
   flingTau: num("flingtau", DEFAULT_SCENE_NAVIGATION.flingTau),
   flingMaxAngle: num("flingangle", DEFAULT_SCENE_NAVIGATION.flingMaxAngle),
 };
-/**
- * Adaptive quality, in the order a viewer minds least.
- *
- * The first version steered the SPLAT BUDGET by frame rate, which is the worst lever to pull
- * on a dense cloud: drawing fewer splats doesn't soften the picture, it punches holes in it,
- * and the façade turns to speckle. Resolution goes first now — a slightly softer image reads
- * as normal, a perforated one reads as broken — and the budget only afterwards, with a floor
- * high enough that it can never perforate the way it did.
- *
- * `?adapt=0` pins both for A/B comparisons.
- */
-const ADAPT = PARAMS?.get("adapt") !== "0";
-/**
- * `?adaptearly=1` — put the pre-fix behaviour back for one reload, so the sky's loading flash
- * can be A/B'd on the machine that actually shows it.
- *
- * This exists because the diagnosis could NOT be reproduced offline: headless Chrome draws an
- * empty sky through SwiftShader at full speed and decodes the asset on a worker, so the loop
- * never measures itself as slow and the adaptor never fires — even forced to devicePixelRatio 2.
- * The reasoning is sound (a dpr step calls setPixelRatio + setSize, which reallocates the
- * drawing buffer cleared, and the block runs after the frame's render, so one blank frame gets
- * presented) and the arithmetic fits the report — 1.5 down to the 1.0 floor in 0.15 steps is
- * three or four ticks at one per 500ms — but fits is not proves. With this flag the flash
- * should come back; without it, it should not.
- */
-const ADAPT_EARLY = PARAMS?.get("adaptearly") === "1";
 const MAX_TARGET_FPS = num("fps", 55);
-const SCALE_MIN = 0.6; // never subsample below this — below it, holes appear
-const DPR_MIN = 1.0; // and never render softer than this before touching the splat count
 
 /**
  * Per-asset extents, measured off the files themselves (`splat-transform --stats`); the scan
@@ -230,6 +181,7 @@ const DPR_MIN = 1.0; // and never render softer than this before touching the sp
  * LoD the mesh's splat source doesn't enumerate, so it hands back an empty box.
  */
 const BOUNDS: Record<AssetKey, { min: [number, number, number]; max: [number, number, number] }> = {
+  local: { min: [-23, -10.77, -35], max: [26, 7.69, 26] },
   mid: { min: [-23, -10.77, -35], max: [26, 7.69, 26] },
   max: { min: [-23, -10.77, -35], max: [26, 7.69, 26] },
   web: { min: [-26, -8, -35], max: [23, 6.85, 26] }, // the old clipped crop
@@ -245,8 +197,11 @@ const SPEED_STEPS = [2, 4, 8, 12, 20, 35, 60];
  * scripts/build-roam-volume.py: the open air connected to the tour's stops, under the
  * roofline, and a clearance above the local ground. Clamping to a box alone can't express
  * this — a box that contains the courtyard also contains the buildings around it, so pushing
- * down or sideways would bury the camera in a wall. Testing the actual cell is what makes
- * "no clipping through the model" a rule rather than a hope.
+ * down or sideways would bury the camera in a wall. Testing the actual cell makes collision
+ * against this measured coarse proxy an enforced runtime rule. It is not a watertight promise
+ * about every rendered Gaussian: the current builder classifies splat centres, not complete
+ * oriented ellipsoids. Visitor motion tests the full production camera sphere against that
+ * grid; point occupancy remains only an offline routing primitive for voxel-centre paths.
  */
 const ROAM: RoamVolume = {
   cell: roamVolume.cell,
@@ -254,8 +209,8 @@ const ROAM: RoamVolume = {
   dims: roamVolume.dims as [number, number, number],
   free: roamVolume.free,
 };
-function isRoamable(x: number, y: number, z: number) {
-  return isRoamablePoint(ROAM, x, y, z);
+function isCameraRoamable(x: number, y: number, z: number) {
+  return isRoamableSphere(ROAM, x, y, z, PRODUCTION_CAMERA_RADIUS);
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -370,10 +325,15 @@ function buildFlight(pins: Waypoint[]) {
 
 const AUTO_FLIGHT = buildFlight(AUTO_TOUR);
 const AUTO_FLIGHT_ROAM = inspectCurveInRoam(AUTO_FLIGHT.curve, ROAM);
-if (!AUTO_FLIGHT_ROAM.ok) {
-  const point = AUTO_FLIGHT_ROAM.firstBlocked;
+const AUTO_FLIGHT_CAMERA_ROAM = inspectCameraCurveInRoam(
+  AUTO_FLIGHT.curve,
+  ROAM,
+  PRODUCTION_CAMERA_RADIUS,
+);
+if (!AUTO_FLIGHT_ROAM.ok || !AUTO_FLIGHT_CAMERA_ROAM.ok) {
+  const point = AUTO_FLIGHT_CAMERA_ROAM.firstBlocked ?? AUTO_FLIGHT_ROAM.firstBlocked;
   throw new Error(
-    `Safe tour construction left the roam volume at ${point?.x.toFixed(2)},` +
+    `Safe tour construction lacks camera clearance at ${point?.x.toFixed(2)},` +
       `${point?.y.toFixed(2)},${point?.z.toFixed(2)}`,
   );
 }
@@ -460,8 +420,6 @@ export function CampusFlight({
   const [playing, setPlaying] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [playInfo, setPlayInfo] = useState("");
-  const [active, setActive] = useState(0);
-  const [scale, setScale] = useState(1);
   const [dpr, setDpr] = useState(() => Math.min(window.devicePixelRatio, DPR_CAP));
   const [fpsTarget, setFpsTarget] = useState(() => Math.min(MAX_TARGET_FPS, 54));
   const [collisionBlocked, setCollisionBlocked] = useState(false);
@@ -505,27 +463,9 @@ export function CampusFlight({
       setSceneAvailability("loading");
     }
     const navigation = new SceneNavigationController(SCENE_CONFIG);
-    const failSetup = (stage: string, error: unknown) => {
-      if (handControl) setSceneAvailability("failed");
-      const message = error instanceof Error ? error.message : String(error);
-      setStatus(`${stage} FAILED — ${message}`);
-      console.error(`[spark] ${stage.toLowerCase()} failed`, error);
-    };
-
-    let renderer: THREE.WebGLRenderer;
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: false }); // Spark: AA off on purpose
-    } catch (error) {
-      failSetup("WebGL setup", error);
-      return;
-    }
-    let deviceDprCap = Math.min(window.devicePixelRatio, DPR_CAP);
-    let curDpr = deviceDprCap;
-    renderer.setPixelRatio(curDpr);
-    renderer.setSize(host.clientWidth, host.clientHeight);
-    host.appendChild(renderer.domElement);
-
-    const scene = new THREE.Scene();
+    let campusRenderer: PlayCanvasCampusRenderer | null = null;
+    let controls: SparkControls | null = null;
+    const deviceDprCap = Math.min(window.devicePixelRatio, DPR_CAP);
     const camera = new THREE.PerspectiveCamera(
       DEFAULT_FOV,
       host.clientWidth / host.clientHeight,
@@ -533,74 +473,42 @@ export function CampusFlight({
       2000,
     );
     cameraRef.current = camera;
+    const asset = URLS[ASSET];
 
-    let spark: SparkRenderer;
-    try {
-      spark = new SparkRenderer({
-        renderer,
-        focalAdjustment: FOCAL_ADJUSTMENT, // 2.0 = match PlayCanvas/SuperSplat sharpness
-        blurAmount: BLUR_AMOUNT,
-        preBlurAmount: PRE_BLUR_AMOUNT,
-        maxStdDev: MAX_STD_DEV,
-        maxPixelRadius: MAX_PIXEL_RADIUS,
-        minPixelRadius: MIN_PIXEL_RADIUS,
-        lodSplatCount: LOD_SPLAT_COUNT,
-        coneFov0: CONE_FOV0,
-        coneFov: CONE_FOV,
-      });
-    } catch (error) {
-      renderer.dispose();
-      renderer.domElement.remove();
-      cameraRef.current = null;
-      failSetup("Spark setup", error);
-      return;
-    }
-    scene.add(spark);
-
-    // Sky first, so the campus is standing under something from the very first frame rather
-    // than in a black void. It costs one draw of a box and no per-frame work; see `sky.ts` for
-    // why it is analytic rather than a picture.
+    // Keep the existing analytic sky byte-for-byte and camera-for-camera. It renders into an
+    // independent bottom canvas; the PlayCanvas model canvas is transparent above it. This
+    // isolates the renderer migration to the Gaussian model instead of silently changing the
+    // environment whenever a visitor looks above the captured geometry.
+    const skyScene = new THREE.Scene();
+    let skyRenderer: THREE.WebGLRenderer | null = null;
     let skyDome: SkyDome | null = null;
     if (SKY_ENABLED) {
-      skyDome = createSkyDome();
-      scene.add(skyDome.object);
+      try {
+        skyRenderer = new THREE.WebGLRenderer({ antialias: false });
+        skyRenderer.setPixelRatio(deviceDprCap);
+        skyRenderer.setSize(host.clientWidth, host.clientHeight);
+        skyRenderer.domElement.style.position = "absolute";
+        skyRenderer.domElement.style.inset = "0";
+        skyRenderer.domElement.style.width = "100%";
+        skyRenderer.domElement.style.height = "100%";
+        skyRenderer.domElement.style.pointerEvents = "none";
+        skyRenderer.domElement.setAttribute("aria-hidden", "true");
+        host.appendChild(skyRenderer.domElement);
+        skyDome = createSkyDome();
+        skyScene.add(skyDome.object);
+      } catch (error) {
+        skyRenderer?.dispose();
+        skyRenderer?.domElement.remove();
+        cameraRef.current = null;
+        if (handControl) setSceneAvailability("failed");
+        setStatus(`sky setup FAILED — ${error instanceof Error ? error.message : String(error)}`);
+        console.error("[showreel-sky] setup failed", error);
+        return;
+      }
     }
 
-    const asset = URLS[ASSET];
-    let splats: SplatMesh;
-    try {
-      splats = new SplatMesh({ url: asset.url, ...LOD_OPT });
-    } catch (error) {
-      skyDome?.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
-      cameraRef.current = null;
-      failSetup("Model setup", error);
-      return;
-    }
-    // stored Y-down → flip so the world is Y-up (see the orientation note above)
-    splats.quaternion.setFromEuler(new THREE.Euler(Math.PI, 0, 0));
-    scene.add(splats);
-
-    // SparkControls installs global/canvas listeners and exposes no dispose API. Production
-    // (`tools=false`) never consumes it, so constructing it there leaked one listener set and
-    // detached canvas on every showreel entry (and twice under StrictMode).
-    const controls = tools ? new SparkControls({ canvas: renderer.domElement }) : null;
-
-    /**
-     * Adaptive quality must not act on the LOADING frame rate.
-     *
-     * While the asset is being fetched and decoded the loop is slow for a reason that has
-     * nothing to do with how expensive the picture is to draw — and the adaptor, measuring
-     * every 500ms, read that as "too slow" and dropped the resolution three times in a row.
-     * Each drop calls `setPixelRatio` + `setSize`, which reallocates the drawing buffer and
-     * clears it, so the sky (the only thing on screen at that point) blinked to black once per
-     * step. Three loading ticks, three flashes, and then it climbed back once the model
-     * arrived. It was measuring the download and charging the picture for it.
-     */
     let ready = false;
     let renderFailed = false;
-    let adaptFrom = Number.POSITIVE_INFINITY;
     let rejectThroughSessionId = flightInput.sessionId;
     const failRender = (error: unknown) => {
       if (disposed || renderFailed) return;
@@ -611,24 +519,25 @@ export function CampusFlight({
       if (handControl) setSceneAvailability("failed");
       const message = error instanceof Error ? error.message : String(error);
       setStatus(`render FAILED — ${message}`);
-      console.error("[spark] render failed", error);
+      console.error("[showreel-renderer] render failed", error);
     };
     const onContextLost = (event: Event) => {
       event.preventDefault();
-      failRender(new Error("WebGL context lost"));
+      failRender(new Error("Graphics context lost"));
     };
-    renderer.domElement.addEventListener("webglcontextlost", onContextLost);
+    skyRenderer?.domElement.addEventListener("webglcontextlost", onContextLost);
     const renderFrame = () => {
       try {
-        renderer.render(scene, camera);
+        skyRenderer?.render(skyScene, camera);
+        campusRenderer?.syncCamera(camera);
+        campusRenderer?.requestFrame();
       } catch (error) {
         failRender(error);
       }
     };
 
     const t0 = performance.now();
-    splats.initialized
-      .then(() => {
+    const finishLoading = () => {
         if (disposed || renderFailed) return;
         // Open on the tour's first stop — that framing is the showreel's resting state, so
         // arriving anywhere else means the first thing a passer-by sees is a shot nobody
@@ -641,15 +550,11 @@ export function CampusFlight({
           camera.updateProjectionMatrix();
           applyLookOffset(camera);
         } else {
-          // Under LoD the splat source doesn't enumerate, so getBoundingBox() hands back an
-          // empty (inverted) box — fall back to the measured asset extents.
-          let box = splats.getBoundingBox(true);
-          if (!Number.isFinite(box.min.x) || box.isEmpty()) {
-            const b = BOUNDS[ASSET];
-            box = new THREE.Box3(new THREE.Vector3(...b.min), new THREE.Vector3(...b.max));
-          }
-          splats.updateMatrixWorld(true);
-          box.applyMatrix4(splats.matrixWorld); // the mesh is flipped Y-up; frame world-space
+          const b = BOUNDS[ASSET];
+          const box = new THREE.Box3(
+            new THREE.Vector3(b.min[0], -b.max[1], -b.max[2]),
+            new THREE.Vector3(b.max[0], -b.min[1], -b.min[2]),
+          );
           const c = box.getCenter(new THREE.Vector3());
           const size = box.getSize(new THREE.Vector3());
           const span = Math.max(size.x, size.z);
@@ -657,10 +562,6 @@ export function CampusFlight({
           camera.lookAt(c);
         }
         homeRef.current = { pos: camera.position.clone(), quat: camera.quaternion.clone() };
-        // ...and even then, not immediately: the first second after the splats land is spent
-        // building LoD trees and warming shaders, which is also not a frame cost worth reacting
-        // to. Throw away the measurement in flight, too, or the first honest tick is polluted
-        // by the frames that came before it.
         ready = true;
         if (handControl) {
           // A grip that began against the loading/default camera must never wake up later and
@@ -669,26 +570,46 @@ export function CampusFlight({
           rejectThroughSessionId = flightInput.sessionId;
           setSceneAvailability("ready");
         }
-        adaptFrom = performance.now() + 1500;
         frames = 0;
         fpsAt = performance.now();
         setStatus(
-          `${asset.label} · LoD ${LOD_PARAM ?? "on"} · ${((performance.now() - t0) / 1000).toFixed(1)}s · ` +
-            `focal ${FOCAL_ADJUSTMENT} · dpr ${DPR_CAP} · maxr ${MAX_PIXEL_RADIUS} · ` +
-            `stddev ${MAX_STD_DEV.toFixed(2)} · ` +
+          `${asset.label} · PlayCanvas WebGPU/Streamed SOG · ` +
+            `${((performance.now() - t0) / 1000).toFixed(1)}s · ` +
             `budget ${(LOD_SPLAT_COUNT / 1e6).toFixed(1)}M`,
         );
         if (autoPlay && AUTO_TOUR.length >= 2) {
           playRef.current = { flight: AUTO_FLIGHT, i: 0, t: 0, phase: "fly" };
           setPlaying(true);
         }
+        renderFrame();
+    };
+
+    void createPlayCanvasCampusRenderer({
+      host,
+      contentUrl: asset.url,
+      budgetMillions: LOD_SPLAT_COUNT / 1_000_000,
+      interactiveCanvas: tools,
+      onProgress: (progress) => setStatus(`loading model… ${Math.round(progress)}%`),
+    })
+      .then((created) => {
+        if (disposed) {
+          created.dispose();
+          return;
+        }
+        campusRenderer = created;
+        created.canvas.addEventListener("webglcontextlost", onContextLost);
+        // The authoring route keeps its existing mouse/WASD controller. Production never
+        // constructs it, so the official viewer remains a pure renderer behind hand input.
+        controls = tools ? new SparkControls({ canvas: created.canvas }) : null;
+        created.syncCamera(camera);
+        return created.loaded.then(finishLoading);
       })
       .catch((e: unknown) => {
         // StrictMode deliberately mounts, disposes and mounts again in development. A late
         // rejection from the disposed first instance has no authority to turn off the live
         // second instance's global scene input or overwrite its status.
         if (disposed) return;
-        console.error("[spark] load failed", e);
+        console.error("[playcanvas] load failed", e);
         if (handControl) {
           setSceneAvailability("failed");
         }
@@ -706,8 +627,6 @@ export function CampusFlight({
     let acceptedOwnerId: number | null = null;
     const refreshIntervals: number[] = [];
     let refreshTarget = Math.min(MAX_TARGET_FPS, 54);
-    let slowWindows = 0;
-    let spareWindows = 0;
 
     const tick = () => {
       if (disposed || renderFailed) return;
@@ -719,6 +638,9 @@ export function CampusFlight({
       // bounded physics steps. Clamping at 50ms made the same gesture 25% slower at 15fps.
       const dt = abnormalFrameGap ? 0 : Math.min(elapsedMs / 1000, 0.1);
       last = now;
+
+      // Preserve the pre-migration sky behaviour: the Munich sun is recomputed once a minute.
+      skyDome?.update(now);
 
       // Learn the display ceiling rather than assuming every screen is 60Hz. A 30Hz panel
       // should target ~27fps, not be permanently classified as overloaded against a 55fps bar.
@@ -792,7 +714,7 @@ export function CampusFlight({
             at: h.freshAt,
           },
           dt,
-          isRoamable,
+          isCameraRoamable,
         );
       } else if (before.phase === "grab") {
         let reason: SceneEndReason = h.endReason ?? "cancelled";
@@ -812,7 +734,7 @@ export function CampusFlight({
       // they left it. Only losing the stable hand starts the breadcrumb return; the tour cannot
       // resume until that safe return reaches its original composed pose.
       if (navigation.status.phase !== "grab" && !visitor) {
-        navigation.tick(camera, dt, now, isRoamable);
+        navigation.tick(camera, dt, now, isCameraRoamable);
       }
       const navStatus = navigation.status;
       const showreelTakenOver = visitor || navStatus.interacting;
@@ -849,7 +771,7 @@ export function CampusFlight({
               !Number.isFinite(p.x) ||
               !Number.isFinite(p.y) ||
               !Number.isFinite(p.z) ||
-              !isRoamable(p.x, p.y, p.z)
+              !isCameraRoamable(p.x, p.y, p.z)
             ) {
               failRender(new Error("Automatic tour left the safe roam volume"));
               return;
@@ -934,51 +856,17 @@ export function CampusFlight({
         }
       }
 
-      // Walks the sun about a quarter of a degree a minute; the call is a clock check.
-      skyDome?.update(now);
-
       renderFrame();
 
       frames += 1;
       if (now - fpsAt >= 500) {
         const measured = Math.round((frames * 1000) / (now - fpsAt));
         setFps(measured);
-        if (ADAPT && (ADAPT_EARLY || (ready && now >= adaptFrom))) {
-          // Nudge, don't jump: a big correction overshoots and the detail visibly pumps.
-          const slow = measured < refreshTarget - 3;
-          const spare = measured > refreshTarget + 2;
-          slowWindows = slow ? slowWindows + 1 : 0;
-          spareWindows = spare ? spareWindows + 1 : 0;
-          const s0 = spark.lodSplatScale ?? 1;
-          const dprFloor = Math.min(DPR_MIN, deviceDprCap);
-          if (slowWindows >= 3) {
-            // resolution first, splat count only once there is no resolution left to give
-            if (curDpr > dprFloor) curDpr = Math.max(dprFloor, curDpr - 0.15);
-            else spark.lodSplatScale = Math.max(SCALE_MIN, s0 * 0.9);
-            slowWindows = 0;
-          } else if (spareWindows >= 8) {
-            if (s0 < 1) spark.lodSplatScale = Math.min(1, s0 * 1.05);
-            else if (curDpr < deviceDprCap) curDpr = Math.min(deviceDprCap, curDpr + 0.1);
-            spareWindows = 0;
-          }
-          if (Math.abs(renderer.getPixelRatio() - curDpr) > 0.01) {
-            renderer.setPixelRatio(curDpr);
-            renderer.setSize(host.clientWidth, host.clientHeight);
-            // Refill it before the browser sees it. A resize reallocates the drawing buffer
-            // cleared, and this block runs AFTER the frame's render — so without this the next
-            // thing presented is one blank frame, which is a black flash on a dark scene.
-            renderFrame();
-          }
-          setScale(spark.lodSplatScale ?? 1);
-          setDpr(curDpr);
-        }
+        setDpr(deviceDprCap);
         frames = 0;
         fpsAt = now;
         const p = camera.position;
         setReadout(`${r2(p.x)}, ${r2(p.y)}, ${r2(p.z)}`);
-        // splats actually drawn this frame — the number that decides how sharp it looks.
-        // If this sits far below the asset's total, the LoD budget is the ceiling, not the data.
-        setActive(spark.activeSplats ?? 0);
       }
       void dt;
     };
@@ -987,18 +875,10 @@ export function CampusFlight({
     const onResize = () => {
       camera.aspect = host.clientWidth / host.clientHeight;
       camera.updateProjectionMatrix();
-      const previousCap = deviceDprCap;
-      const qualityFraction = previousCap > 0 ? curDpr / previousCap : 1;
-      deviceDprCap = Math.min(window.devicePixelRatio, DPR_CAP);
-      curDpr = THREE.MathUtils.clamp(
-        deviceDprCap * qualityFraction,
-        Math.min(DPR_MIN, deviceDprCap),
-        deviceDprCap,
-      );
-      renderer.setPixelRatio(curDpr);
-      renderer.setSize(host.clientWidth, host.clientHeight);
-      setDpr(curDpr);
-      renderFrame(); // same reason as the dpr change above
+      skyRenderer?.setPixelRatio(Math.min(window.devicePixelRatio, DPR_CAP));
+      skyRenderer?.setSize(host.clientWidth, host.clientHeight);
+      setDpr(Math.min(window.devicePixelRatio, DPR_CAP));
+      renderFrame();
     };
     window.addEventListener("resize", onResize);
 
@@ -1013,11 +893,15 @@ export function CampusFlight({
       navigation.reset();
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
-      renderer.domElement.removeEventListener("webglcontextlost", onContextLost);
-      splats.dispose?.();
+      skyRenderer?.domElement.removeEventListener("webglcontextlost", onContextLost);
+      campusRenderer?.canvas.removeEventListener("webglcontextlost", onContextLost);
+      campusRenderer?.dispose();
+      campusRenderer = null;
       skyDome?.dispose();
-      renderer.dispose();
-      renderer.domElement.remove();
+      skyDome = null;
+      skyRenderer?.dispose();
+      skyRenderer?.domElement.remove();
+      skyRenderer = null;
     };
   }, [tools, autoPlay, ASSET, handControl, hand]);
 
@@ -1196,10 +1080,9 @@ export function CampusFlight({
             >
               {fps} fps / {fpsTarget} target
             </span>
-            {"  ·  drawing "}
-            <span style={{ color: dark.accent }}>{(active / 1e6).toFixed(2)}M</span>
-            {" splats/frame"}
-            {ADAPT ? ` · lod ×${scale.toFixed(2)} · dpr ${dpr.toFixed(2)}` : " · quality pinned"}
+            {"  ·  Streamed SOG budget "}
+            <span style={{ color: dark.accent }}>{(LOD_SPLAT_COUNT / 1e6).toFixed(1)}M</span>
+            {` · dpr ${dpr.toFixed(2)}`}
           </div>
           <div style={{ color: dark.text.secondary }}>{status}</div>
         </div>
@@ -1245,7 +1128,7 @@ export function CampusFlight({
         <br />
         <span>pins are saved across reloads</span>
         <br />
-        <span>?asset=web|mid|max · ?lod=0|quality · ?focal=1|2 · ?dpr=1|1.5|2 · ?budget=4000000</span>
+        <span>?asset=web|mid|local|max · ?dpr=1|1.5|2 · ?budget=8000000</span>
       </div>
 
       {/* raw JSON, selectable — the reliable way to get the picks out of the browser */}

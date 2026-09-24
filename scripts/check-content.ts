@@ -9,8 +9,8 @@
  *
  * Run with tsx (no build step): see the root package.json script.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { readFileSync, existsSync, statSync } from "node:fs";
+import { resolve, dirname, isAbsolute, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { ZodTypeAny } from "zod";
 import {
@@ -26,12 +26,30 @@ import {
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CONTENT = resolve(ROOT, "content");
 const MEDIA = resolve(CONTENT, "media");
+const PUBLIC_PAPERS = resolve(ROOT, "apps", "kiosk", "public", "papers");
 
 const errors: string[] = [];
 const fail = (file: string, msg: string) => errors.push(`${file}: ${msg}`);
 const isUrl = (s: string) => /^https?:\/\//i.test(s);
-/** External URL or an app-served absolute path (e.g. "/papers/..."): not on disk here. */
+/** Remote URL or a generic app-served absolute path. `/papers/...` is checked separately. */
 const isExternal = (s: string) => isUrl(s) || s.startsWith("/");
+
+/** Publication figures are app-served, but unlike an arbitrary route their files are in-repo.
+ *  Treating every leading-slash path as external let broken `/papers/...` references deploy. */
+function checkPublicPaper(file: string, ownerId: string, value: string): boolean {
+  const prefix = "/papers/";
+  if (!value.startsWith(prefix)) return false;
+  const path = resolve(PUBLIC_PAPERS, value.slice(prefix.length));
+  const fromRoot = relative(PUBLIC_PAPERS, path);
+  const escaped = fromRoot === "" || fromRoot.startsWith("..") || isAbsolute(fromRoot);
+  if (escaped || !existsSync(path) || !statSync(path).isFile()) {
+    fail(
+      file,
+      `"${ownerId}" media "${value}" not found at apps/kiosk/public/papers/${value.slice(prefix.length)}`,
+    );
+  }
+  return true;
+}
 
 /** Parse + schema-validate one file. Returns the typed array, or undefined on failure. */
 function load(file: string, schema: ZodTypeAny): any[] | undefined {
@@ -77,7 +95,8 @@ function checkRefs(file: string, ownerId: string, field: string, refs: string[] 
 /** A non-URL media value must resolve to a real file under content/media/<dir>/. */
 function checkMedia(file: string, ownerId: string, dir: string, values: (string | undefined)[]) {
   for (const value of values) {
-    if (!value || isExternal(value)) continue;
+    if (!value || isUrl(value)) continue;
+    if (checkPublicPaper(file, ownerId, value) || isExternal(value)) continue;
     const path = resolve(MEDIA, dir, value);
     if (!existsSync(path)) {
       fail(file, `"${ownerId}" media "${value}" not found at content/media/${dir}/${value}`);

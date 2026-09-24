@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Logo } from "@groundtruth/ui";
+import { ArrowRightIcon } from "../components/ArrowRightIcon";
 import { activePointer } from "../lib/cursorPosition";
 import { navigate } from "../lib/navigate";
 import type { View } from "../state/store";
@@ -167,7 +168,7 @@ export function HomeBoard() {
                 <span className="hb-row__sub">{s.sub}</span>
               </span>
               <span className="hb-row__go" aria-hidden>
-                →
+                <ArrowRightIcon />
               </span>
             </button>
           ))}
