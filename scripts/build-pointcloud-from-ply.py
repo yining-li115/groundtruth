@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Extract a decimated particle point cloud from the cropped/upright 3DGS .ply (the TUM
-Hauptgebäude) for the hand-gesture disperse/reassemble interaction (/?exp=cv).
+Hauptgebäude) for the hand-gesture disperse/reassemble interaction.
 
 Each Gaussian's CENTRE is a point; we keep its colour, opacity and footprint so the
 assembled cloud reads like the building. This is the "extract point cloud from the 3dgs"

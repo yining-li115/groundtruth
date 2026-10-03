@@ -2,9 +2,9 @@ import { useRef } from "react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import { BlurScrollText, HoverCaption } from "@groundtruth/ui";
-import { GalleryGL } from "../experiments/gallery/galleryGL";
+import { GalleryGL } from "../features/home-gallery/galleryGL";
 import { prefersReducedMotion } from "../lib/scroll";
-import "../experiments/gallery/gallery.css";
+import "../features/home-gallery/gallery.css";
 import "./spotlightGallery.css";
 
 /**

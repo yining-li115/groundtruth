@@ -5,8 +5,8 @@
 > 审计时的旧代码，不再描述运行中的系统。当前运行契约以 `docs/gesture-input.md` 为准。
 >
 > 旧 `steer()`、`useHandFlight.ts`、`Showreel.tsx`、`ShowreelStage.tsx` 及其私有飞行语法
-> 已从生产路径删除；保留的 `/?exp=cv` 是隔离诊断实验，不属于生产手势系统，也不会与
-> kiosk 同时创建第二条摄像头流。
+> 已从生产路径删除。移交清理时 `?exp=` 诊断页面也已删除；离线 harness 保留在
+> `scripts/`，不会创建第二条摄像头流。
 
 修订日期：2026-09-10。基于 v1（`Groundtruth_Gesture_Control_Plan_v1.md`，由外部模型依据 `docs/gesture-input.md` 撰写，未接触仓库）。
 
@@ -396,7 +396,7 @@ v1 的职责边界保留了，但实现按可测试性拆成以下生产链：
 | runtime stability | `lib/vision/pointerStabilizer.ts`, `controlFreshness.ts`, `faceOwner.ts` | owner-scoped 静止死区、自适应结果有效期、与当前 hand owner 关联的 face ruler |
 | session + exclusive routing | `lib/vision/interactionRouter.ts` | locked owner/recipient、CALIBRATION/UI/SCENE 互斥、统一取消路径 |
 | scene boundary | `lib/vision/flightInput.ts` | 发布获授权的 session/owner/seq/fresh Explore intent；`sceneExploreAxes` 统一校准中心坐标 |
-| Gaussian camera math | `experiments/spark/sceneNavigation.ts` | centred joystick、deadzone/acceleration、turn/travel velocity、collision 与 breadcrumb return |
+| Gaussian camera math | `features/showreel/sceneNavigation.ts` | centred joystick、deadzone/acceleration、turn/travel velocity、collision 与 breadcrumb return |
 | browser effects | `components/HandControl.tsx` | 唯一生产 consumer；执行 DOM click、scroll 与 scene actions |
 
 “新增只有三个模块”是实施前对文件数量的估计，不是最终结构：frame source、owner、router

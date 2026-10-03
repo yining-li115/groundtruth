@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@groundtruth/ui";
 import { KioskMenu } from "../components/KioskMenu";
 import { useKioskStore } from "../state/store";
-import { ContentCard, runwayVh } from "../experiments/fly/FlyExperiment";
+import { ContentCard, runwayVh } from "../features/home-fly/content";
 import {
   PAGES,
   STOP_COUNT,
   useFlySplatStage,
-} from "../experiments/fly/FlySplatExperiment";
-import { STOP_ACCENTS } from "../experiments/fly/assetColors";
+} from "../features/home-fly/useFlySplatStage";
+import { STOP_ACCENTS } from "../features/home-fly/assetColors";
 
 /**
  * Home variant B — the campus-splat fly-through as the REAL interactive home

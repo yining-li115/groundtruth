@@ -20,14 +20,14 @@ import {
   clickGestureInstruction,
   useClickGesture,
 } from "../lib/vision/useClickGesture";
-import { DEFAULT_SHOWREEL_ASSET } from "../experiments/spark/quality";
+import { DEFAULT_SHOWREEL_ASSET } from "../features/showreel/quality";
 import "./showreelFlight.css";
 
 /**
  * Idle showreel — the unattended screen behind the glass (architecture §6).
  *
  * A continuous camera flight through the TUM campus gaussians: it rests on each of the
- * hand-picked viewpoints in `experiments/spark/tour.json`, carries that stop's spotlight
+ * hand-picked viewpoints in `features/showreel/tour.json`, carries that stop's spotlight
  * card, then flies on to the next and loops. No cuts, and never a frame with empty space
  * in it — every pose was verified to be filled by the model (scripts/build-tour.py).
  *
@@ -48,7 +48,7 @@ import "./showreelFlight.css";
 const LOCAL_QUALITY = DEFAULT_SHOWREEL_ASSET;
 
 const CampusFlight = lazy(() =>
-  import("../experiments/spark/SparkCampusExperiment").then((m) => ({ default: m.CampusFlight })),
+  import("../features/showreel/CampusFlight").then((m) => ({ default: m.CampusFlight })),
 );
 
 /** Keep the site entrance alive when a laptop cannot initialise the 3D renderer or load it. */

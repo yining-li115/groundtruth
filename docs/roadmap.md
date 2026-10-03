@@ -2,7 +2,8 @@
 
 > Historical delivery log. The Phase 1 phone/relay input was later replaced in production by
 > the webcam gesture system documented in `docs/gesture-input.md`; the controller and relay
-> workspaces remain as isolated prototypes.
+> workspaces remain as isolated prototypes. All public `?exp=` routes and pure experiment pages
+> were removed during the 2026-10 handoff cleanup; references below describe historical previews.
 
 Build order is "make it work, then make it cool." Each phase is a coherent chunk Claude
 Code can take on. Check items off as they land; update CLAUDE.md §7 when an open
@@ -83,7 +84,7 @@ This is the project's only make-or-break risk. Prove it first.
       `?home=classic` and `?home=fly`. Rows are ~17% of screen height each — the biggest
       target the layout can give an arm — and their edges never move on hover. Verified by
       `node scripts/usertest/home-board.mjs` (75-point coverage grid, both click postures,
-      seam agreement, left-column inertness); design preview at `/?exp=home2`.
+      seam agreement, left-column inertness).
 - [ ] Idle showreel as its own auto-playing standby screen (independent of home; may
       reuse the same content JSON as source material) — `docs/architecture.md` §6.
 - [ ] Idle ↔ interactive mode switching driven by `room:driverChanged`. (NOT done yet:
@@ -101,7 +102,7 @@ This is the project's only make-or-break risk. Prove it first.
       `window.scrollY` unchanged. Plumbing only — per-component scroll choreography
       (reveals / pins / parallax) lands with the content-feed polish below.
 - [x] **Home Spotlight = horizontal WebGL parallax gallery** (`components/SpotlightGallery.tsx`
-      + `experiments/gallery/galleryGL.ts`, ported from the Codrops horizontal-parallax-gallery
+      + `features/home-gallery/galleryGL.ts`, ported from the Codrops horizontal-parallax-gallery
       demo, three.js — our stack). The section is **pinned** and a scrubbed ScrollTrigger maps
       vertical scroll → the gallery's horizontal position, so the visitor "scrolls on" to browse
       spotlights sideways; per-image uv parallax + rounded corners in the shader. Phone: the
@@ -122,22 +123,22 @@ This is the project's only make-or-break risk. Prove it first.
       Picsum placeholders + fake copy for now. Real (mostly text-only) news still needs a `date`
       field + external `link` on the schema (per CLAUDE.md rule 3) and likely a different
       text-first treatment.
-- [x] **Home Open Topics = full-bleed depth gallery** (`components/OpenTopicsDepth.tsx` +
-      `experiments/depth/`, vendored from Codrops `codrops-depth-gallery`, three.js). The visitor
+- [x] **Home Open Topics = full-bleed depth gallery** (historical prototype, removed during
+      handoff cleanup; originally vendored from Codrops `codrops-depth-gallery`, three.js). The visitor
       keeps scrolling DOWN; the section is a **sticky** stage inside a tall section so it rises
       continuously from beneath News (no blank gap), then page-scroll drives the camera through a
       stack of poster planes in 3D depth (a scrubbed ScrollTrigger → `setScrollProgress`, the
       engine's own wheel hijack off via `externalScroll`). The entry plane reads like a normal
       editorial section (heading + poster + caption beside it); deeper planes carry per-plane
       "mood" backgrounds that the GLSL background blends through — a **white → gray → black**
-      descent (token grays). Preview at `/?exp=depth`. Posters are placeholder (`poster.webp`).
-- [x] **Cursor-fluid garnish on home** (`experiments/liquid/LiquidEther.tsx`, vendored from
+      descent (token grays). Posters were placeholders (`poster.webp`).
+- [x] **Cursor-fluid garnish on home** (`features/home-liquid/LiquidEther.tsx`, vendored from
       React Bits' LiquidEther — a GPU stable-fluids sim, three.js). A faint, fixed full-page layer
       (`.home-fluid`) in front of content whose trail follows the cursor across the whole home.
       Driven by our cursor (`lib/cursorPosition`: `HandControl.tsx` publishes the stabilized
       hand pointer; `activePointer()` prefers a real mouse while it moves in dev) instead
       of the upstream window listeners. Brand palette (`assetColors`); reduced-motion skips it.
-      Preview at `/?exp=liquid`. Note: a 4th WebGL context on the home.
+      Note: a 4th WebGL context on the home.
 - [x] **Pixel page transition** on section navigation (`components/PixelOverlay.tsx` +
       `lib/pixelTransition.ts`, reimplemented from Codrops PixelTransition demo 4). A fixed
       full-screen grid of cells scatter-scales IN to cover, the view swaps behind the cover, then
@@ -145,22 +146,9 @@ This is the project's only make-or-break risk. Prove it first.
       back-to-home, controller back). Black pixels (`brand-black`); reduced-motion skips to the swap.
 
 ## Phase 4 — WebGL façade
-- [~] Hero scene for R3F: an interactive **point cloud** (on-brand for a remote-sensing
-      group). **Started early and relocated** — it drives the **interactive home hero**
-      (`apps/kiosk/src/scenes/Home.tsx` via `experiments/showcase/Scene.tsx`): a city +
-      satellites + car + sensor "data lines" assembled from ~140k particles,
-      scroll-disperses, cursor-orbits (§4/§6). Single indigo asset color (off-token by the
-      design-system "asset colors" exception). The live home geometry is still a
-      **procedural box stand-in**. Still WIP (composition/feel); not yet promoted into
-      `packages/ui` or `webgl/`.
-  - [~] **GLB-model variant** (experiment-only, preview at `/?exp=showcase`):
-        `experiments/showcase/SceneModels.tsx` + `sampleModels.ts` surface-sample real
-        Sketchfab GLBs (towers / car / satellite / drone / tree) into the same 140k-point
-        cloud — a far less crude city than the boxes. **Decoupled** from the live home hero
-        (the procedural `Scene.tsx` is untouched); promote into `Home.tsx` only once the
-        look is locked. GLB binaries are gitignored (`apps/kiosk/public/models/`, manifest
-        in its `README.md`); the two big towers still need decimation/texture-stripping
-        before they'd ever be committed.
+- [x] Home hero now uses the deployed campus Gaussian implementation in
+      `features/home-hero/HeroSplat.tsx`. The earlier procedural and GLB experiment variants
+      were removed during handoff cleanup.
 - [ ] Postprocessing pass (bloom/DOF) for the Lusion look, perf-budgeted for the kiosk
       hardware. NOTE: Bloom was deliberately dropped from the hero point cloud — it
       blew out the dense particles and hurt readability; density + crisp soft sprites

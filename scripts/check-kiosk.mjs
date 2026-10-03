@@ -1044,14 +1044,6 @@ async function main() {
     await sleep(250);
     ok("no page errors during the particle-story journey", problems.length === 0, problems[0]);
 
-    // ---------------------------------------------------------------- experiments
-    console.log("\nthe tuning pages still work\n");
-    for (const exp of ["handlab", "pointer"]) {
-      await goto(`${BASE}/?exp=${exp}&calibrate=0`, 7000);
-      ok(`/?exp=${exp}: renders`, (await evaluate(`document.body.children.length > 0`)) === true);
-      ok(`/?exp=${exp}: no page errors`, problems.length === 0, problems[0]);
-    }
-
     sock.close();
   } finally {
     chrome.kill("SIGTERM"); // this pid only — never a broad pkill

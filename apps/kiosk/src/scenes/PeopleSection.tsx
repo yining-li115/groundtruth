@@ -3,7 +3,7 @@ import type { Person } from "../../../../content/schema";
 import { people } from "../lib/content";
 import { SectionHome } from "../components/SectionHome";
 import { LegoAvatarLab } from "../components/lego/LegoAvatarLab";
-import { PersonDetail } from "../experiments/people/PersonDetail";
+import { PersonDetail } from "../features/people-detail/PersonDetail";
 import { activePointer } from "../lib/cursorPosition";
 import { scrollToTop, scrollToY } from "../lib/scroll";
 import "./people.css";
@@ -12,7 +12,7 @@ import "./people.css";
  * People — the group roster. Content is data (content/people.json, CLAUDE.md rule 3): each
  * member carries a `category`, and we group by it in a fixed order, so adding a person is a
  * JSON edit that lands in the right group automatically. Layout mirrors the design locked in
- * the ?exp=people prototype: a sticky "TEAM" intro beside a grid of portrait cards, with a
+ * the original prototype: a sticky "TEAM" intro beside a grid of portrait cards, with a
  * cursor-proximity scale "lens" driven by the kiosk cursor (works for the hand pointer
  * on the wall and a real mouse in dev — see lib/cursorPosition).
  */

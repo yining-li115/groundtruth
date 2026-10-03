@@ -8,7 +8,7 @@ import "./homeBoard.css";
 
 /**
  * The home page: one light ground carrying who this is, and one dark board carrying where to
- * go. (Previewable on its own at `/?exp=home2`, which is where it was designed.)
+ * go.
  *
  * It replaces the five colour bands. Those were built for the same problem — targets a hand
  * cannot miss, nothing to scroll to, no drawer to open first — and they solved it, but the

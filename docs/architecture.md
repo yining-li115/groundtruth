@@ -125,7 +125,7 @@ directly (that's a desktop/dev affordance only). See `apps/kiosk/src/lib/heroInp
 shared singleton (`apps/kiosk/src/lib/cursorPosition.ts`) so decorative effects can follow the
 SAME kiosk pointer without re-deriving it. `activePointer()` returns a real mouse while it moves
 (desktop dev) else the phone-driven cursor (kiosk) — used by the home cursor-fluid garnish
-(`experiments/liquid/LiquidEther.tsx`).
+(`features/home-liquid/LiquidEther.tsx`).
 
 ---
 

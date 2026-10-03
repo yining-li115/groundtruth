@@ -110,7 +110,7 @@ Build these in `packages/ui`, consume them in `apps/kiosk` and `apps/controller`
 
 `HandControl` deliberately stays app-level because it owns camera/device lifecycle rather than
 presentation. `TrackpadSurface` remains in the isolated controller prototype. The hero point cloud lives in
-`apps/kiosk/src/experiments/showcase/` and is not a reusable component yet.
+`apps/kiosk/src/features/home-hero/` and is not a reusable package component yet.
 
 ---
 

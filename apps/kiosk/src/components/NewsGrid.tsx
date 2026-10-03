@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
  * our light theme + a Lusion "Featured Work" layout). Big near-full-width two-column cards
  * rise with a restrained 3D tilt + blur as they scroll. Picsum placeholders + fake copy for
  * now — the real (mostly text-only) news will need a different treatment, but this is the
- * showcase layout. Also previewable standalone at /?exp=news.
+ * showcase layout.
  */
 const ITEMS = [
   { tag: "Research • CVPR • 3D Vision", title: "Five CVPR 2026 Papers" },

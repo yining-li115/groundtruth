@@ -7,7 +7,7 @@ import {
   morphVertexShader,
   setMorphPair,
   type ParticleFrame,
-} from "../experiments/story/imageParticles";
+} from "../features/detail-story/imageParticles";
 import "./publicationStoryBackdrop.css";
 
 /**

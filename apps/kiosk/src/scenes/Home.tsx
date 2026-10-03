@@ -7,17 +7,17 @@ import { useKioskStore } from "../state/store";
 import { heroOrbit } from "../lib/heroInput";
 
 import { activePointer } from "../lib/cursorPosition";
-import { liquidColors } from "../experiments/liquid/assetColors";
+import { liquidColors } from "../features/home-liquid/assetColors";
 
 // Lazy — the WebGL scene (three.js + gaussian splats) is heavy; code-split it out of the
 // main bundle. The hero is now the real TUM-campus gaussians (same scroll-disperse/orbit
-// behaviour as the old procedural point cloud, which stays previewable at /?exp=showcase).
+// behaviour as the old procedural point cloud.
 const HeroScene = lazy(() =>
-  import("../experiments/showcase/HeroSplat").then((m) => ({ default: m.HeroSplat })),
+  import("../features/home-hero/HeroSplat").then((m) => ({ default: m.HeroSplat })),
 );
 // Cursor-fluid garnish over the hero; also three.js-heavy, so lazy too.
 const HeroFluid = lazy(() =>
-  import("../experiments/liquid/LiquidEther").then((m) => ({ default: m.LiquidEther })),
+  import("../features/home-liquid/LiquidEther").then((m) => ({ default: m.LiquidEther })),
 );
 
 export function Home() {
@@ -120,9 +120,6 @@ export function Home() {
 
       {/* News — 3D staggered scroll grid (Lusion "Featured Work" layout). */}
       <NewsGrid />
-
-      {/* Open Topics (full-bleed depth gallery) removed from the home for now — the component
-          and its effect are kept in components/OpenTopicsDepth.tsx (preview /?exp=depth). */}
 
       {/* debug: showreel jump + the home A/B tab (until the supervisor picks a design) */}
       <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2">

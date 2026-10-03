@@ -10,7 +10,7 @@ import {
   type SceneNavigationConfig,
   type SceneNavigationMode,
   type SceneNavigationSample,
-} from "../apps/kiosk/src/experiments/spark/sceneNavigation";
+} from "../apps/kiosk/src/features/showreel/sceneNavigation";
 import { sceneExploreAxes } from "../apps/kiosk/src/lib/vision/flightInput";
 import {
   buildProductionTourCurve,
@@ -23,9 +23,9 @@ import {
   routeTourThroughRoam,
   type RoamVolume,
   type TourWaypoint,
-} from "../apps/kiosk/src/experiments/spark/safeTour";
-import autoTourJson from "../apps/kiosk/src/experiments/spark/tour.json";
-import roamJson from "../apps/kiosk/src/experiments/spark/roam.json";
+} from "../apps/kiosk/src/features/showreel/safeTour";
+import autoTourJson from "../apps/kiosk/src/features/showreel/tour.json";
+import roamJson from "../apps/kiosk/src/features/showreel/roam.json";
 
 let checks = 0;
 const ok = (condition: unknown, message: string) => {

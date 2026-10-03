@@ -6,7 +6,8 @@
 > `docs/gesture-input.md`: unique decoded frames, elapsed-time recognition, stable hand+face
 > ownership, adaptive freshness, exclusive routing, a wrist pointer with per-owner stabilization,
 > v4 installation-only calibration and explicit Showreel LOOK/MOVE. Do not use this file to infer
-> current defaults or profile fields.
+> current defaults or profile fields. The `?exp=roi` and other diagnostic routes described below
+> were removed during the 2026-10 handoff cleanup; the passages remain only as historical evidence.
 
 The recorded evidence remains useful for one unresolved experiment. It does **not** support the
 old claim that a webcam metres away necessarily fails because it cannot resolve two fingertips.

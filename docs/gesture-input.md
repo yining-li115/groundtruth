@@ -496,8 +496,9 @@ two public LOOK/MOVE buttons or a fist-on-background `SCENE_GRAB` records an aba
 intermediate implementation, not the shipped interaction contract.
 
 The old production showreel, its private webcam hook, and the separate one-finger/two-finger
-flight grammar have been removed. `/?exp=cv` remains an isolated diagnostic experiment; it is not
-mounted with the kiosk and cannot create a second production stream.
+flight grammar have been removed. The former `?exp=` diagnostic routes were also removed during
+handoff cleanup. Offline deterministic harnesses under `scripts/` remain the diagnostic surface
+and cannot create a second production stream.
 
 ---
 

@@ -2,7 +2,7 @@
 """
 Replay the kiosk's hand-control loop offline against the roam volume.
 
-Reproduces SparkCampusExperiment's movement exactly — try the whole move, fall back axis by
+Reproduces the production CampusFlight movement exactly — try the whole move, fall back axis by
 axis so a push into a wall slides instead of stopping, then clamp to the model bounds — and
 drives it with synthetic gestures from every stop, in every direction, for as long as a
 visitor plausibly would.
@@ -13,17 +13,18 @@ cross the courtyard (speed), and does any direction lock up.
 import json
 import math
 import sys
+from pathlib import Path
 
-BASE = "/Users/hayden/projects/groundtruth/apps/kiosk/src/experiments/spark/"
-roam = json.load(open(BASE + "roam.json"))
-tour = json.load(open(BASE + "tour.json"))
+BASE = Path(__file__).resolve().parents[1] / "apps/kiosk/src/features/showreel"
+roam = json.loads((BASE / "roam.json").read_text())
+tour = json.loads((BASE / "tour.json").read_text())
 
 CELL = roam["cell"]
 RMIN = roam["min"]
 NX, NY, NZ = roam["dims"]
 FREE = roam["free"]
 
-# must mirror the constants in SparkCampusExperiment.tsx
+# must mirror the constants in CampusFlight.tsx
 DOLLY_SPEED = 1.0
 STRAFE_SPEED = 0.8
 LIFT_SPEED = 0.8
